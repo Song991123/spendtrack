@@ -8,6 +8,7 @@ import { OcrUploadPage } from "./pages/OcrUploadPage";
 import { OcrEditPage } from "./pages/OcrEditPage";
 import { TransactionsPage } from "./pages/TransactionsPage";
 import { AnalysisPage } from "./pages/AnalysisPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
         <Route path="/ocr-edit" element={<OcrEditPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/analysis" element={<AnalysisPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

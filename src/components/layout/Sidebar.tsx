@@ -8,7 +8,11 @@ interface SidebarProps {
   user: { name: string; initial: string };
 }
 
-const NAV_ITEMS: { key: NavKey; label: string; path: string }[] = [
+const NAV_ITEMS: Array<{
+  key: Exclude<NavKey, "settings">;
+  label: string;
+  path: string;
+}> = [
   { key: "home", label: "홈", path: "/" },
   { key: "upload", label: "업로드", path: "/upload" },
   { key: "transactions", label: "수입/지출 내역", path: "/transactions" },
@@ -126,7 +130,7 @@ const UserMeta = styled.div`
   }
 `;
 
-const LogoutLink = styled.button`
+const SubLink = styled.button`
   background: none;
   border: none;
   padding: 0;
@@ -171,10 +175,13 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
         <UserMeta>
           <span className="name">{user.name}</span>
           <span className="sub">
-            내 계정 설정 ·{" "}
-            <LogoutLink type="button" onClick={handleLogout}>
+            <SubLink type="button" onClick={() => navigate("/settings")}>
+              내 계정 설정
+            </SubLink>
+            {" · "}
+            <SubLink type="button" onClick={handleLogout}>
               로그아웃
-            </LogoutLink>
+            </SubLink>
           </span>
         </UserMeta>
       </Footer>

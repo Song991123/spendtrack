@@ -5,7 +5,12 @@ import { Sidebar } from "./Sidebar";
 import { TopHeader } from "./TopHeader";
 import { media } from "../../tokens/breakpoints";
 
-export type NavKey = "home" | "upload" | "transactions" | "analysis";
+export type NavKey =
+  | "home"
+  | "upload"
+  | "transactions"
+  | "analysis"
+  | "settings";
 
 interface AppShellProps {
   activeNav: NavKey;
@@ -130,6 +135,12 @@ export const AppShell = ({
             onClick={() => navigate("/analysis")}
           >
             분석
+          </MobileNavItem>
+          <MobileNavItem
+            $active={activeNav === "settings"}
+            onClick={() => navigate("/settings")}
+          >
+            설정
           </MobileNavItem>
           <MobileNavDivider />
           <MobileNavItem type="button" onClick={() => navigate("/login")}>
