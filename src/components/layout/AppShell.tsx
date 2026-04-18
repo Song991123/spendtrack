@@ -9,7 +9,6 @@ interface AppShellProps {
   activeNav: NavKey;
   title: string;
   headerRight?: ReactNode;
-  onNavChange?: (key: NavKey) => void;
   children: ReactNode;
 }
 
@@ -45,15 +44,10 @@ export const AppShell = ({
   activeNav,
   title,
   headerRight,
-  onNavChange,
   children,
 }: AppShellProps) => (
   <Shell>
-    <Sidebar
-      activeNav={activeNav}
-      onNavChange={onNavChange}
-      user={{ name: "홍길동", initial: "홍" }}
-      />
+    <Sidebar activeNav={activeNav} user={{ name: "홍민수", initial: "홍" }} />
     <Main>
       <TopHeader title={title} right={headerRight} />
       <Content>{children}</Content>

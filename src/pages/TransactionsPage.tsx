@@ -1,725 +1,492 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import styled from "styled-components";
 import { AppShell } from "../components/layout/AppShell";
-import type { NavKey } from "../components/layout/AppShell";
-import type { Platform } from "../types/platform";
-import { formatKRW } from "../utils/format";
+import { mockTransactions } from "../data/mockTransactions";
+import { Tag } from "../components/primitives/Tag";
+import { Card } from "../components/primitives/Card";
+import { Button } from "../components/primitives/Button";
+import type { StatusTag, Transaction } from "../types/transaction";
+import {
+  formatAmount,
+  platformLabel,
+  statusLabel,
+  typeLabel,
+} from "../utils/transaction";
 
-interface TransactionsPageProps {
-  activeNav: NavKey;
-  onNavChange: (key: NavKey) => void;
-}
-
-type Period = "이번달" | "최근3개월" | "사용자 지정";
-type PlatformFilter = "전체" | Platform;
-
-interface Transaction {
-  id: string;
-  date: string;
-  platform: Platform;
-  productName: string;
-  totalAmount: number;
-  itemCount: number;
-}
-
-const PERIODS: Period[] = ["이번달", "최근3개월", "사용자 지정"];
-const PLATFORM_FILTERS: PlatformFilter[] = [
-  "전체",
-  "쿠팡",
-  "네이버쇼핑",
-  "무신사",
-];
-
-const PLATFORM_TONES: Record<
-  Platform,
-  { bg: string; fg: string; border: string }
-> = {
-  쿠팡: { bg: "#FEF3C7", fg: "#B45309", border: "#F59E0B" },
-  네이버쇼핑: { bg: "#D1FAE5", fg: "#0F9B54", border: "#0F9B54" },
-  무신사: { bg: "#EEE7FF", fg: "#6D28D9", border: "#AB81FE" },
-};
-
-const TRANSACTIONS: Transaction[] = [
-  {
-    id: "1",
-    date: "2025.04.14",
-    platform: "쿠팡",
-    productName: "나이키 에어포스 1 로우 화이트 270",
-    totalAmount: 129000,
-    itemCount: 1,
-  },
-  {
-    id: "2",
-    date: "2025.04.12",
-    platform: "무신사",
-    productName: "커버낫 스트릿 후드집업",
-    totalAmount: 89000,
-    itemCount: 1,
-  },
-  {
-    id: "3",
-    date: "2025.04.10",
-    platform: "네이버쇼핑",
-    productName: "애플 에어팟 프로 외 2건",
-    totalAmount: 289000,
-    itemCount: 3,
-  },
-  {
-    id: "4",
-    date: "2025.04.08",
-    platform: "쿠팡",
-    productName: "다이슨 헤어 컴플리트",
-    totalAmount: 650000,
-    itemCount: 1,
-  },
-  {
-    id: "5",
-    date: "2025.04.05",
-    platform: "무신사",
-    productName: "노스페이스 눕시 패딩 외 1건",
-    totalAmount: 329000,
-    itemCount: 2,
-  },
-];
-
-const buildDetailItems = (tx: Transaction) => {
-  if (tx.itemCount <= 1) {
-    return [{ name: tx.productName, price: tx.totalAmount }];
-  }
-  const baseName = tx.productName.replace(/\s*외\s+\d+건$/, "");
-  const avg = Math.round(tx.totalAmount / tx.itemCount);
-  return Array.from({ length: tx.itemCount }, (_, i) => ({
-    name: i === 0 ? baseName : `${baseName} (${i + 1})`,
-    price: avg,
-  }));
-};
-
-const Spacer = styled.div<{ $h?: number }>`
-  height: ${({ $h = 8 }) => $h}px;
-`;
-
-const CardBox = styled.div`
+const MonthSelector = styled.button`
   background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.02);
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+  font-family: inherit;
 `;
 
-const CardHead = styled.div`
+const PageLayout = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 14px;
+  flex-direction: column;
+  gap: 0;
+`;
+
+const FilterRow = styled.div`
+  display: flex;
   gap: 12px;
-
-  .titles {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-  }
-  h3 {
-    margin: 0;
-    font-size: 14.5px;
-    font-weight: 700;
-    color: #111827;
-    letter-spacing: -0.15px;
-  }
-  .subtitle {
-    font-size: 11.5px;
-    color: #9ca3af;
-    font-weight: 400;
-  }
-`;
-
-const FilterBar = styled.div`
-  display: flex;
   align-items: center;
-  gap: 10px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 `;
 
-const SearchWrap = styled.div`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 38px;
-  padding: 0 12px;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+const SearchField = styled.input`
+  width: 244px;
+  height: 40px;
+  border: 1px solid #d9d9d9;
   border-radius: 8px;
-  flex: 1;
-  min-width: 220px;
-  transition: background 0.12s, border-color 0.12s;
-
-  &:focus-within {
-    background: #ffffff;
-    border-color: #4f6ef7;
-  }
-
-  .icon {
-    color: #9ca3af;
-    font-size: 13px;
-    flex-shrink: 0;
-  }
-
-  input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    background: none;
-    outline: none;
-    font-family: inherit;
-    font-size: 13px;
-    color: #111827;
-
-    &::placeholder {
-      color: #9ca3af;
-    }
-  }
-`;
-
-const PillGroup = styled.div`
-  display: inline-flex;
-  background: #f3f4f6;
-  border-radius: 8px;
-  padding: 3px;
-  gap: 2px;
-  height: 38px;
-  align-items: center;
-`;
-
-const Pill = styled.button<{ $active?: boolean }>`
-  padding: 6px 12px;
-  border: none;
-  background: ${({ $active }) => ($active ? "#ffffff" : "transparent")};
-  color: ${({ $active }) => ($active ? "#111827" : "#6b7280")};
-  font-weight: ${({ $active }) => ($active ? 600 : 500)};
+  font-size: 13px;
+  padding: 0 14px;
+  color: #111827;
+  background: #ffffff;
   font-family: inherit;
-  font-size: 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s, box-shadow 0.12s;
-  box-shadow: ${({ $active }) =>
-    $active ? "0 1px 2px rgba(0, 0, 0, 0.06)" : "none"};
+  box-sizing: border-box;
 
-  &:hover {
-    color: #111827;
+  &::placeholder {
+    color: #9ca3af;
   }
 `;
 
-const TwoCol = styled.div`
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 14px;
-  align-items: start;
-
-  @media (max-width: 960px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const ListBody = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-`;
-
-const TxItem = styled.li<{ $selected?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 8px;
+const FilterSelect = styled.button`
+  height: 40px;
+  border: 1px solid #d9d9d9;
   border-radius: 8px;
+  padding: 0 14px;
+  font-size: 13px;
+  color: #374151;
+  background: #ffffff;
   cursor: pointer;
-  transition: background 0.12s;
-  background: ${({ $selected }) => ($selected ? "#eef4ff" : "transparent")};
-
-  & + & {
-    border-top: 1px solid #f3f4f6;
-  }
-
-  &:hover {
-    background: ${({ $selected }) => ($selected ? "#eef4ff" : "#fafbfc")};
-  }
+  min-width: 148px;
+  font-family: inherit;
+  text-align: left;
 `;
 
-const Thumb = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 17px;
+const ResultCount = styled.span`
+  margin-left: auto;
+  font-size: 13px;
   color: #9ca3af;
 `;
 
-const TxBody = styled.div`
+const ContentRow = styled.div`
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+
+  @media (max-width: 1200px) {
+    flex-direction: column;
+  }
+`;
+
+const TableSection = styled.div`
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-
-  .name {
-    font-size: 13px;
-    font-weight: 600;
-    color: #111827;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    letter-spacing: -0.1px;
-  }
-  .meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    color: #6b7280;
-  }
-  .dot {
-    color: #d1d5db;
-  }
 `;
 
-const PlatformPill = styled.span<{
-  $bg: string;
-  $fg: string;
-  $border: string;
-}>`
-  display: inline-flex;
+const TableCard = styled(Card)`
+  overflow: hidden;
+`;
+
+const TableHeader = styled.div`
+  display: grid;
+  grid-template-columns: 60px 90px 100px 1fr 120px 70px;
+  height: 44px;
   align-items: center;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $fg }) => $fg};
-  border: 1px solid ${({ $border }) => $border};
-  border-radius: 5px;
+  padding: 0 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 12px;
+`;
+
+const ColHead = styled.span`
+  font-size: 12px;
   font-weight: 600;
-  font-size: 10.5px;
-  padding: 1px 7px;
-  line-height: 1.2;
+  color: #6b7280;
 `;
 
-const TxAmount = styled.div`
-  text-align: right;
-  flex-shrink: 0;
-
-  .amount {
-    font-size: 14px;
-    font-weight: 700;
-    color: #111827;
-    letter-spacing: -0.3px;
-  }
-  .count {
-    font-size: 10.5px;
-    color: #9ca3af;
-    margin-top: 2px;
-  }
+const TableRow = styled.button<{ $selected?: boolean }>`
+  width: 100%;
+  display: grid;
+  grid-template-columns: 60px 90px 100px 1fr 120px 70px;
+  height: 52px;
+  align-items: center;
+  padding: 0 16px;
+  border: none;
+  border-bottom: 1px solid #f3f4f6;
+  background: ${({ $selected }) => ($selected ? "#f5f7ff" : "#ffffff")};
+  cursor: pointer;
+  gap: 12px;
+  text-align: left;
+  font-family: inherit;
 `;
 
-const EmptyMsg = styled.div`
-  padding: 40px 20px;
-  text-align: center;
-  color: #9ca3af;
+const Cell = styled.div`
+  min-width: 0;
   font-size: 13px;
+  color: #374151;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const TitleCell = styled(Cell)`
+  font-weight: 500;
+  color: #111827;
+`;
+
+const Amount = styled.span<{ $type: Transaction["type"]; $statusTag: StatusTag }>`
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ $type, $statusTag }) => {
+    if ($statusTag === "cancel") return "#808080";
+    return $type === "expense" ? "#D92626" : "#3E76FC";
+  }};
 `;
 
 const Pagination = styled.div`
   display: flex;
   justify-content: center;
-  gap: 6px;
-  padding-top: 14px;
-  margin-top: 14px;
-  border-top: 1px solid #f3f4f6;
+  gap: 8px;
+  padding: 20px 0;
 `;
 
 const PageBtn = styled.button<{ $active?: boolean }>`
   width: 32px;
   height: 32px;
-  border: 1px solid ${({ $active }) => ($active ? "#4f6ef7" : "#e5e7eb")};
-  background: ${({ $active }) => ($active ? "#4f6ef7" : "#ffffff")};
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  background: ${({ $active }) => ($active ? "#4f6ef7" : "#f3f4f6")};
   color: ${({ $active }) => ($active ? "#ffffff" : "#374151")};
   font-weight: ${({ $active }) => ($active ? 700 : 500)};
-  font-family: inherit;
-  font-size: 12.5px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
+`;
 
-  &:hover {
-    border-color: ${({ $active }) => ($active ? "#4f6ef7" : "#9ca3af")};
+const PanelCard = styled(Card)`
+  width: 476px;
+  flex-shrink: 0;
+
+  @media (max-width: 1200px) {
+    width: 100%;
   }
 `;
 
-const DetailColumn = styled.div`
-  position: sticky;
-  top: 16px;
-
-  @media (max-width: 960px) {
-    position: static;
-  }
-`;
-
-const DetailHead = styled.div`
+const PanelHeader = styled.div`
   display: flex;
   justify-content: space-between;
+  padding: 20px 24px;
   align-items: center;
-  margin-bottom: 14px;
+`;
 
-  h3 {
-    margin: 0;
-    font-size: 14.5px;
-    font-weight: 700;
-    color: #111827;
-    letter-spacing: -0.15px;
-  }
+const PanelTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
 `;
 
 const CloseBtn = styled.button`
-  background: none;
-  border: none;
-  font-size: 14px;
+  font-size: 16px;
   color: #9ca3af;
   cursor: pointer;
-  padding: 4px;
+  background: none;
+  border: none;
+  padding: 0;
   font-family: inherit;
-  line-height: 1;
-
-  &:hover {
-    color: #374151;
-  }
 `;
 
-const DetailMeta = styled.div`
+const Divider = styled.div`
+  height: 1px;
+  background: #e5e7eb;
+`;
+
+const PanelBody = styled.div`
+  padding: 20px 24px;
+`;
+
+const BadgeRow = styled.div`
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+`;
+
+const TxName = styled.h4`
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+`;
+
+const DateAmountRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 14px;
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .label {
-    font-size: 11px;
-    color: #9ca3af;
-    font-weight: 500;
-  }
-  .value {
-    font-size: 13px;
-    font-weight: 600;
-    color: #111827;
-  }
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
 `;
 
-const DetailHighlight = styled.div`
-  background: #eef4ff;
-  border: 1px solid #dbe6fe;
-  border-radius: 12px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
-
-  .label {
-    font-size: 11.5px;
-    color: #4f6ef7;
-    font-weight: 600;
-    margin-bottom: 4px;
-  }
-  .value {
-    font-size: 22px;
-    font-weight: 700;
-    color: #111827;
-    letter-spacing: -0.4px;
-    line-height: 1.2;
-  }
+const TxDate = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
 `;
 
-const DetailSection = styled.div`
-  margin-top: 14px;
-
-  .label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7280;
-    margin-bottom: 8px;
-  }
+const Sep = styled.span`
+  color: #d1d5db;
 `;
 
-const ItemList = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 0;
+const TxAmount = styled.span<{ $type: Transaction["type"]; $statusTag: StatusTag }>`
+  font-size: 18px;
+  font-weight: 700;
+  color: ${({ $type, $statusTag }) => {
+    if ($statusTag === "cancel") return "#808080";
+    return $type === "expense" ? "#D92626" : "#3E76FC";
+  }};
 `;
 
-const ItemLine = styled.li`
+const SectionLabel = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  margin: 16px 0 12px;
+`;
+
+const ProductItem = styled.div`
   display: flex;
   justify-content: space-between;
+  padding: 8px 0;
   gap: 12px;
-  padding: 9px 0;
-  font-size: 13px;
-  border-bottom: 1px solid #f3f4f6;
 
-  &:last-child {
-    border-bottom: none;
-  }
-
-  .name {
+  span:first-child {
+    font-size: 13px;
     color: #374151;
     flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
-  .price {
+
+  span:last-child {
+    font-size: 13px;
     font-weight: 600;
     color: #111827;
     flex-shrink: 0;
   }
 `;
 
-const EditBtn = styled.button`
+const EmptyNote = styled.p`
+  margin: 0;
+  font-size: 12px;
+  color: #9ca3af;
+`;
+
+const DeleteBtn = styled.button`
   width: 100%;
-  height: 42px;
-  background: #4f6ef7;
-  color: #ffffff;
-  border: none;
+  height: 44px;
+  border: 1px solid #e54d4d;
   border-radius: 10px;
-  font-family: inherit;
-  font-size: 13.5px;
+  color: #e54d4d;
+  background: #ffffff;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 16px;
-  transition: background 0.12s;
-
-  &:hover {
-    background: #4060e6;
-  }
+  margin-bottom: 16px;
+  font-family: inherit;
 `;
 
-const DetailEmpty = styled.div`
-  padding: 60px 20px;
-  text-align: center;
-  color: #9ca3af;
-  font-size: 13px;
-
-  .icon {
-    font-size: 32px;
-    opacity: 0.5;
-    margin-bottom: 8px;
-  }
+const LinkAction = styled.button`
+  font-size: 12px;
+  color: #4f6ef7;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
 `;
 
-export const TransactionsPage = ({
-  activeNav,
-  onNavChange,
-}: TransactionsPageProps) => {
-  const [period, setPeriod] = useState<Period>("이번달");
-  const [platform, setPlatform] = useState<PlatformFilter>("전체");
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+export const TransactionsPage = () => {
   const [selectedId, setSelectedId] = useState<string | null>(
-    TRANSACTIONS[0]?.id ?? null
+    mockTransactions[0]?.id ?? null
   );
 
-  const filtered = TRANSACTIONS.filter((t) => {
-    const matchPlatform = platform === "전체" || t.platform === platform;
-    const matchSearch = t.productName
-      .toLowerCase()
-      .includes(search.toLowerCase());
-    return matchPlatform && matchSearch;
-  });
+  const selectedTx = useMemo(
+    () =>
+      mockTransactions.find((transaction) => transaction.id === selectedId) ??
+      null,
+    [selectedId]
+  );
 
-  const selected = TRANSACTIONS.find((t) => t.id === selectedId) ?? null;
-  const detailItems = selected ? buildDetailItems(selected) : [];
-  const selectedTone = selected ? PLATFORM_TONES[selected.platform] : null;
+  const expenseCount = mockTransactions.filter(
+    (transaction) => transaction.type === "expense"
+  ).length;
+  const incomeCount = mockTransactions.filter(
+    (transaction) => transaction.type === "income"
+  ).length;
 
   return (
     <AppShell
-      activeNav={activeNav}
-      title="소비내역"
-      onNavChange={onNavChange}
+      activeNav="transactions"
+      title="수입·지출 내역"
+      headerRight={<MonthSelector type="button">2025년 4월 ▾</MonthSelector>}
     >
-      <CardBox>
-        <CardHead>
-          <div className="titles">
-            <h3>필터</h3>
-            <span className="subtitle">
-              기간과 플랫폼을 선택해 거래를 조회하세요
-            </span>
-          </div>
-        </CardHead>
+      <PageLayout>
+        <FilterRow>
+          <SearchField placeholder="🔍  주문명·상품명 검색" />
+          <FilterSelect type="button">기간 선택 ▾</FilterSelect>
+          <FilterSelect type="button">플랫폼 전체 ▾</FilterSelect>
+          <FilterSelect type="button">카테고리 ▾</FilterSelect>
+          <ResultCount>
+            총 {mockTransactions.length}건 (지출 {expenseCount} · 수입{" "}
+            {incomeCount})
+          </ResultCount>
+        </FilterRow>
 
-        <FilterBar>
-          <SearchWrap>
-            <span className="icon">🔍</span>
-            <input
-              type="text"
-              placeholder="상품명 검색"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </SearchWrap>
+        <ContentRow>
+          <TableSection>
+            <TableCard padding={0}>
+              <TableHeader>
+                <ColHead>유형</ColHead>
+                <ColHead>주문일</ColHead>
+                <ColHead>플랫폼</ColHead>
+                <ColHead>거래명</ColHead>
+                <ColHead>금액</ColHead>
+                <ColHead>상태</ColHead>
+              </TableHeader>
 
-          <PillGroup>
-            {PERIODS.map((p) => (
-              <Pill
-                key={p}
-                type="button"
-                $active={period === p}
-                onClick={() => setPeriod(p)}
-              >
-                {p}
-              </Pill>
-            ))}
-          </PillGroup>
-
-          <PillGroup>
-            {PLATFORM_FILTERS.map((p) => (
-              <Pill
-                key={p}
-                type="button"
-                $active={platform === p}
-                onClick={() => setPlatform(p)}
-              >
-                {p}
-              </Pill>
-            ))}
-          </PillGroup>
-        </FilterBar>
-      </CardBox>
-
-      <Spacer $h={4} />
-
-      <TwoCol>
-        <CardBox>
-          <CardHead>
-            <div className="titles">
-              <h3>소비내역</h3>
-              <span className="subtitle">총 {filtered.length}건</span>
-            </div>
-          </CardHead>
-
-          {filtered.length === 0 ? (
-            <EmptyMsg>조건에 맞는 거래가 없습니다</EmptyMsg>
-          ) : (
-            <>
-              <ListBody>
-                {filtered.map((tx) => {
-                  const tone = PLATFORM_TONES[tx.platform];
-                  return (
-                    <TxItem
-                      key={tx.id}
-                      $selected={selectedId === tx.id}
-                      onClick={() => setSelectedId(tx.id)}
+              {mockTransactions.map((transaction) => (
+                <TableRow
+                  key={transaction.id}
+                  type="button"
+                  $selected={selectedId === transaction.id}
+                  onClick={() => setSelectedId(transaction.id)}
+                >
+                  <Cell>
+                    <Tag variant="type" value={typeLabel(transaction.type)} />
+                  </Cell>
+                  <Cell>{transaction.date}</Cell>
+                  <Cell>
+                    <Tag
+                      variant="platform"
+                      value={platformLabel(transaction.platform)}
+                    />
+                  </Cell>
+                  <TitleCell>{transaction.title}</TitleCell>
+                  <Cell>
+                    <Amount
+                      $type={transaction.type}
+                      $statusTag={transaction.statusTag}
                     >
-                      <Thumb>🛍</Thumb>
-                      <TxBody>
-                        <span className="name">{tx.productName}</span>
-                        <div className="meta">
-                          <PlatformPill
-                            $bg={tone.bg}
-                            $fg={tone.fg}
-                            $border={tone.border}
-                          >
-                            {tx.platform}
-                          </PlatformPill>
-                          <span className="dot">·</span>
-                          <span>{tx.date}</span>
-                        </div>
-                      </TxBody>
-                      <TxAmount>
-                        <div className="amount">
-                          {formatKRW(tx.totalAmount)}
-                        </div>
-                        <div className="count">{tx.itemCount}개 상품</div>
-                      </TxAmount>
-                    </TxItem>
-                  );
-                })}
-              </ListBody>
+                      {formatAmount(transaction.amount, transaction.type)}
+                    </Amount>
+                  </Cell>
+                  <Cell>
+                    <Tag
+                      variant="status"
+                      value={statusLabel(transaction.statusTag)}
+                    />
+                  </Cell>
+                </TableRow>
+              ))}
 
               <Pagination>
-                {[1, 2, 3].map((n) => (
-                  <PageBtn
-                    key={n}
-                    type="button"
-                    $active={page === n}
-                    onClick={() => setPage(n)}
-                  >
-                    {n}
-                  </PageBtn>
-                ))}
+                <PageBtn type="button" $active>
+                  1
+                </PageBtn>
+                <PageBtn type="button">2</PageBtn>
+                <PageBtn type="button">3</PageBtn>
               </Pagination>
-            </>
-          )}
-        </CardBox>
+            </TableCard>
+          </TableSection>
 
-        <DetailColumn>
-          <CardBox>
-            <DetailHead>
-              <h3>주문 상세</h3>
-              {selected && (
-                <CloseBtn
-                  type="button"
-                  aria-label="닫기"
-                  onClick={() => setSelectedId(null)}
-                >
+          {selectedTx && (
+            <PanelCard padding={0}>
+              <PanelHeader>
+                <PanelTitle>거래 상세</PanelTitle>
+                <CloseBtn type="button" onClick={() => setSelectedId(null)}>
                   ✕
                 </CloseBtn>
-              )}
-            </DetailHead>
+              </PanelHeader>
+              <Divider />
 
-            {selected && selectedTone ? (
-              <>
-                <DetailMeta>
-                  <PlatformPill
-                    $bg={selectedTone.bg}
-                    $fg={selectedTone.fg}
-                    $border={selectedTone.border}
+              <PanelBody>
+                <BadgeRow>
+                  <Tag
+                    variant="platform"
+                    value={platformLabel(selectedTx.platform)}
+                  />
+                  <Tag variant="type" value={typeLabel(selectedTx.type)} />
+                </BadgeRow>
+
+                <TxName>{selectedTx.title}</TxName>
+
+                <DateAmountRow>
+                  <TxDate>{selectedTx.date}</TxDate>
+                  <Sep>|</Sep>
+                  <TxAmount
+                    $type={selectedTx.type}
+                    $statusTag={selectedTx.statusTag}
                   >
-                    {selected.platform}
-                  </PlatformPill>
-                  <div className="field">
-                    <span className="label">주문일자</span>
-                    <span className="value">{selected.date}</span>
-                  </div>
-                </DetailMeta>
+                    {formatAmount(selectedTx.amount, selectedTx.type)}
+                  </TxAmount>
+                </DateAmountRow>
 
-                <DetailHighlight>
-                  <div className="label">전체 결제금액</div>
-                  <div className="value">
-                    {formatKRW(selected.totalAmount)}
-                  </div>
-                </DetailHighlight>
+                <Divider />
 
-                <DetailSection>
-                  <div className="label">상품 목록 ({selected.itemCount}개)</div>
-                  <ItemList>
-                    {detailItems.map((item, i) => (
-                      <ItemLine key={i}>
-                        <span className="name">{item.name}</span>
-                        <span className="price">{formatKRW(item.price)}</span>
-                      </ItemLine>
-                    ))}
-                  </ItemList>
-                </DetailSection>
+                <SectionLabel>상품 목록</SectionLabel>
+                {selectedTx.products?.length ? (
+                  selectedTx.products.map((product) => (
+                    <ProductItem key={product.id}>
+                      <span>{product.name}</span>
+                      <span>₩{product.price.toLocaleString("ko-KR")}</span>
+                    </ProductItem>
+                  ))
+                ) : (
+                  <EmptyNote>등록된 상품이 없습니다</EmptyNote>
+                )}
 
-                <EditBtn type="button">✏ 수정하기</EditBtn>
-              </>
-            ) : (
-              <DetailEmpty>
-                <div className="icon">📋</div>
-                <div>좌측 목록에서 거래를 선택해주세요</div>
-              </DetailEmpty>
-            )}
-          </CardBox>
-        </DetailColumn>
-      </TwoCol>
+                <Divider style={{ margin: "16px 0" }} />
+
+                <SectionLabel>거래 상태</SectionLabel>
+                <Tag
+                  variant="status"
+                  value={statusLabel(selectedTx.statusTag)}
+                />
+
+                <Divider style={{ margin: "16px 0" }} />
+
+                <SectionLabel>입력 방식</SectionLabel>
+                <Tag
+                  variant="source"
+                  value={selectedTx.source === "ocr" ? "OCR" : "직접"}
+                />
+
+                <Divider style={{ margin: "16px 0" }} />
+
+                <Button
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  style={{ marginBottom: 12 }}
+                >
+                  수정하기
+                </Button>
+                <DeleteBtn type="button">거래 삭제</DeleteBtn>
+
+                <LinkAction type="button">
+                  상품 링크 보기 / 편집 →
+                </LinkAction>
+              </PanelBody>
+            </PanelCard>
+          )}
+        </ContentRow>
+      </PageLayout>
     </AppShell>
   );
 };

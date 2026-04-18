@@ -1,17 +1,17 @@
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 import type { NavKey } from "./AppShell";
 
 interface SidebarProps {
   activeNav: NavKey;
   user: { name: string; initial: string };
-  onNavChange?: (key: NavKey) => void;
 }
 
-const NAV_ITEMS: { key: NavKey; label: string }[] = [
-  { key: "home", label: "홈" },
-  { key: "upload", label: "업로드" },
-  { key: "transactions", label: "소비내역" },
-  { key: "analysis", label: "소비분석" },
+const NAV_ITEMS: { key: NavKey; label: string; path: string }[] = [
+  { key: "home", label: "홈", path: "/" },
+  { key: "upload", label: "업로드", path: "/upload" },
+  { key: "transactions", label: "수입·지출 내역", path: "/transactions" },
+  { key: "analysis", label: "소비분석", path: "/analysis" },
 ];
 
 const Aside = styled.aside`
@@ -113,6 +113,7 @@ const UserMeta = styled.div`
     color: #111827;
     line-height: 1.3;
   }
+
   .sub {
     font-size: 11px;
     color: #9ca3af;
@@ -120,32 +121,36 @@ const UserMeta = styled.div`
   }
 `;
 
-export const Sidebar = ({ activeNav, user, onNavChange }: SidebarProps) => (
-  <Aside>
-    <LogoArea>
-      <LogoMark />
-      <LogoText>SpendTrack</LogoText>
-    </LogoArea>
+export const Sidebar = ({ activeNav, user }: SidebarProps) => {
+  const navigate = useNavigate();
 
-    <Nav>
-      {NAV_ITEMS.map((item) => (
-        <NavItem
-          key={item.key}
-          type="button"
-          $active={activeNav === item.key}
-          onClick={() => onNavChange?.(item.key)}
-        >
-          {item.label}
-        </NavItem>
-      ))}
-    </Nav>
+  return (
+    <Aside>
+      <LogoArea>
+        <LogoMark />
+        <LogoText>SpendTrack</LogoText>
+      </LogoArea>
 
-    <Footer>
-      <Avatar>{user.initial}</Avatar>
-      <UserMeta>
-        <span className="name">{user.name}</span>
-        <span className="sub">내 계정 설정</span>
-      </UserMeta>
-    </Footer>
-  </Aside>
-);
+      <Nav>
+        {NAV_ITEMS.map((item) => (
+          <NavItem
+            key={item.key}
+            type="button"
+            $active={activeNav === item.key}
+            onClick={() => navigate(item.path)}
+          >
+            {item.label}
+          </NavItem>
+        ))}
+      </Nav>
+
+      <Footer>
+        <Avatar>{user.initial}</Avatar>
+        <UserMeta>
+          <span className="name">{user.name}</span>
+          <span className="sub">내 계정 설정</span>
+        </UserMeta>
+      </Footer>
+    </Aside>
+  );
+};

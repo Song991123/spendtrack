@@ -1,14 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../components/layout/AppShell";
-import type { NavKey } from "../components/layout/AppShell";
-import type { Platform } from "../types/platform";
+import { Tag } from "../components/primitives/Tag";
+import { Button } from "../components/primitives/Button";
 import { formatKRW, parsePrice } from "../utils/format";
-
-interface OcrEditPageProps {
-  activeNav: NavKey;
-  onNavChange: (key: NavKey) => void;
-}
 
 interface UploadedImage {
   id: string;
@@ -16,18 +12,18 @@ interface UploadedImage {
   url?: string;
 }
 
-const IMAGES: UploadedImage[] = [
-  { id: "img1", label: "이미지 1" },
-  { id: "img2", label: "이미지 2" },
-  { id: "img3", label: "이미지 3" },
-];
-
 interface ProductDraft {
   id: string;
   name: string;
   price: number;
   link: string;
 }
+
+const IMAGES: UploadedImage[] = [
+  { id: "img1", label: "이미지 1" },
+  { id: "img2", label: "이미지 2" },
+  { id: "img3", label: "이미지 3" },
+];
 
 const INITIAL_PRODUCTS: ProductDraft[] = [
   {
@@ -38,27 +34,13 @@ const INITIAL_PRODUCTS: ProductDraft[] = [
   },
   {
     id: "p2",
-    name: "나이키 에어맥스 90 블랙 265",
+    name: "나이키 에어포스 1 로우 블랙 265",
     price: 129000,
     link: "",
   },
 ];
 
-const PLATFORM_TONES: Record<
-  Platform,
-  { bg: string; fg: string; border: string }
-> = {
-  쿠팡: { bg: "#FEF3C7", fg: "#B45309", border: "#F59E0B" },
-  네이버쇼핑: { bg: "#D1FAE5", fg: "#0F9B54", border: "#0F9B54" },
-  무신사: { bg: "#EEE7FF", fg: "#6D28D9", border: "#AB81FE" },
-};
-
-const ORDER_PLATFORM: Platform = "쿠팡";
 const ORDER_DATE = "2025.04.14";
-
-const Spacer = styled.div<{ $h?: number }>`
-  height: ${({ $h = 8 }) => $h}px;
-`;
 
 const TwoCol = styled.div`
   display: grid;
@@ -110,6 +92,7 @@ const CardHead = styled.div`
     flex-direction: column;
     gap: 3px;
   }
+
   h3 {
     margin: 0;
     font-size: 14.5px;
@@ -117,6 +100,7 @@ const CardHead = styled.div`
     color: #111827;
     letter-spacing: -0.15px;
   }
+
   .subtitle {
     font-size: 11.5px;
     color: #9ca3af;
@@ -133,10 +117,8 @@ const ThumbRow = styled.div`
 const ThumbBtn = styled.button<{ $selected?: boolean }>`
   width: 100%;
   padding: 0;
-  background: ${({ $selected }) =>
-    $selected ? "#eef4ff" : "#ffffff"};
-  border: 2px solid
-    ${({ $selected }) => ($selected ? "#4f6ef7" : "#e5e7eb")};
+  background: ${({ $selected }) => ($selected ? "#eef4ff" : "#ffffff")};
+  border: 2px solid ${({ $selected }) => ($selected ? "#4f6ef7" : "#e5e7eb")};
   border-radius: 12px;
   cursor: pointer;
   font-family: inherit;
@@ -146,8 +128,7 @@ const ThumbBtn = styled.button<{ $selected?: boolean }>`
   transition: border-color 0.12s, background 0.12s;
 
   &:hover {
-    border-color: ${({ $selected }) =>
-      $selected ? "#4f6ef7" : "#9ca3af"};
+    border-color: ${({ $selected }) => ($selected ? "#4f6ef7" : "#9ca3af")};
   }
 
   .image {
@@ -160,6 +141,7 @@ const ThumbBtn = styled.button<{ $selected?: boolean }>`
     color: #9ca3af;
     font-size: 18px;
   }
+
   .meta {
     padding: 7px 9px;
     font-size: 11px;
@@ -170,6 +152,7 @@ const ThumbBtn = styled.button<{ $selected?: boolean }>`
     flex-direction: column;
     gap: 2px;
   }
+
   .badge {
     font-size: 10px;
     color: #4f6ef7;
@@ -193,11 +176,20 @@ const PreviewBox = styled.div`
     font-size: 40px;
     opacity: 0.7;
   }
+
   .label {
     font-size: 12px;
     font-weight: 500;
     color: #6b7280;
   }
+`;
+
+const SummaryRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
 `;
 
 const InfoRow = styled.div`
@@ -211,32 +203,17 @@ const InfoRow = styled.div`
     flex-direction: column;
     gap: 2px;
   }
+
   .label {
     font-size: 11px;
     color: #6b7280;
   }
+
   .value {
     font-size: 13px;
     font-weight: 600;
     color: #111827;
   }
-`;
-
-const PlatformPill = styled.span<{
-  $bg: string;
-  $fg: string;
-  $border: string;
-}>`
-  display: inline-flex;
-  align-items: center;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $fg }) => $fg};
-  border: 1px solid ${({ $border }) => $border};
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 12px;
-  padding: 3px 10px;
-  line-height: 1.2;
 `;
 
 const Divider = styled.div`
@@ -254,6 +231,7 @@ const TotalLine = styled.div`
     font-size: 12px;
     color: #6b7280;
   }
+
   .value {
     font-size: 18px;
     font-weight: 700;
@@ -330,6 +308,7 @@ const Input = styled.input`
   &:focus {
     border-color: #4f6ef7;
   }
+
   &::placeholder {
     color: #9ca3af;
   }
@@ -359,26 +338,6 @@ const RemoveBtn = styled.button`
   }
 `;
 
-const AddBtn = styled.button`
-  width: 100%;
-  height: 42px;
-  background: #eef2ff;
-  color: #4f6ef7;
-  border: 1px dashed #c7d2fe;
-  border-radius: 10px;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 12px;
-  transition: background 0.12s, border-color 0.12s;
-
-  &:hover {
-    background: #e0e7ff;
-    border-color: #a5b4fc;
-  }
-`;
-
 const Hint = styled.p`
   margin: 12px 0 0;
   font-size: 11.5px;
@@ -395,111 +354,64 @@ const ActionRow = styled.div`
   }
 `;
 
-const SecondaryBtn = styled.button`
-  flex: 1;
-  height: 46px;
-  background: #ffffff;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
-
-  &:hover {
-    background: #f9fafb;
-    border-color: #bfc5cd;
-  }
-`;
-
-const PrimaryBtn = styled.button`
-  flex: 1;
-  height: 46px;
-  background: #4f6ef7;
-  color: #ffffff;
-  border: 1px solid #4f6ef7;
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 1px 2px rgba(79, 110, 247, 0.18);
-  transition: background 0.12s, box-shadow 0.12s;
-
-  &:hover {
-    background: #4060e6;
-    box-shadow: 0 2px 6px rgba(79, 110, 247, 0.28);
-  }
-`;
-
-export const OcrEditPage = ({
-  activeNav,
-  onNavChange,
-}: OcrEditPageProps) => {
+export const OcrEditPage = () => {
+  const navigate = useNavigate();
   const [selectedImg, setSelectedImg] = useState(IMAGES[0].id);
-  const [products, setProducts] =
-    useState<ProductDraft[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<ProductDraft[]>(INITIAL_PRODUCTS);
 
-  const updateProduct = (
-    id: string,
-    key: "name" | "link",
-    val: string
-  ) =>
+  const updateProduct = (id: string, key: "name" | "link", value: string) => {
     setProducts((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [key]: val } : p))
-    );
-
-  const updatePrice = (id: string, val: string) =>
-    setProducts((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, price: parsePrice(val) } : p
+      prev.map((product) =>
+        product.id === id ? { ...product, [key]: value } : product
       )
     );
+  };
 
-  const addProduct = () =>
+  const updatePrice = (id: string, value: string) => {
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.id === id ? { ...product, price: parsePrice(value) } : product
+      )
+    );
+  };
+
+  const addProduct = () => {
     setProducts((prev) => [
       ...prev,
       { id: `p-${Date.now()}`, name: "", price: 0, link: "" },
     ]);
+  };
 
-  const removeProduct = (id: string) =>
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+  const removeProduct = (id: string) => {
+    setProducts((prev) => prev.filter((product) => product.id !== id));
+  };
 
-  const totalAmount = products.reduce((s, p) => s + p.price, 0);
-  const tone = PLATFORM_TONES[ORDER_PLATFORM];
+  const totalAmount = products.reduce((sum, product) => sum + product.price, 0);
 
   return (
-    <AppShell
-      activeNav={activeNav}
-      title="OCR 결과 수정"
-      onNavChange={onNavChange}
-    >
+    <AppShell activeNav="upload" title="OCR 결과 확인 및 수정">
       <TwoCol>
         <LeftStack>
           <CardBox>
             <CardHead>
               <div className="titles">
-                <h3>업로드 이미지</h3>
-                <span className="subtitle">
-                  수정할 이미지를 선택하세요
-                </span>
+                <h3>업로드한 이미지</h3>
+                <span className="subtitle">수정할 이미지를 선택해 주세요</span>
               </div>
             </CardHead>
             <ThumbRow>
-              {IMAGES.map((img) => (
+              {IMAGES.map((image) => (
                 <ThumbBtn
-                  key={img.id}
+                  key={image.id}
                   type="button"
-                  $selected={selectedImg === img.id}
-                  onClick={() => setSelectedImg(img.id)}
+                  $selected={selectedImg === image.id}
+                  onClick={() => setSelectedImg(image.id)}
                 >
                   <div className="image">🖼</div>
                   <div className="meta">
-                    <span>{img.label}</span>
-                    {selectedImg === img.id && (
-                      <span className="badge">● 선택됨</span>
+                    <span>{image.label}</span>
+                    {selectedImg === image.id && (
+                      <span className="badge">현재 선택됨</span>
                     )}
                   </div>
                 </ThumbBtn>
@@ -512,7 +424,7 @@ export const OcrEditPage = ({
               <div className="titles">
                 <h3>이미지 미리보기</h3>
                 <span className="subtitle">
-                  {IMAGES.find((i) => i.id === selectedImg)?.label}
+                  {IMAGES.find((image) => image.id === selectedImg)?.label}
                 </span>
               </div>
             </CardHead>
@@ -527,21 +439,18 @@ export const OcrEditPage = ({
           <CardBox>
             <CardHead>
               <div className="titles">
-                <h3>주문 요약</h3>
-                <span className="subtitle">
-                  OCR로 추출된 주문 정보입니다
-                </span>
+                <h3>거래 요약</h3>
+                <span className="subtitle">OCR이 추출한 주문 정보 초안입니다</span>
               </div>
             </CardHead>
 
+            <SummaryRow>
+              <Tag variant="platform" value="쿠팡" />
+              <Tag variant="status" value="구매" />
+              <Tag variant="status" value="정기결제" />
+            </SummaryRow>
+
             <InfoRow>
-              <PlatformPill
-                $bg={tone.bg}
-                $fg={tone.fg}
-                $border={tone.border}
-              >
-                {ORDER_PLATFORM}
-              </PlatformPill>
               <div className="field">
                 <span className="label">주문일자</span>
                 <span className="value">{ORDER_DATE}</span>
@@ -555,7 +464,7 @@ export const OcrEditPage = ({
             <Divider />
 
             <TotalLine>
-              <span className="label">전체 결제금액</span>
+              <span className="label">전체 거래금액</span>
               <span className="value">{formatKRW(totalAmount)}</span>
             </TotalLine>
           </CardBox>
@@ -565,40 +474,42 @@ export const OcrEditPage = ({
               <div className="titles">
                 <h3>상품 목록 편집</h3>
                 <span className="subtitle">
-                  추출된 상품 정보를 확인·수정하세요
+                  상품명, 금액, 링크를 확인하고 수정해 주세요
                 </span>
               </div>
             </CardHead>
 
             <TableHead>
               <span>상품명</span>
-              <span>가격</span>
+              <span>금액</span>
               <span>상품 링크</span>
               <span />
             </TableHead>
 
-            {products.map((p) => (
-              <ProductRow key={p.id}>
+            {products.map((product) => (
+              <ProductRow key={product.id}>
                 <Field>
                   <FieldLabel>상품명</FieldLabel>
                   <Input
                     type="text"
-                    value={p.name}
-                    onChange={(e) =>
-                      updateProduct(p.id, "name", e.target.value)
+                    value={product.name}
+                    onChange={(event) =>
+                      updateProduct(product.id, "name", event.target.value)
                     }
-                    placeholder="상품명을 입력하세요"
+                    placeholder="상품명을 입력해 주세요"
                   />
                 </Field>
                 <Field>
-                  <FieldLabel>가격</FieldLabel>
+                  <FieldLabel>금액</FieldLabel>
                   <Input
                     type="text"
                     inputMode="numeric"
                     value={
-                      p.price ? p.price.toLocaleString("ko-KR") : ""
+                      product.price ? product.price.toLocaleString("ko-KR") : ""
                     }
-                    onChange={(e) => updatePrice(p.id, e.target.value)}
+                    onChange={(event) =>
+                      updatePrice(product.id, event.target.value)
+                    }
                     placeholder="0"
                   />
                 </Field>
@@ -606,33 +517,52 @@ export const OcrEditPage = ({
                   <FieldLabel>상품 링크</FieldLabel>
                   <Input
                     type="text"
-                    value={p.link}
-                    onChange={(e) =>
-                      updateProduct(p.id, "link", e.target.value)
+                    value={product.link}
+                    onChange={(event) =>
+                      updateProduct(product.id, "link", event.target.value)
                     }
-                    placeholder="링크 없음"
+                    placeholder="URL (선택)"
                   />
                 </Field>
                 <RemoveBtn
                   type="button"
                   aria-label="상품 삭제"
-                  onClick={() => removeProduct(p.id)}
+                  onClick={() => removeProduct(product.id)}
                 >
                   ✕
                 </RemoveBtn>
               </ProductRow>
             ))}
 
-            <AddBtn type="button" onClick={addProduct}>
+            <Button
+              variant="ghost"
+              fullWidth
+              onClick={addProduct}
+              style={{ marginTop: 12 }}
+            >
               + 상품 직접 추가하기
-            </AddBtn>
+            </Button>
 
-            <Hint>💡 OCR 누락 상품은 직접 추가할 수 있습니다</Hint>
+            <Hint>OCR 결과는 초안이에요. 수정 후 저장하면 내역에 반영됩니다.</Hint>
           </CardBox>
 
           <ActionRow>
-            <SecondaryBtn type="button">↺ 다시 OCR 분석</SecondaryBtn>
-            <PrimaryBtn type="button">저장하기</PrimaryBtn>
+            <Button
+              variant="secondary"
+              size="lg"
+              fullWidth
+              onClick={() => navigate("/ocr-upload")}
+            >
+              ↺ 다시 OCR 분석
+            </Button>
+            <Button
+              variant="primary"
+              size="lg"
+              fullWidth
+              onClick={() => navigate("/transactions")}
+            >
+              저장하고 내역 반영
+            </Button>
           </ActionRow>
         </RightStack>
       </TwoCol>
