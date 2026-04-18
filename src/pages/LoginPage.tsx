@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { FormField } from "../components/form/FormField";
 import { TextInput } from "../components/form/TextInput";
 import { Button } from "../components/primitives/Button";
+import { media } from "../tokens/breakpoints";
 
 const PageWrapper = styled.div`
   min-height: 100vh;
@@ -22,6 +23,12 @@ const Card = styled.div`
   background: #ffffff;
   border-radius: 20px;
   box-sizing: border-box;
+
+  ${media.mobile} {
+    width: calc(100% - 32px);
+    max-width: 480px;
+    padding: 32px 24px;
+  }
 `;
 
 const LogoRow = styled.div`

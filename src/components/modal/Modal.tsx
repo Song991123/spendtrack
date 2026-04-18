@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
+import { media } from "../../tokens/breakpoints";
 
 interface ModalProps {
   isOpen: boolean;
@@ -30,6 +31,11 @@ const ModalCard = styled.div`
   z-index: 1001;
   box-shadow: 0 24px 60px rgba(17, 24, 39, 0.18);
   overflow: hidden;
+
+  ${media.mobile} {
+    width: calc(100% - 32px);
+    max-width: 480px;
+  }
 `;
 
 const Header = styled.div`

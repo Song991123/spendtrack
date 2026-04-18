@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Sidebar } from "./Sidebar";
 import { TopHeader } from "./TopHeader";
+import { media } from "../../tokens/breakpoints";
 
 export type NavKey = "home" | "upload" | "transactions" | "analysis";
 
@@ -20,6 +22,16 @@ const Shell = styled.div`
     sans-serif;
   color: #111827;
   -webkit-font-smoothing: antialiased;
+
+  ${media.mobile} {
+    flex-direction: column;
+  }
+`;
+
+const SidebarWrapper = styled.div`
+  ${media.mobile} {
+    display: none;
+  }
 `;
 
 const Main = styled.main`
@@ -30,6 +42,33 @@ const Main = styled.main`
   overflow-y: auto;
 `;
 
+const MobileNav = styled.nav`
+  display: none;
+
+  ${media.mobile} {
+    display: flex;
+    gap: 16px;
+    padding: 0 16px;
+    height: 44px;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    overflow-x: auto;
+  }
+`;
+
+const MobileNavItem = styled.button<{ $active?: boolean }>`
+  font-size: 13px;
+  font-weight: ${({ $active }) => ($active ? 600 : 400)};
+  color: ${({ $active }) => ($active ? "#4F6EF7" : "#6B7280")};
+  white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+`;
+
 const Content = styled.div`
   flex: 1;
   padding: 24px 32px 48px;
@@ -38,6 +77,14 @@ const Content = styled.div`
   gap: 16px;
   max-width: 1280px;
   width: 100%;
+
+  ${media.tablet} {
+    padding: 20px 24px 40px;
+  }
+
+  ${media.mobile} {
+    padding: 16px 16px 32px;
+  }
 `;
 
 export const AppShell = ({
@@ -45,12 +92,41 @@ export const AppShell = ({
   title,
   headerRight,
   children,
-}: AppShellProps) => (
-  <Shell>
-    <Sidebar activeNav={activeNav} user={{ name: "홍민수", initial: "홍" }} />
-    <Main>
-      <TopHeader title={title} right={headerRight} />
-      <Content>{children}</Content>
-    </Main>
-  </Shell>
-);
+}: AppShellProps) => {
+  const navigate = useNavigate();
+
+  return (
+    <Shell>
+      <SidebarWrapper>
+        <Sidebar activeNav={activeNav} user={{ name: "홍길동", initial: "홍" }} />
+      </SidebarWrapper>
+      <Main>
+        <TopHeader title={title} right={headerRight} />
+        <MobileNav>
+          <MobileNavItem $active={activeNav === "home"} onClick={() => navigate("/")}>
+            홈
+          </MobileNavItem>
+          <MobileNavItem
+            $active={activeNav === "upload"}
+            onClick={() => navigate("/upload")}
+          >
+            업로드
+          </MobileNavItem>
+          <MobileNavItem
+            $active={activeNav === "transactions"}
+            onClick={() => navigate("/transactions")}
+          >
+            내역
+          </MobileNavItem>
+          <MobileNavItem
+            $active={activeNav === "analysis"}
+            onClick={() => navigate("/analysis")}
+          >
+            분석
+          </MobileNavItem>
+        </MobileNav>
+        <Content>{children}</Content>
+      </Main>
+    </Shell>
+  );
+};

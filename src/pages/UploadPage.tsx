@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { AppShell } from "../components/layout/AppShell";
 import { Card } from "../components/primitives/Card";
 import { Button } from "../components/primitives/Button";
+import { media } from "../tokens/breakpoints";
 
 const CenteredArea = styled.div`
   display: flex;
@@ -17,6 +18,11 @@ const Heading = styled.h2`
   font-weight: 700;
   color: #111827;
   text-align: center;
+
+  ${media.mobile} {
+    font-size: 18px;
+    padding-top: 32px;
+  }
 `;
 
 const CardRow = styled.div`
@@ -26,6 +32,10 @@ const CardRow = styled.div`
   max-width: 900px;
 
   @media (max-width: 900px) {
+    flex-direction: column;
+  }
+
+  ${media.mobile} {
     flex-direction: column;
   }
 `;

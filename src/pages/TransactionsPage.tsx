@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import styled from "styled-components";
 import { AppShell } from "../components/layout/AppShell";
-import { mockTransactions } from "../data/mockTransactions";
-import { Tag } from "../components/primitives/Tag";
 import { Card } from "../components/primitives/Card";
 import { Button } from "../components/primitives/Button";
+import { Tag } from "../components/primitives/Tag";
+import { mockTransactions } from "../data/mockTransactions";
+import { media } from "../tokens/breakpoints";
 import type { StatusTag, Transaction } from "../types/transaction";
 import {
   formatAmount,
@@ -13,17 +14,18 @@ import {
   typeLabel,
 } from "../utils/transaction";
 
-const MonthSelector = styled.button`
-  background: #ffffff;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  padding: 6px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #1a1a1a;
-  cursor: pointer;
-  font-family: inherit;
-`;
+const PERIOD_OPTIONS = [
+  { value: "all", label: "전체 기간" },
+  { value: "2025-04", label: "2025년 4월" },
+  { value: "2025-03", label: "2025년 3월" },
+];
+
+const PLATFORM_OPTIONS = [
+  { value: "all", label: "플랫폼 전체" },
+  { value: "coupang", label: "쿠팡" },
+  { value: "naver", label: "네이버쇼핑" },
+  { value: "musinsa", label: "무신사" },
+];
 
 const PageLayout = styled.div`
   display: flex;
@@ -37,9 +39,15 @@ const FilterRow = styled.div`
   align-items: center;
   margin-bottom: 16px;
   flex-wrap: wrap;
+
+  ${media.mobile} {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
 `;
 
-const SearchField = styled.input`
+const SearchInput = styled.input`
   width: 244px;
   height: 40px;
   border: 1px solid #d9d9d9;
@@ -54,9 +62,13 @@ const SearchField = styled.input`
   &::placeholder {
     color: #9ca3af;
   }
+
+  ${media.mobile} {
+    width: 100%;
+  }
 `;
 
-const FilterSelect = styled.button`
+const FilterSelect = styled.select`
   height: 40px;
   border: 1px solid #d9d9d9;
   border-radius: 8px;
@@ -67,13 +79,24 @@ const FilterSelect = styled.button`
   cursor: pointer;
   min-width: 148px;
   font-family: inherit;
-  text-align: left;
+
+  ${media.mobile} {
+    flex: 1;
+    min-width: 0;
+  }
 `;
 
 const ResultCount = styled.span`
   margin-left: auto;
   font-size: 13px;
   color: #9ca3af;
+
+  ${media.mobile} {
+    width: 100%;
+    margin-left: 0;
+    margin-top: 8px;
+    text-align: left;
+  }
 `;
 
 const ContentRow = styled.div`
@@ -81,7 +104,11 @@ const ContentRow = styled.div`
   gap: 16px;
   align-items: flex-start;
 
-  @media (max-width: 1200px) {
+  ${media.tablet} {
+    align-items: stretch;
+  }
+
+  ${media.mobile} {
     flex-direction: column;
   }
 `;
@@ -98,12 +125,16 @@ const TableCard = styled(Card)`
 const TableHeader = styled.div`
   display: grid;
   grid-template-columns: 60px 90px 100px 1fr 120px 70px;
-  height: 44px;
+  min-height: 44px;
   align-items: center;
   padding: 0 16px;
   background: #f8fafc;
   border-bottom: 1px solid #e5e7eb;
   gap: 12px;
+
+  ${media.mobile} {
+    grid-template-columns: 1fr 100px;
+  }
 `;
 
 const ColHead = styled.span`
@@ -112,11 +143,17 @@ const ColHead = styled.span`
   color: #6b7280;
 `;
 
+const HideOnMobile = styled.div`
+  ${media.mobile} {
+    display: none;
+  }
+`;
+
 const TableRow = styled.button<{ $selected?: boolean }>`
   width: 100%;
   display: grid;
   grid-template-columns: 60px 90px 100px 1fr 120px 70px;
-  height: 52px;
+  min-height: 52px;
   align-items: center;
   padding: 0 16px;
   border: none;
@@ -126,6 +163,10 @@ const TableRow = styled.button<{ $selected?: boolean }>`
   gap: 12px;
   text-align: left;
   font-family: inherit;
+
+  ${media.mobile} {
+    grid-template-columns: 1fr 100px;
+  }
 `;
 
 const Cell = styled.div`
@@ -151,31 +192,15 @@ const Amount = styled.span<{ $type: Transaction["type"]; $statusTag: StatusTag }
   }};
 `;
 
-const Pagination = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-  padding: 20px 0;
-`;
-
-const PageBtn = styled.button<{ $active?: boolean }>`
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-  font-family: inherit;
-  background: ${({ $active }) => ($active ? "#4f6ef7" : "#f3f4f6")};
-  color: ${({ $active }) => ($active ? "#ffffff" : "#374151")};
-  font-weight: ${({ $active }) => ($active ? 700 : 500)};
-`;
-
 const PanelCard = styled(Card)`
   width: 476px;
   flex-shrink: 0;
 
-  @media (max-width: 1200px) {
+  ${media.tablet} {
+    width: 380px;
+  }
+
+  ${media.mobile} {
     width: 100%;
   }
 `;
@@ -311,39 +336,110 @@ const LinkAction = styled.button`
   font-family: inherit;
 `;
 
+const EmptyState = styled.div`
+  padding: 48px 24px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 13px;
+`;
+
 export const TransactionsPage = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPeriod, setSelectedPeriod] = useState<string>("all");
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [selectedId, setSelectedId] = useState<string | null>(
     mockTransactions[0]?.id ?? null
   );
 
+  const filteredTransactions = useMemo(() => {
+    return mockTransactions.filter((tx) => {
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const titleMatch = tx.title.toLowerCase().includes(q);
+        const productMatch =
+          tx.products?.some((product) => product.name.toLowerCase().includes(q)) ??
+          false;
+        if (!titleMatch && !productMatch) return false;
+      }
+
+      if (selectedPeriod !== "all") {
+        const txMonth = tx.date.slice(0, 7).replace(".", "-");
+        if (txMonth !== selectedPeriod) return false;
+      }
+
+      if (selectedPlatform !== "all") {
+        if (tx.platform !== selectedPlatform) return false;
+      }
+
+      return true;
+    });
+  }, [searchQuery, selectedPeriod, selectedPlatform]);
+
+  useEffect(() => {
+    if (
+      selectedId &&
+      !filteredTransactions.find((tx) => tx.id === selectedId)
+    ) {
+      setSelectedId(filteredTransactions[0]?.id ?? null);
+    }
+  }, [filteredTransactions, selectedId]);
+
   const selectedTx = useMemo(
     () =>
-      mockTransactions.find((transaction) => transaction.id === selectedId) ??
+      filteredTransactions.find((transaction) => transaction.id === selectedId) ??
       null,
-    [selectedId]
+    [filteredTransactions, selectedId]
   );
 
-  const expenseCount = mockTransactions.filter(
+  const expenseCount = filteredTransactions.filter(
     (transaction) => transaction.type === "expense"
   ).length;
-  const incomeCount = mockTransactions.filter(
+  const incomeCount = filteredTransactions.filter(
     (transaction) => transaction.type === "income"
   ).length;
 
   return (
-    <AppShell
-      activeNav="transactions"
-      title="수입·지출 내역"
-      headerRight={<MonthSelector type="button">2025년 4월 ▾</MonthSelector>}
-    >
+    <AppShell activeNav="transactions" title="수입/지출 내역">
       <PageLayout>
         <FilterRow>
-          <SearchField placeholder="🔍  주문명·상품명 검색" />
-          <FilterSelect type="button">기간 선택 ▾</FilterSelect>
-          <FilterSelect type="button">플랫폼 전체 ▾</FilterSelect>
-          <FilterSelect type="button">카테고리 ▾</FilterSelect>
+          <SearchInput
+            placeholder="🔍  주문명·상품명 검색"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
+
+          <FilterSelect
+            value={selectedPeriod}
+            onChange={(event) => setSelectedPeriod(event.target.value)}
+          >
+            {PERIOD_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            value={selectedPlatform}
+            onChange={(event) => setSelectedPlatform(event.target.value)}
+          >
+            {PLATFORM_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </FilterSelect>
+
+          <FilterSelect
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+          >
+            <option value="all">카테고리</option>
+          </FilterSelect>
+
           <ResultCount>
-            총 {mockTransactions.length}건 (지출 {expenseCount} · 수입{" "}
+            총 {filteredTransactions.length}건 (지출 {expenseCount} · 수입{" "}
             {incomeCount})
           </ResultCount>
         </FilterRow>
@@ -352,56 +448,60 @@ export const TransactionsPage = () => {
           <TableSection>
             <TableCard padding={0}>
               <TableHeader>
-                <ColHead>유형</ColHead>
-                <ColHead>주문일</ColHead>
-                <ColHead>플랫폼</ColHead>
+                <ColHead>
+                  <HideOnMobile>유형</HideOnMobile>
+                </ColHead>
+                <ColHead>
+                  <HideOnMobile>주문일</HideOnMobile>
+                </ColHead>
+                <ColHead>
+                  <HideOnMobile>플랫폼</HideOnMobile>
+                </ColHead>
                 <ColHead>거래명</ColHead>
                 <ColHead>금액</ColHead>
-                <ColHead>상태</ColHead>
+                <ColHead>
+                  <HideOnMobile>상태</HideOnMobile>
+                </ColHead>
               </TableHeader>
 
-              {mockTransactions.map((transaction) => (
-                <TableRow
-                  key={transaction.id}
-                  type="button"
-                  $selected={selectedId === transaction.id}
-                  onClick={() => setSelectedId(transaction.id)}
-                >
-                  <Cell>
-                    <Tag variant="type" value={typeLabel(transaction.type)} />
-                  </Cell>
-                  <Cell>{transaction.date}</Cell>
-                  <Cell>
-                    <Tag
-                      variant="platform"
-                      value={platformLabel(transaction.platform)}
-                    />
-                  </Cell>
-                  <TitleCell>{transaction.title}</TitleCell>
-                  <Cell>
-                    <Amount
-                      $type={transaction.type}
-                      $statusTag={transaction.statusTag}
-                    >
-                      {formatAmount(transaction.amount, transaction.type)}
-                    </Amount>
-                  </Cell>
-                  <Cell>
-                    <Tag
-                      variant="status"
-                      value={statusLabel(transaction.statusTag)}
-                    />
-                  </Cell>
-                </TableRow>
-              ))}
-
-              <Pagination>
-                <PageBtn type="button" $active>
-                  1
-                </PageBtn>
-                <PageBtn type="button">2</PageBtn>
-                <PageBtn type="button">3</PageBtn>
-              </Pagination>
+              {filteredTransactions.length > 0 ? (
+                filteredTransactions.map((transaction) => (
+                  <TableRow
+                    key={transaction.id}
+                    type="button"
+                    $selected={selectedId === transaction.id}
+                    onClick={() => setSelectedId(transaction.id)}
+                  >
+                    <Cell as={HideOnMobile}>
+                      <Tag variant="type" value={typeLabel(transaction.type)} />
+                    </Cell>
+                    <Cell as={HideOnMobile}>{transaction.date}</Cell>
+                    <Cell as={HideOnMobile}>
+                      <Tag
+                        variant="platform"
+                        value={platformLabel(transaction.platform)}
+                      />
+                    </Cell>
+                    <TitleCell>{transaction.title}</TitleCell>
+                    <Cell>
+                      <Amount
+                        $type={transaction.type}
+                        $statusTag={transaction.statusTag}
+                      >
+                        {formatAmount(transaction.amount, transaction.type)}
+                      </Amount>
+                    </Cell>
+                    <Cell as={HideOnMobile}>
+                      <Tag
+                        variant="status"
+                        value={statusLabel(transaction.statusTag)}
+                      />
+                    </Cell>
+                  </TableRow>
+                ))
+              ) : (
+                <EmptyState>조건에 맞는 거래가 없습니다.</EmptyState>
+              )}
             </TableCard>
           </TableSection>
 
@@ -410,7 +510,7 @@ export const TransactionsPage = () => {
               <PanelHeader>
                 <PanelTitle>거래 상세</PanelTitle>
                 <CloseBtn type="button" onClick={() => setSelectedId(null)}>
-                  ✕
+                  ×
                 </CloseBtn>
               </PanelHeader>
               <Divider />
@@ -444,11 +544,11 @@ export const TransactionsPage = () => {
                   selectedTx.products.map((product) => (
                     <ProductItem key={product.id}>
                       <span>{product.name}</span>
-                      <span>₩{product.price.toLocaleString("ko-KR")}</span>
+                      <span>{`₩${product.price.toLocaleString("ko-KR")}`}</span>
                     </ProductItem>
                   ))
                 ) : (
-                  <EmptyNote>등록된 상품이 없습니다</EmptyNote>
+                  <EmptyNote>등록된 상품이 없습니다.</EmptyNote>
                 )}
 
                 <Divider style={{ margin: "16px 0" }} />
@@ -475,12 +575,12 @@ export const TransactionsPage = () => {
                   fullWidth
                   style={{ marginBottom: 12 }}
                 >
-                  수정하기
+                  거래 수정하기
                 </Button>
                 <DeleteBtn type="button">거래 삭제</DeleteBtn>
 
                 <LinkAction type="button">
-                  상품 링크 보기 / 편집 →
+                  상품 링크 보기 / 직접 입력
                 </LinkAction>
               </PanelBody>
             </PanelCard>

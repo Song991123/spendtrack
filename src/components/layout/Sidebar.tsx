@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import type { NavKey } from "./AppShell";
+import { media } from "../../tokens/breakpoints";
 
 interface SidebarProps {
   activeNav: NavKey;
@@ -10,8 +11,8 @@ interface SidebarProps {
 const NAV_ITEMS: { key: NavKey; label: string; path: string }[] = [
   { key: "home", label: "홈", path: "/" },
   { key: "upload", label: "업로드", path: "/upload" },
-  { key: "transactions", label: "수입·지출 내역", path: "/transactions" },
-  { key: "analysis", label: "소비분석", path: "/analysis" },
+  { key: "transactions", label: "수입/지출 내역", path: "/transactions" },
+  { key: "analysis", label: "소비 분석", path: "/analysis" },
 ];
 
 const Aside = styled.aside`
@@ -25,6 +26,10 @@ const Aside = styled.aside`
   top: 0;
   height: 100vh;
   overflow-y: auto;
+
+  ${media.tablet} {
+    width: 200px;
+  }
 `;
 
 const LogoArea = styled.div`
@@ -148,7 +153,7 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
         <Avatar>{user.initial}</Avatar>
         <UserMeta>
           <span className="name">{user.name}</span>
-          <span className="sub">내 계정 설정</span>
+          <span className="sub">계정 설정</span>
         </UserMeta>
       </Footer>
     </Aside>

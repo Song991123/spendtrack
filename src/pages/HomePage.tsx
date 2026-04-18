@@ -21,6 +21,7 @@ import {
   platformInitial,
   platformLabel,
 } from "../utils/transaction";
+import { media } from "../tokens/breakpoints";
 
 const PLATFORM_SHARE = [
   { name: "쿠팡", amount: 342500, percent: 40, color: "#FF4B00" },
@@ -83,7 +84,11 @@ const KpiRow = styled.div`
   gap: 16px;
   margin-bottom: 16px;
 
-  @media (max-width: 960px) {
+  ${media.tablet} {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  ${media.mobile} {
     grid-template-columns: 1fr;
   }
 `;
@@ -130,7 +135,7 @@ const ChartRow = styled.div`
   gap: 16px;
   margin-bottom: 16px;
 
-  @media (max-width: 960px) {
+  ${media.tablet} {
     grid-template-columns: 1fr;
   }
 `;
@@ -342,7 +347,11 @@ const InsightRow = styled.div`
   grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
 
-  @media (max-width: 960px) {
+  ${media.tablet} {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  ${media.mobile} {
     grid-template-columns: 1fr;
   }
 `;

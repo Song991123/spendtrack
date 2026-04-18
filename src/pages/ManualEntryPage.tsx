@@ -7,6 +7,7 @@ import { TextInput } from "../components/form/TextInput";
 import { ProductAddModal } from "../components/modal/ProductAddModal";
 import { Button } from "../components/primitives/Button";
 import { Card } from "../components/primitives/Card";
+import { media } from "../tokens/breakpoints";
 import type { Product, TransactionType } from "../types/transaction";
 
 const FormCard = styled(Card)`
@@ -48,7 +49,7 @@ const TwoCol = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 
-  @media (max-width: 720px) {
+  ${media.mobile} {
     grid-template-columns: 1fr;
   }
 `;

@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { AppShell } from "../components/layout/AppShell";
 import { Card, CardHeader } from "../components/primitives/Card";
+import { media } from "../tokens/breakpoints";
 
 const KPI_ITEMS = [
   { label: "총 지출", value: "₩463,500", sub: "전월 대비 +8.2%", subColor: "#D92626" },
@@ -79,11 +80,11 @@ const KpiRow = styled.div`
   gap: 16px;
   margin-bottom: 16px;
 
-  @media (max-width: 1100px) {
+  ${media.tablet} {
     grid-template-columns: 1fr 1fr;
   }
 
-  @media (max-width: 720px) {
+  ${media.mobile} {
     grid-template-columns: 1fr;
   }
 `;
@@ -115,7 +116,7 @@ const ChartRow = styled.div`
   gap: 16px;
   margin-bottom: 16px;
 
-  @media (max-width: 960px) {
+  ${media.tablet} {
     grid-template-columns: 1fr;
   }
 `;
