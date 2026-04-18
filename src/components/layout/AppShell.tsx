@@ -69,14 +69,21 @@ const MobileNavItem = styled.button<{ $active?: boolean }>`
   font-family: inherit;
 `;
 
+const MobileNavDivider = styled.div`
+  width: 1px;
+  height: 16px;
+  background: #e5e7eb;
+  flex-shrink: 0;
+`;
+
 const Content = styled.div`
   flex: 1;
   padding: 24px 32px 48px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-width: 1280px;
   width: 100%;
+  box-sizing: border-box;
 
   ${media.tablet} {
     padding: 20px 24px 40px;
@@ -123,6 +130,10 @@ export const AppShell = ({
             onClick={() => navigate("/analysis")}
           >
             분석
+          </MobileNavItem>
+          <MobileNavDivider />
+          <MobileNavItem type="button" onClick={() => navigate("/login")}>
+            로그아웃
           </MobileNavItem>
         </MobileNav>
         <Content>{children}</Content>

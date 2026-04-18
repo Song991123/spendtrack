@@ -126,8 +126,25 @@ const UserMeta = styled.div`
   }
 `;
 
+const LogoutLink = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  font-family: inherit;
+  color: #9ca3af;
+  cursor: pointer;
+
+  &:hover {
+    color: #6b7280;
+  }
+`;
+
 export const Sidebar = ({ activeNav, user }: SidebarProps) => {
   const navigate = useNavigate();
+  const handleLogout = () => {
+    navigate("/login");
+  };
 
   return (
     <Aside>
@@ -153,7 +170,12 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
         <Avatar>{user.initial}</Avatar>
         <UserMeta>
           <span className="name">{user.name}</span>
-          <span className="sub">계정 설정</span>
+          <span className="sub">
+            내 계정 설정 ·{" "}
+            <LogoutLink type="button" onClick={handleLogout}>
+              로그아웃
+            </LogoutLink>
+          </span>
         </UserMeta>
       </Footer>
     </Aside>
