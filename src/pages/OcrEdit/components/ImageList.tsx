@@ -114,7 +114,7 @@ export const ImageList: React.FC<{
           const active = image.id === selectedId;
           return (
             <Row key={image.id} $active={active} onClick={() => onSelect(image.id)}>
-              <Thumb>{image.thumbUrl ? <img src={image.thumbUrl} alt={image.fileName} /> : "□"}</Thumb>
+              <Thumb>{image.thumbUrl ? <img src={image.thumbUrl} alt={image.fileName} /> : "🧾"}</Thumb>
               <Meta>
                 <div className="name">{image.fileName}</div>
                 <div className="status">

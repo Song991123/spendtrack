@@ -6,19 +6,7 @@ import { Button } from "../../../components/primitives/Button";
 import { tokens } from "../../../styles/tokens";
 import { formatKRW } from "../../../utils/format";
 import type { TxRow } from "./TransactionTable";
-
-const PLATFORM_LABEL = {
-  coupang: "쿠팡",
-  naver: "네이버쇼핑",
-  musinsa: "무신사",
-} as const;
-
-const STATUS_LABEL = {
-  purchase: "구매",
-  cancel: "취소",
-  refund: "환불",
-  sub: "정기결제",
-} as const;
+import { PLATFORM_LABELS, SOURCE_LABELS, STATUS_LABELS, TYPE_LABELS } from "../../../constants/labels";
 
 const HeaderRow = styled.div`
   display: flex;
@@ -115,19 +103,25 @@ const Actions = styled.div`
   margin-top: 4px;
 `;
 
-const LinkRow = styled.div`
+const LinkButton = styled.button`
   margin-top: 10px;
-  color: ${tokens.color.ink4};
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: ${tokens.color.accentHover};
   font-size: 12px;
-
-  a {
-    color: ${tokens.color.accentHover};
-    font-weight: 600;
-    text-decoration: none;
-  }
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
 `;
 
-export const DetailPanel: React.FC<{ row: TxRow; onClose: () => void }> = ({ row, onClose }) => (
+export const DetailPanel: React.FC<{
+  row: TxRow;
+  onClose: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onOpenSource: () => void;
+}> = ({ row, onClose, onEdit, onDelete, onOpenSource }) => (
   <Card padding={0}>
     <CardHd>
       <HeaderRow>
@@ -139,10 +133,8 @@ export const DetailPanel: React.FC<{ row: TxRow; onClose: () => void }> = ({ row
     </CardHd>
     <CardBd>
       <Tags>
-        <Tag kind={row.platform}>{PLATFORM_LABEL[row.platform]}</Tag>
-        <Tag kind={row.type === "expense" ? "expense" : "income"}>
-          {row.type === "expense" ? "지출" : "수입"}
-        </Tag>
+        <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
+        <Tag kind={row.type === "expense" ? "expense" : "income"}>{TYPE_LABELS[row.type]}</Tag>
       </Tags>
       <Title>{row.title}</Title>
       <DateAmount>
@@ -167,28 +159,30 @@ export const DetailPanel: React.FC<{ row: TxRow; onClose: () => void }> = ({ row
 
       <Section>
         <div className="label">거래 상태</div>
-        <Tag kind={row.status}>{STATUS_LABEL[row.status]}</Tag>
+        <Tag kind={row.status}>{STATUS_LABELS[row.status]}</Tag>
       </Section>
 
       {row.detail?.source && (
         <Section>
           <div className="label">입력 방식</div>
-          <Tag kind="purchase">{row.detail.source}</Tag>
+          <Tag kind="purchase">{SOURCE_LABELS[row.detail.source]}</Tag>
         </Section>
       )}
 
       <Actions>
-        <Button variant="primary" size="lg" block>
+        <Button variant="primary" size="lg" block onClick={onEdit}>
           수정하기
         </Button>
-        <Button variant="danger" size="lg" block>
+        <Button variant="danger" size="lg" block onClick={onDelete}>
           거래 삭제
         </Button>
       </Actions>
 
-      <LinkRow>
-        <a href="#">상품 링크 보기 / 편집 →</a>
-      </LinkRow>
+      {row.detail?.source === "OCR" && (
+        <LinkButton type="button" onClick={onOpenSource}>
+          OCR 결과 화면으로 이동
+        </LinkButton>
+      )}
     </CardBd>
   </Card>
 );

@@ -19,6 +19,7 @@ const Container = styled.div<{ $padding: string }>`
   border-radius: ${tokens.radius.card};
   padding: ${({ $padding }) => $padding};
   box-shadow: ${tokens.shadow.card};
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
 `;
 
 const Header = styled.div`

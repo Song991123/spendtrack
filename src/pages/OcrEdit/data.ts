@@ -38,8 +38,8 @@ export const ocrEditMockData: OcrEditMockData = {
       totalAmount: 258000,
       statusTag: "purchase",
       products: [
-        { id: "p1", name: "나이키 에어포스 1 로우 화이트 270", price: 129000, link: "" },
-        { id: "p2", name: "나이키 에어맥스 90 블랙 265", price: 129000, link: "" },
+        { id: "p1", name: "에어포스 1 로우 화이트 270", price: 129000, link: "" },
+        { id: "p2", name: "에어맥스 90 블랙 265", price: 129000, link: "" },
       ],
     },
     {
@@ -52,7 +52,7 @@ export const ocrEditMockData: OcrEditMockData = {
       productCount: 1,
       totalAmount: 89000,
       statusTag: "purchase",
-      products: [{ id: "p3", name: "카바낫 스트릿 후드집업", price: 89000 }],
+      products: [{ id: "p3", name: "캔버스 백 화이트", price: 89000 }],
     },
   ],
 };

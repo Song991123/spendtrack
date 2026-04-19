@@ -63,7 +63,7 @@ export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
           {kpi.delta ? (
             <div style={{ marginTop: 6 }}>
               <Chip tone={kpi.delta.tone === "up" ? "up" : "down"}>
-                {kpi.delta.tone === "up" ? "▲" : "▼"} {kpi.delta.text}
+                {kpi.delta.tone === "up" ? "상승" : "하락"} {kpi.delta.text}
               </Chip>
             </div>
           ) : (

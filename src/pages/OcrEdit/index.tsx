@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/primitives/Button";
@@ -31,6 +32,7 @@ const Footer = styled.div`
 `;
 
 export const OcrEditPage: React.FC = () => {
+  const navigate = useNavigate();
   const data = ocrEditMockData;
   const [selectedId, setSelectedId] = useState<string>(data.images[0].id);
   const selected: OcrImageItem | undefined = data.images.find((image) => image.id === selectedId);
@@ -42,16 +44,16 @@ export const OcrEditPage: React.FC = () => {
           images={data.images}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          onAdd={() => undefined}
+          onAdd={() => navigate("/ocr-upload")}
         />
         <ImagePreview image={selected} />
         <EditForm image={selected} />
       </Body>
       <Footer>
-        <Button variant="ghost" size="lg">
+        <Button variant="ghost" size="lg" onClick={() => navigate("/ocr-upload")}>
           다시 OCR 분석
         </Button>
-        <Button variant="primary" size="lg">
+        <Button variant="primary" size="lg" onClick={() => navigate("/transactions")}>
           저장
         </Button>
       </Footer>

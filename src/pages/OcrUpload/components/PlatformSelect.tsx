@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
 import { tokens } from "../../../styles/tokens";
+import { PLATFORM_LABELS } from "../../../constants/labels";
 
 export type Platform = "coupang" | "naver" | "musinsa";
 
@@ -28,12 +29,6 @@ const Option = styled.button<{ $on?: boolean }>`
   }
 `;
 
-const LABEL: Record<Platform, string> = {
-  coupang: "쿠팡",
-  naver: "네이버쇼핑",
-  musinsa: "무신사",
-};
-
 export const PlatformSelect: React.FC<{
   value: Platform;
   onChange: (value: Platform) => void;
@@ -44,9 +39,14 @@ export const PlatformSelect: React.FC<{
     </CardHd>
     <CardBd>
       <Group>
-        {(Object.keys(LABEL) as Platform[]).map((platform) => (
-          <Option key={platform} type="button" $on={value === platform} onClick={() => onChange(platform)}>
-            {LABEL[platform]}
+        {(Object.keys(PLATFORM_LABELS) as Platform[]).map((platform) => (
+          <Option
+            key={platform}
+            type="button"
+            $on={value === platform}
+            onClick={() => onChange(platform)}
+          >
+            {PLATFORM_LABELS[platform]}
           </Option>
         ))}
       </Group>

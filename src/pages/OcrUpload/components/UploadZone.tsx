@@ -81,15 +81,24 @@ export const UploadZone: React.FC<{
   acceptedTypes: string;
   maxSize: string;
   maxCount: number;
-}> = ({ acceptedTypes, maxSize, maxCount }) => (
-  <Zone>
+  onPick: () => void;
+}> = ({ acceptedTypes, maxSize, maxCount, onPick }) => (
+  <Zone onClick={onPick}>
     <IconBox>
       <UpIcon />
     </IconBox>
-    <Title>여러 장의 주문내역 캡처를 한 번에 업로드하세요</Title>
+    <Title>여러 장의 주문내역 캡처를 한 번에 업로드해 보세요</Title>
     <Sub>
-      {acceptedTypes} · 최대 {maxSize} · 한 번에 {maxCount}장까지 동시 분석
+      {acceptedTypes} · 최대 {maxSize} · 한 번에 {maxCount}장까지 분석할 수 있어요
     </Sub>
-    <PickButton type="button">파일 선택하기</PickButton>
+    <PickButton
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onPick();
+      }}
+    >
+      파일 선택하기
+    </PickButton>
   </Zone>
 );

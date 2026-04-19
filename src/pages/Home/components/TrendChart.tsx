@@ -1,6 +1,15 @@
 import React from "react";
 import styled from "styled-components";
 import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import {
   Card,
   CardBd,
   CardFoot,
@@ -16,42 +25,10 @@ interface Point {
   value: number;
 }
 
-const SvgWrap = styled.div`
+const ChartWrap = styled.div`
+  height: 212px;
   padding-top: 4px;
 `;
-
-const Chart: React.FC<{ points: Point[] }> = ({ points }) => {
-  const width = 540;
-  const height = 180;
-  const pad = { l: 8, r: 8, t: 16, b: 24 };
-  const innerWidth = width - pad.l - pad.r;
-  const innerHeight = height - pad.t - pad.b;
-  const min = Math.min(...points.map((point) => point.value));
-  const max = Math.max(...points.map((point) => point.value));
-  const stepX = innerWidth / (points.length - 1);
-  const coords = points.map((point, index) => {
-    const x = pad.l + index * stepX;
-    const y = pad.t + innerHeight - ((point.value - min) / (max - min || 1)) * innerHeight;
-    return { x, y, label: point.label };
-  });
-  const line = coords.map((coord, index) => `${index === 0 ? "M" : "L"}${coord.x} ${coord.y}`).join(" ");
-  const area = `${line} L${coords[coords.length - 1].x} ${pad.t + innerHeight} L${coords[0].x} ${pad.t + innerHeight} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
-      <path d={area} fill={tokens.color.accentSubtle} opacity={0.55} />
-      <path d={line} fill="none" stroke={tokens.color.accent} strokeWidth={2} />
-      {coords.map((coord) => (
-        <g key={coord.label}>
-          <circle cx={coord.x} cy={coord.y} r={3.5} fill="#fff" stroke={tokens.color.accent} strokeWidth={2} />
-          <text x={coord.x} y={height - 6} textAnchor="middle" fontSize="10" fill={tokens.color.ink4}>
-            {coord.label}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-};
 
 export const TrendChart: React.FC<{ points: Point[]; average: number }> = ({ points, average }) => (
   <Card>
@@ -62,9 +39,42 @@ export const TrendChart: React.FC<{ points: Point[]; average: number }> = ({ poi
       </div>
     </CardHd>
     <CardBd>
-      <SvgWrap>
-        <Chart points={points} />
-      </SvgWrap>
+      <ChartWrap>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={points} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
+            <defs>
+              <linearGradient id="home-trend-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={tokens.color.accent} stopOpacity={0.28} />
+                <stop offset="100%" stopColor={tokens.color.accent} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke={tokens.color.line2} />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: tokens.color.ink4, fontSize: 11 }}
+            />
+            <YAxis hide domain={["dataMin - 40000", "dataMax + 40000"]} />
+            <Tooltip
+              formatter={(value) => [formatKRW(Number(value ?? 0)), "지출"]}
+              contentStyle={{
+                borderRadius: 12,
+                border: `1px solid ${tokens.color.line}`,
+                boxShadow: tokens.shadow.card,
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={tokens.color.accent}
+              strokeWidth={2.5}
+              fill="url(#home-trend-fill)"
+              activeDot={{ r: 4, stroke: tokens.color.accent, strokeWidth: 2, fill: "#fff" }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartWrap>
     </CardBd>
     <CardFoot>
       <span>최근 6개월 평균</span>

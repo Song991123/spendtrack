@@ -5,6 +5,7 @@ import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
+import { PLATFORM_LABELS, STATUS_LABELS, TYPE_LABELS } from "../../../constants/labels";
 
 export type TxType = "expense" | "income";
 export type TxPlatform = "coupang" | "naver" | "musinsa";
@@ -23,19 +24,6 @@ export interface TxRow {
     source?: "OCR" | "MANUAL";
   };
 }
-
-const PLATFORM_LABEL: Record<TxPlatform, string> = {
-  coupang: "쿠팡",
-  naver: "네이버쇼핑",
-  musinsa: "무신사",
-};
-
-const STATUS_LABEL: Record<TxStatus, string> = {
-  purchase: "구매",
-  cancel: "취소",
-  refund: "환불",
-  sub: "정기결제",
-};
 
 const Table = styled.div`
   display: grid;
@@ -113,12 +101,12 @@ export const TransactionTable: React.FC<{
           <React.Fragment key={row.id}>
             <DataCell {...common}>
               <Tag kind={row.type === "expense" ? "expense" : "income"}>
-                {row.type === "expense" ? "지출" : "수입"}
+                {TYPE_LABELS[row.type]}
               </Tag>
             </DataCell>
             <DataCell {...common}>{row.date}</DataCell>
             <DataCell {...common}>
-              <Tag kind={row.platform}>{PLATFORM_LABEL[row.platform]}</Tag>
+              <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
             </DataCell>
             <DataCell {...common}>{row.title}</DataCell>
             <DataCell {...common} $right>
@@ -128,7 +116,7 @@ export const TransactionTable: React.FC<{
               </Amount>
             </DataCell>
             <DataCell {...common}>
-              <Tag kind={row.status}>{STATUS_LABEL[row.status]}</Tag>
+              <Tag kind={row.status}>{STATUS_LABELS[row.status]}</Tag>
             </DataCell>
           </React.Fragment>
         );

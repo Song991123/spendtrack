@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { DatePill } from "../../components/primitives/DatePill";
@@ -32,9 +33,24 @@ const Grid = styled.div`
 `;
 
 export const TransactionsPage: React.FC = () => {
-  const data = transactionsMockData;
-  const [selectedId, setSelectedId] = useState<string>(data.rows[0].id);
-  const selected = data.rows.find((row) => row.id === selectedId) ?? data.rows[0];
+  const navigate = useNavigate();
+  const [rows, setRows] = useState(transactionsMockData.rows);
+  const [selectedId, setSelectedId] = useState<string>(transactionsMockData.rows[0].id);
+
+  const selected = useMemo(
+    () => rows.find((row) => row.id === selectedId) ?? rows[0],
+    [rows, selectedId]
+  );
+
+  const handleDelete = () => {
+    setRows((current) => {
+      const nextRows = current.filter((row) => row.id !== selectedId);
+      if (nextRows.length > 0) {
+        setSelectedId(nextRows[0].id);
+      }
+      return nextRows;
+    });
+  };
 
   return (
     <AppShell
@@ -44,13 +60,21 @@ export const TransactionsPage: React.FC = () => {
       headerRight={<DatePill>2025년 4월</DatePill>}
     >
       <Grid>
-        <SummaryStrip summary={data.summary} />
+        <SummaryStrip summary={transactionsMockData.summary} />
         <Body>
           <Left>
-            <FilterBar totalLabel={data.summary.countLabel} />
-            <TransactionTable rows={data.rows} selectedId={selectedId} onSelect={setSelectedId} />
+            <FilterBar totalLabel={transactionsMockData.summary.countLabel} />
+            <TransactionTable rows={rows} selectedId={selectedId} onSelect={setSelectedId} />
           </Left>
-          <DetailPanel row={selected} onClose={() => undefined} />
+          {selected && (
+            <DetailPanel
+              row={selected}
+              onClose={() => setSelectedId(rows[0]?.id ?? selectedId)}
+              onEdit={() => navigate("/manual-entry")}
+              onDelete={handleDelete}
+              onOpenSource={() => navigate("/ocr-edit")}
+            />
+          )}
         </Body>
       </Grid>
     </AppShell>

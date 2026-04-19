@@ -1,5 +1,6 @@
 import React from "react";
 import styled from "styled-components";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import {
   Card,
   CardBd,
@@ -71,59 +72,33 @@ const Row = styled.li`
   }
 `;
 
-const DonutChart: React.FC<{ total: number; items: DonutItem[] }> = ({ total, items }) => {
-  const size = 160;
-  const stroke = 22;
-  const radius = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * radius;
-  let offset = 0;
+const DonutWrap = styled.div`
+  width: 180px;
+  height: 180px;
+  position: relative;
+`;
 
-  return (
-    <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size}>
-      <circle
-        cx={size / 2}
-        cy={size / 2}
-        r={radius}
-        fill="none"
-        stroke={tokens.color.line2}
-        strokeWidth={stroke}
-      />
-      {items.map((item) => {
-        const length = (item.percent / 100) * circumference;
-        const node = (
-          <circle
-            key={item.label}
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={item.color}
-            strokeWidth={stroke}
-            strokeDasharray={`${length} ${circumference - length}`}
-            strokeDashoffset={-offset}
-            transform={`rotate(-90 ${size / 2} ${size / 2})`}
-          />
-        );
-        offset += length;
-        return node;
-      })}
-      <text
-        x="50%"
-        y="48%"
-        textAnchor="middle"
-        fontSize="15"
-        fontWeight={700}
-        fill={tokens.color.ink1}
-        style={{ fontVariantNumeric: "tabular-nums" }}
-      >
-        {formatKRW(total)}
-      </text>
-      <text x="50%" y="60%" textAnchor="middle" fontSize="10" fill={tokens.color.ink4}>
-        이번달 총 소비
-      </text>
-    </svg>
-  );
-};
+const CenterLabel = styled.div`
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  pointer-events: none;
+
+  .amount {
+    color: ${tokens.color.ink1};
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .caption {
+    margin-top: 4px;
+    color: ${tokens.color.ink4};
+    font-size: 10px;
+  }
+`;
 
 export const PlatformDonut: React.FC<{ total: number; items: DonutItem[] }> = ({
   total,
@@ -132,13 +107,45 @@ export const PlatformDonut: React.FC<{ total: number; items: DonutItem[] }> = ({
   <Card>
     <CardHd>
       <div>
-        <CardTitle>플랫폼별 소비 비율</CardTitle>
-        <CardSub>이번달 기준</CardSub>
+        <CardTitle>플랫폼별 소비 비중</CardTitle>
+        <CardSub>이번 달 기준</CardSub>
       </div>
     </CardHd>
     <CardBd>
       <Body>
-        <DonutChart total={total} items={items} />
+        <DonutWrap>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={items}
+                dataKey="value"
+                nameKey="label"
+                innerRadius={52}
+                outerRadius={78}
+                paddingAngle={2}
+                stroke="none"
+              >
+                {items.map((item) => (
+                  <Cell key={item.label} fill={item.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                formatter={(value) => [formatKRW(Number(value ?? 0)), "금액"]}
+                contentStyle={{
+                  borderRadius: 12,
+                  border: `1px solid ${tokens.color.line}`,
+                  boxShadow: tokens.shadow.card,
+                }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          <CenterLabel>
+            <div>
+              <div className="amount">{formatKRW(total)}</div>
+              <div className="caption">이번 달 총소비</div>
+            </div>
+          </CenterLabel>
+        </DonutWrap>
         <Legend>
           {items.map((item) => (
             <Row key={item.label}>

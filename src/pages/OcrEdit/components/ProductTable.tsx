@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { tokens } from "../../../styles/tokens";
 import type { OcrProduct } from "../data";
@@ -92,28 +92,56 @@ const AddRow = styled.button`
   }
 `;
 
-export const ProductTable: React.FC<{ products: OcrProduct[] }> = ({ products }) => (
-  <Table>
-    <HeaderCell>상품명</HeaderCell>
-    <HeaderCell className="right">상품 금액</HeaderCell>
-    <HeaderCell>상품 링크</HeaderCell>
-    <HeaderCell />
-    {products.map((product) => (
-      <Row key={product.id}>
-        <div>
-          <Input defaultValue={product.name} />
-        </div>
-        <div>
-          <Input className="amount" defaultValue={product.price.toLocaleString("ko-KR")} />
-        </div>
-        <div>
-          <Input className="link" placeholder="URL (선택)" defaultValue={product.link ?? ""} />
-        </div>
-        <div style={{ display: "grid", placeItems: "center" }}>
-          <RemoveButton type="button">×</RemoveButton>
-        </div>
-      </Row>
-    ))}
-    <AddRow type="button">+ 상품 직접 추가하기</AddRow>
-  </Table>
-);
+export const ProductTable: React.FC<{ products: OcrProduct[] }> = ({ products }) => {
+  const [rows, setRows] = useState(products);
+
+  useEffect(() => {
+    setRows(products);
+  }, [products]);
+
+  const handleRemove = (id: string) => {
+    setRows((current) => current.filter((product) => product.id !== id));
+  };
+
+  const handleAdd = () => {
+    setRows((current) => [
+      ...current,
+      {
+        id: `local-${Date.now()}`,
+        name: "새 상품",
+        price: 0,
+        link: "",
+      },
+    ]);
+  };
+
+  return (
+    <Table>
+      <HeaderCell>상품명</HeaderCell>
+      <HeaderCell className="right">상품 금액</HeaderCell>
+      <HeaderCell>상품 링크</HeaderCell>
+      <HeaderCell />
+      {rows.map((product) => (
+        <Row key={product.id}>
+          <div>
+            <Input defaultValue={product.name} />
+          </div>
+          <div>
+            <Input className="amount" defaultValue={product.price.toLocaleString("ko-KR")} />
+          </div>
+          <div>
+            <Input className="link" placeholder="URL (선택)" defaultValue={product.link ?? ""} />
+          </div>
+          <div style={{ display: "grid", placeItems: "center" }}>
+            <RemoveButton type="button" onClick={() => handleRemove(product.id)}>
+              ×
+            </RemoveButton>
+          </div>
+        </Row>
+      ))}
+      <AddRow type="button" onClick={handleAdd}>
+        + 상품 직접 추가하기
+      </AddRow>
+    </Table>
+  );
+};

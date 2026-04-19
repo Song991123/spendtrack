@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "../../../components/primitives/Button";
 import { FormField } from "../../../components/form/FormField";
 import { TextInput } from "../../../components/form/TextInput";
@@ -38,10 +38,16 @@ const PasswordInput = styled(TextInput)`
 `;
 
 export const RegisterForm: React.FC = () => {
+  const navigate = useNavigate();
   const [password, setPassword] = useState("");
 
   return (
-    <form onSubmit={(event) => event.preventDefault()}>
+    <form
+      onSubmit={(event) => {
+        event.preventDefault();
+        navigate("/");
+      }}
+    >
       <div style={{ display: "grid", gap: 14 }}>
         <FormField label="이름">
           <TextInput placeholder="홍길동" autoComplete="name" />
@@ -61,7 +67,7 @@ export const RegisterForm: React.FC = () => {
         </FormField>
       </div>
       <Agree>
-        <input type="checkbox" />
+        <input type="checkbox" defaultChecked />
         <span>
           <Link to="/register">이용약관</Link>과{" "}
           <Link to="/register">개인정보 처리방침</Link>에 동의합니다. (필수)

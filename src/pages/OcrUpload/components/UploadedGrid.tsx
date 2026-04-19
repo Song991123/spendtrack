@@ -81,7 +81,7 @@ export const UploadedGrid: React.FC<{
 }> = ({ images, onRemove }) => (
   <Card>
     <CardHd>
-      <CardTitle>업로드된 이미지 ({images.length})</CardTitle>
+      <CardTitle>업로드한 이미지 ({images.length})</CardTitle>
     </CardHd>
     <CardBd>
       <Grid>
@@ -91,7 +91,7 @@ export const UploadedGrid: React.FC<{
               {image.thumbUrl ? (
                 <img src={image.thumbUrl} alt={image.fileName} />
               ) : (
-                <div className="placeholder">□</div>
+                <div className="placeholder">🧾</div>
               )}
               <Remove type="button" onClick={() => onRemove(image.id)}>
                 ×

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/primitives/Button";
@@ -33,6 +34,7 @@ const Actions = styled.div`
 `;
 
 export const OcrUploadPage: React.FC = () => {
+  const navigate = useNavigate();
   const [platform, setPlatform] = useState<Platform>("coupang");
   const [images, setImages] = useState<UploadedImage[]>(ocrUploadMockData.images);
 
@@ -40,22 +42,52 @@ export const OcrUploadPage: React.FC = () => {
     setImages((current) => current.filter((image) => image.id !== id));
   };
 
+  const handleAddMock = () => {
+    setImages((current) => {
+      if (current.length >= 5) {
+        return current;
+      }
+
+      const nextIndex = current.length + 1;
+      return [
+        ...current,
+        {
+          id: `mock-${Date.now()}`,
+          thumbUrl: "",
+          fileName: `${platform}-capture-${nextIndex}.png`,
+          sizeLabel: `${(0.8 + nextIndex * 0.2).toFixed(1)} MB`,
+          status: "ready",
+        },
+      ];
+    });
+  };
+
   return (
     <AppShell activeNav="upload" crumb="입력 · OCR" title="OCR 업로드">
       <Wrap>
         <GuideCard items={ocrUploadMockData.guide} />
         <PlatformSelect value={platform} onChange={setPlatform} />
-        <UploadZone acceptedTypes="PNG, JPG, WEBP" maxSize="10MB" maxCount={5} />
+        <UploadZone
+          acceptedTypes="PNG, JPG, WEBP"
+          maxSize="10MB"
+          maxCount={5}
+          onPick={handleAddMock}
+        />
 
         {images.length > 0 && <UploadedGrid images={images} onRemove={handleRemove} />}
 
         <Footer>
           <span className="count">업로드한 이미지 {images.length}/5</span>
           <Actions>
-            <Button variant="ghost" size="lg">
+            <Button variant="ghost" size="lg" onClick={() => navigate("/upload")}>
               취소
             </Button>
-            <Button variant="primary" size="lg" disabled={images.length === 0}>
+            <Button
+              variant="primary"
+              size="lg"
+              disabled={images.length === 0}
+              onClick={() => navigate("/ocr-edit")}
+            >
               분석 시작하기
             </Button>
           </Actions>

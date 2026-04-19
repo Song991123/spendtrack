@@ -5,6 +5,7 @@ import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/
 import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
 import { formatKRW } from "../../../utils/format";
+import { PLATFORM_LABELS } from "../../../constants/labels";
 
 type Platform = "coupang" | "naver" | "musinsa";
 
@@ -16,12 +17,6 @@ export interface RecentItem {
   date: string;
   amount: number;
 }
-
-const PLATFORM_LABEL: Record<Platform, string> = {
-  coupang: "쿠팡",
-  naver: "네이버쇼핑",
-  musinsa: "무신사",
-};
 
 const LinkButton = styled.button`
   border: 0;
@@ -95,9 +90,9 @@ export const RecentTransactions: React.FC<{ items: RecentItem[] }> = ({ items })
   return (
     <Card>
       <CardHd>
-        <CardTitle>4월 최근 거래</CardTitle>
+        <CardTitle>최근 거래</CardTitle>
         <LinkButton type="button" onClick={() => navigate("/transactions")}>
-          전체보기 →
+          전체보기
         </LinkButton>
       </CardHd>
       <CardBd>
@@ -109,7 +104,7 @@ export const RecentTransactions: React.FC<{ items: RecentItem[] }> = ({ items })
                 <Title>{item.title}</Title>
                 <Meta>{item.date}</Meta>
               </div>
-              <Tag kind={item.platform}>{PLATFORM_LABEL[item.platform]}</Tag>
+              <Tag kind={item.platform}>{PLATFORM_LABELS[item.platform]}</Tag>
               <Amount $negative={item.amount < 0}>
                 {item.amount < 0 ? "-" : "+"}
                 {formatKRW(Math.abs(item.amount))}

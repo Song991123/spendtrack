@@ -58,7 +58,7 @@ export const SummaryStrip: React.FC<{ summary: SummaryData }> = ({ summary }) =>
         <Label>전체 거래</Label>
         <Value>{summary.total}건</Value>
         <Sub>
-          지출 {summary.spendCount} · 수입 {summary.incomeCount}
+          지출 {summary.spendCount}건, 수입 {summary.incomeCount}건
         </Sub>
       </CardBd>
     </Card>
@@ -78,9 +78,9 @@ export const SummaryStrip: React.FC<{ summary: SummaryData }> = ({ summary }) =>
     </Card>
     <Card>
       <CardBd>
-        <Label>순 지출</Label>
+        <Label>순지출</Label>
         <Value>{formatKRW(summary.netSpend)}</Value>
-        <Sub>지출 − 수입</Sub>
+        <Sub>지출에서 수입 차감</Sub>
       </CardBd>
     </Card>
   </Strip>

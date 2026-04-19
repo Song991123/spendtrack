@@ -41,7 +41,7 @@ const INIT: Pref[] = [
   {
     key: "monthly",
     label: "월간 지출 요약",
-    desc: "매월 1일, 지난달 지출과 수입 요약을 이메일로 받아요.",
+    desc: "매월 1일 지난달 지출과 수입 요약을 이메일로 받아요.",
     on: true,
   },
   {
