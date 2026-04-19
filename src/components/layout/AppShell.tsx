@@ -18,7 +18,7 @@ interface AppShellProps {
 
 const Shell = styled.div`
   display: grid;
-  grid-template-columns: 232px 1fr;
+  grid-template-columns: 232px minmax(0, 1fr);
   min-height: 100vh;
   background: ${tokens.color.bg};
 
@@ -34,8 +34,8 @@ const SidebarWrapper = styled.div`
 `;
 
 const Main = styled.main`
-  width: 100%;
   min-width: 0;
+  width: 100%;
 `;
 
 const MobileNav = styled.nav`
@@ -74,11 +74,12 @@ const MobileNavDivider = styled.div`
 
 const Content = styled.div`
   width: 100%;
-  max-width: 1400px;
+  min-width: 0;
   padding: 20px 28px 40px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-sizing: border-box;
 
   ${media.tablet} {
     padding: 20px 24px 40px;
