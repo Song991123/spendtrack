@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { Toggle } from "../../../components/primitives/Toggle";
 import { tokens } from "../../../styles/tokens";
 import { SettingsBlock } from "./SettingsSection";
 
@@ -29,31 +30,6 @@ const Item = styled.div`
   }
 `;
 
-const Toggle = styled.button<{ $on: boolean }>`
-  position: relative;
-  width: 40px;
-  height: 22px;
-  border: none;
-  border-radius: 999px;
-  background: ${({ $on }) => ($on ? tokens.color.accent : tokens.color.line)};
-  cursor: pointer;
-  flex: none;
-  transition: background 0.16s;
-
-  &::after {
-    content: "";
-    position: absolute;
-    top: 3px;
-    left: ${({ $on }) => ($on ? "21px" : "3px")};
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.15);
-    transition: left 0.16s;
-  }
-`;
-
 interface Pref {
   key: string;
   label: string;
@@ -65,13 +41,13 @@ const INIT: Pref[] = [
   {
     key: "monthly",
     label: "월간 지출 요약",
-    desc: "매월 1일, 전월 지출·수입 요약을 이메일로 받아요.",
+    desc: "매월 1일, 지난달 지출과 수입 요약을 이메일로 받아요.",
     on: true,
   },
   {
     key: "overspend",
     label: "예산 초과 경고",
-    desc: "카테고리 예산을 80% 이상 사용하면 알려드려요.",
+    desc: "카테고리 예산의 80% 이상을 사용하면 알려드려요.",
     on: true,
   },
   {
@@ -82,8 +58,8 @@ const INIT: Pref[] = [
   },
   {
     key: "tips",
-    label: "팁·업데이트 소식",
-    desc: "새 기능 소식과 가계부 사용 팁을 받아볼게요.",
+    label: "업데이트 소식",
+    desc: "새 기능 소식과 가이드를 받을 수 있어요.",
     on: false,
   },
 ];
@@ -103,7 +79,7 @@ export const NotificationSection: React.FC = () => {
             <div className="label">{pref.label}</div>
             <div className="sub">{pref.desc}</div>
           </div>
-          <Toggle type="button" $on={pref.on} onClick={() => toggle(pref.key)} />
+          <Toggle checked={pref.on} onClick={() => toggle(pref.key)} />
         </Item>
       ))}
     </SettingsBlock>

@@ -11,7 +11,7 @@ import { DangerSection } from "./components/DangerSection";
 
 const Body = styled.div`
   display: grid;
-  grid-template-columns: 220px 1fr;
+  grid-template-columns: 220px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 
@@ -23,6 +23,7 @@ const Body = styled.div`
 const Content = styled.div`
   display: grid;
   gap: 16px;
+  min-width: 0;
 `;
 
 export const SettingsPage: React.FC = () => {

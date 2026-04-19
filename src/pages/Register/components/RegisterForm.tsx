@@ -2,48 +2,10 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import { Link } from "react-router-dom";
 import { Button } from "../../../components/primitives/Button";
+import { FormField } from "../../../components/form/FormField";
+import { TextInput } from "../../../components/form/TextInput";
 import { tokens } from "../../../styles/tokens";
 import { PasswordStrength } from "./PasswordStrength";
-
-const Field = styled.div`
-  margin-bottom: 14px;
-
-  label {
-    display: block;
-    margin-bottom: 6px;
-    color: ${tokens.color.ink2};
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  .hint {
-    margin-top: 6px;
-    color: ${tokens.color.ink4};
-    font-size: 11.5px;
-  }
-
-  input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid ${tokens.color.line};
-    border-radius: 8px;
-    background: ${tokens.color.panel};
-    color: ${tokens.color.ink1};
-    font-family: inherit;
-    font-size: 13.5px;
-    outline: none;
-    transition: border-color 0.12s, box-shadow 0.12s;
-  }
-
-  input:focus {
-    border-color: ${tokens.color.accent};
-    box-shadow: ${tokens.shadow.focus};
-  }
-
-  input::placeholder {
-    color: ${tokens.color.ink5};
-  }
-`;
 
 const Agree = styled.label`
   display: flex;
@@ -71,35 +33,38 @@ const Agree = styled.label`
   }
 `;
 
+const PasswordInput = styled(TextInput)`
+  letter-spacing: 0.08em;
+`;
+
 export const RegisterForm: React.FC = () => {
   const [password, setPassword] = useState("");
 
   return (
     <form onSubmit={(event) => event.preventDefault()}>
-      <Field>
-        <label>이름</label>
-        <input placeholder="홍길동" autoComplete="name" />
-      </Field>
-      <Field>
-        <label>이메일</label>
-        <input type="email" placeholder="you@example.com" autoComplete="email" />
-      </Field>
-      <Field>
-        <label>비밀번호</label>
-        <input
-          type="password"
-          placeholder="8자 이상, 숫자 포함"
-          autoComplete="new-password"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-        />
-        <PasswordStrength value={password} />
-      </Field>
+      <div style={{ display: "grid", gap: 14 }}>
+        <FormField label="이름">
+          <TextInput placeholder="홍길동" autoComplete="name" />
+        </FormField>
+        <FormField label="이메일">
+          <TextInput type="email" placeholder="you@example.com" autoComplete="email" />
+        </FormField>
+        <FormField label="비밀번호" helpText="8자 이상, 숫자를 포함해 주세요.">
+          <PasswordInput
+            type="password"
+            placeholder="8자 이상, 숫자 포함"
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <PasswordStrength value={password} />
+        </FormField>
+      </div>
       <Agree>
         <input type="checkbox" />
         <span>
-          <Link to="/register">이용약관</Link>과 <Link to="/register">개인정보 처리방침</Link>에
-          동의합니다. (필수)
+          <Link to="/register">이용약관</Link>과{" "}
+          <Link to="/register">개인정보 처리방침</Link>에 동의합니다. (필수)
         </span>
       </Agree>
       <Button variant="primary" size="lg" block type="submit">

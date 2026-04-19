@@ -12,8 +12,8 @@ interface Category {
 
 const INIT: Category[] = [
   { id: "c1", name: "패션/의류", color: "#6366F1", count: 24 },
-  { id: "c2", name: "식비", color: "#10B981", count: 47 },
-  { id: "c3", name: "카페/디저트", color: "#F59E0B", count: 18 },
+  { id: "c2", name: "생활비", color: "#10B981", count: 47 },
+  { id: "c3", name: "카페/음료", color: "#F59E0B", count: 18 },
   { id: "c4", name: "전자제품", color: "#0EA5E9", count: 6 },
   { id: "c5", name: "교통비", color: "#EF4444", count: 31 },
 ];
@@ -59,7 +59,7 @@ export const CategoriesSection: React.FC = () => {
   return (
     <SettingsBlock
       title="카테고리"
-      subtitle="지출과 수입을 구분하는 카테고리 목록이에요. 색상은 리포트에 반영돼요."
+      subtitle="지출과 수입을 구분하는 카테고리 목록이에요. 색상은 리포트와 차트에 반영돼요."
     >
       <List>
         {categories.map((category) => (

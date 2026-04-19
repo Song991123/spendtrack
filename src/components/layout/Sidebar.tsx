@@ -15,7 +15,7 @@ const NAV_ITEMS: Array<{
   path: string;
 }> = [
   { key: "home", label: "홈", path: "/" },
-  { key: "upload", label: "업로드", path: "/upload" },
+  { key: "upload", label: "입력", path: "/upload" },
   { key: "transactions", label: "수입·지출 내역", path: "/transactions" },
   { key: "analysis", label: "소비 분석", path: "/analysis" },
 ];
@@ -204,7 +204,7 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
         ))}
       </Nav>
 
-      <Section>도구</Section>
+      <Section>계정</Section>
       <Nav>
         <NavItem
           type="button"

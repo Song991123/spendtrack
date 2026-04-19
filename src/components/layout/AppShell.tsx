@@ -108,13 +108,13 @@ export const AppShell = ({ activeNav, crumb, title, headerRight, children }: App
             홈
           </MobileNavItem>
           <MobileNavItem $active={activeNav === "upload"} onClick={() => navigate("/upload")}>
-            업로드
+            입력
           </MobileNavItem>
           <MobileNavItem
             $active={activeNav === "transactions"}
             onClick={() => navigate("/transactions")}
           >
-            내역
+            거래
           </MobileNavItem>
           <MobileNavItem $active={activeNav === "analysis"} onClick={() => navigate("/analysis")}>
             분석

@@ -1,5 +1,7 @@
 import React from "react";
 import styled from "styled-components";
+import { FormField } from "../../../components/form/FormField";
+import { TextInput } from "../../../components/form/TextInput";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 
@@ -20,67 +22,58 @@ const Field = styled.div<{ $span?: number }>`
   ${media.mobile} {
     grid-column: span 1;
   }
+`;
 
-  label {
-    display: block;
-    margin-bottom: 6px;
-    color: ${tokens.color.ink2};
-    font-size: 12px;
-    font-weight: 600;
-  }
+const Textarea = styled.textarea`
+  width: 100%;
+  min-height: 64px;
+  padding: 9px 12px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.panel};
+  color: ${tokens.color.ink1};
+  font-family: inherit;
+  font-size: 13.5px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.12s, box-shadow 0.12s;
 
-  input,
-  textarea {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid ${tokens.color.line};
-    border-radius: 8px;
-    background: ${tokens.color.panel};
-    color: ${tokens.color.ink1};
-    font-family: inherit;
-    font-size: 13.5px;
-    outline: none;
-    transition: border-color 0.12s, box-shadow 0.12s;
-  }
-
-  input:focus,
-  textarea:focus {
+  &:focus {
     border-color: ${tokens.color.accent};
     box-shadow: ${tokens.shadow.focus};
   }
 
-  input::placeholder,
-  textarea::placeholder {
+  &::placeholder {
     color: ${tokens.color.ink5};
-  }
-
-  textarea {
-    min-height: 64px;
-    resize: vertical;
   }
 `;
 
 export const MetaFields: React.FC = () => (
   <Grid>
     <Field>
-      <label>거래명</label>
-      <input placeholder="예: 쿠팡 주문, 네이버 환불" />
+      <FormField label="거래명">
+        <TextInput placeholder="예: 쿠팡 주문, 네이버 환불" />
+      </FormField>
     </Field>
     <Field>
-      <label>금액</label>
-      <input placeholder="₩ 0" />
+      <FormField label="금액">
+        <TextInput placeholder="예: 129000" />
+      </FormField>
     </Field>
     <Field>
-      <label>플랫폼</label>
-      <input placeholder="쿠팡, 네이버쇼핑, 무신사..." />
+      <FormField label="플랫폼">
+        <TextInput placeholder="쿠팡, 네이버쇼핑, 무신사" />
+      </FormField>
     </Field>
     <Field>
-      <label>거래일자</label>
-      <input placeholder="YYYY.MM.DD" />
+      <FormField label="거래일자">
+        <TextInput placeholder="YYYY.MM.DD" />
+      </FormField>
     </Field>
     <Field $span={2}>
-      <label>메모 (선택)</label>
-      <textarea placeholder="거래에 대한 메모를 남겨보세요" />
+      <FormField label="메모" helpText="선택 항목">
+        <Textarea placeholder="거래에 대한 메모를 남겨보세요." />
+      </FormField>
     </Field>
   </Grid>
 );

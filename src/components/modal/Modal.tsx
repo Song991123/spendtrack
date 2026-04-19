@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
 import { media } from "../../tokens/breakpoints";
+import { tokens } from "../../styles/tokens";
 
 interface ModalProps {
   isOpen: boolean;
@@ -12,7 +13,7 @@ interface ModalProps {
 const Overlay = styled.button`
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(11, 18, 32, 0.4);
   border: none;
   padding: 0;
   z-index: 1000;
@@ -26,10 +27,10 @@ const ModalCard = styled.div`
   transform: translate(-50%, -50%);
   width: 480px;
   max-width: calc(100vw - 32px);
-  background: #FFFFFF;
-  border-radius: 16px;
+  background: ${tokens.color.panel};
+  border-radius: ${tokens.radius.modal};
   z-index: 1001;
-  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.18);
+  box-shadow: ${tokens.shadow.modal};
   overflow: hidden;
 
   ${media.mobile} {
@@ -43,34 +44,34 @@ const Header = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 24px 32px 20px;
+  padding: 24px 28px 20px;
 `;
 
 const Title = styled.h2`
   margin: 0;
+  color: ${tokens.color.ink1};
   font-size: 18px;
   font-weight: 700;
-  color: #111827;
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
   padding: 0;
-  font-size: 18px;
-  color: #999999;
+  color: ${tokens.color.ink4};
   cursor: pointer;
-  line-height: 1;
   font-family: inherit;
+  font-size: 20px;
+  line-height: 1;
 `;
 
 const Divider = styled.div`
   height: 1px;
-  background: #EBEBEB;
+  background: ${tokens.color.line2};
 `;
 
 const Body = styled.div`
-  padding: 24px 32px 28px;
+  padding: 24px 28px 28px;
 `;
 
 export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
@@ -85,7 +86,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
         <Header>
           <Title>{title}</Title>
           <CloseButton type="button" aria-label="닫기" onClick={onClose}>
-            ✕
+            ×
           </CloseButton>
         </Header>
         <Divider />

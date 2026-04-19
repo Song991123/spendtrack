@@ -50,13 +50,13 @@ export const OcrUploadPage: React.FC = () => {
         {images.length > 0 && <UploadedGrid images={images} onRemove={handleRemove} />}
 
         <Footer>
-          <span className="count">업로드된 이미지 {images.length}/5</span>
+          <span className="count">업로드한 이미지 {images.length}/5</span>
           <Actions>
             <Button variant="ghost" size="lg">
               취소
             </Button>
             <Button variant="primary" size="lg" disabled={images.length === 0}>
-              분석 시작하기 →
+              분석 시작하기
             </Button>
           </Actions>
         </Footer>

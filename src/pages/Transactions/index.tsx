@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
-import { tokens } from "../../styles/tokens";
+import { DatePill } from "../../components/primitives/DatePill";
 import { media } from "../../tokens/breakpoints";
 import { SummaryStrip } from "./components/SummaryStrip";
 import { FilterBar } from "./components/FilterBar";
@@ -11,7 +11,7 @@ import { transactionsMockData } from "./data";
 
 const Body = styled.div`
   display: grid;
-  grid-template-columns: 1fr 320px;
+  grid-template-columns: minmax(0, 1fr) 320px;
   gap: 16px;
   align-items: start;
 
@@ -23,27 +23,7 @@ const Body = styled.div`
 const Left = styled.div`
   display: grid;
   gap: 16px;
-`;
-
-const DatePill = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border: 1px solid ${tokens.color.line};
-  background: ${tokens.color.panel};
-  border-radius: 8px;
-  color: ${tokens.color.ink2};
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: ${tokens.color.accent};
-  }
+  min-width: 0;
 `;
 
 const Grid = styled.div`
@@ -61,12 +41,7 @@ export const TransactionsPage: React.FC = () => {
       activeNav="transactions"
       crumb="거래 · 2025년 4월"
       title="수입·지출 내역"
-      headerRight={
-        <DatePill type="button">
-          <span className="dot" />
-          2025년 4월 ▼
-        </DatePill>
-      }
+      headerRight={<DatePill>2025년 4월</DatePill>}
     >
       <Grid>
         <SummaryStrip summary={data.summary} />

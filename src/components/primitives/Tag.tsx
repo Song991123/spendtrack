@@ -44,7 +44,7 @@ const legacyFilledToneMap: Record<string, { bg: string; text: string }> = {
 
 const legacyPlatformToneMap: Record<string, { border: string; text: string }> = {
   쿠팡: { border: "#FF4B00", text: "#FF4B00" },
-  네이버쇼핑: { border: "#03C75A", text: "#03C75A" },
+  "네이버쇼핑": { border: "#03C75A", text: "#03C75A" },
   네이버: { border: "#03C75A", text: "#03C75A" },
   무신사: { border: "#222222", text: "#222222" },
 };

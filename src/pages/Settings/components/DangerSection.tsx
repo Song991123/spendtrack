@@ -29,7 +29,7 @@ const Box = styled.div`
 `;
 
 export const DangerSection: React.FC = () => (
-  <SettingsBlock title="계정 삭제" subtitle="계정을 삭제하면 모든 거래 내역과 설정이 영구적으로 삭제돼요.">
+  <SettingsBlock title="계정 삭제" subtitle="계정을 삭제하면 모든 거래 내역과 설정이 영구적으로 제거돼요.">
     <Box>
       <div>
         <div className="title">계정과 모든 데이터 삭제</div>

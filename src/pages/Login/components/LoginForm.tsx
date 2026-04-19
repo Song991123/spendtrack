@@ -2,41 +2,9 @@ import React from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
 import { Button } from "../../../components/primitives/Button";
+import { FormField } from "../../../components/form/FormField";
+import { TextInput } from "../../../components/form/TextInput";
 import { tokens } from "../../../styles/tokens";
-
-const Field = styled.div`
-  margin-bottom: 14px;
-
-  label {
-    display: block;
-    margin-bottom: 6px;
-    color: ${tokens.color.ink2};
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid ${tokens.color.line};
-    border-radius: 8px;
-    background: ${tokens.color.panel};
-    color: ${tokens.color.ink1};
-    font-family: inherit;
-    font-size: 13.5px;
-    outline: none;
-    transition: border-color 0.12s, box-shadow 0.12s;
-  }
-
-  input:focus {
-    border-color: ${tokens.color.accent};
-    box-shadow: ${tokens.shadow.focus};
-  }
-
-  input::placeholder {
-    color: ${tokens.color.ink5};
-  }
-`;
 
 const Row = styled.div`
   display: flex;
@@ -44,6 +12,7 @@ const Row = styled.div`
   justify-content: space-between;
   margin: 14px 0 18px;
   font-size: 12.5px;
+  gap: 12px;
 `;
 
 const Remember = styled.label`
@@ -68,16 +37,24 @@ const ForgotLink = styled(Link)`
   }
 `;
 
+const PasswordInput = styled(TextInput)`
+  letter-spacing: 0.08em;
+`;
+
 export const LoginForm: React.FC = () => (
   <form onSubmit={(event) => event.preventDefault()}>
-    <Field>
-      <label>이메일</label>
-      <input type="email" placeholder="you@example.com" autoComplete="email" />
-    </Field>
-    <Field>
-      <label>비밀번호</label>
-      <input type="password" placeholder="••••••••" autoComplete="current-password" />
-    </Field>
+    <div style={{ display: "grid", gap: 14 }}>
+      <FormField label="이메일">
+        <TextInput type="email" placeholder="you@example.com" autoComplete="email" />
+      </FormField>
+      <FormField label="비밀번호">
+        <PasswordInput
+          type="password"
+          placeholder="••••••••"
+          autoComplete="current-password"
+        />
+      </FormField>
+    </div>
     <Row>
       <Remember>
         <input type="checkbox" /> 로그인 상태 유지

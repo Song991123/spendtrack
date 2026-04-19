@@ -47,7 +47,7 @@ export const UploadPage: React.FC = () => (
             icon={<CameraIcon />}
             title="OCR로 입력"
             description={`쇼핑몰 주문내역 캡처를 인식해\n자동으로 입력합니다.`}
-            ctaLabel="OCR 업로드 시작 →"
+            ctaLabel="OCR 업로드 시작"
             ctaVariant="primary"
             footnote="취소·반품·환불·정기결제 자동 감지"
             href="/ocr-upload"
@@ -55,10 +55,10 @@ export const UploadPage: React.FC = () => (
           <MethodCard
             icon={<PenIcon />}
             title="수동 입력"
-            description={`지출/수입 내역을 직접\n기록할 수 있습니다.`}
-            ctaLabel="직접 입력 시작 →"
+            description={`지출·수입 내역을 직접\n기록할 수 있습니다.`}
+            ctaLabel="직접 입력 시작"
             ctaVariant="ghost"
-            footnote="상품 추가는 팝업으로 간편하게"
+            footnote="상품은 팝업으로 간편하게 추가"
             href="/manual-entry"
           />
         </Options>

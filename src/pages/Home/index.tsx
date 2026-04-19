@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
+import { DatePill } from "../../components/primitives/DatePill";
 import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 import { KpiStrip } from "./components/KpiStrip";
@@ -18,27 +19,6 @@ const HeaderRight = styled.div`
   ${media.mobile} {
     width: 100%;
     justify-content: space-between;
-  }
-`;
-
-const DatePill = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  border: 1px solid ${tokens.color.line};
-  background: ${tokens.color.panel};
-  border-radius: ${tokens.radius.control};
-  color: ${tokens.color.ink2};
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
-
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: ${tokens.color.accent};
   }
 `;
 
@@ -73,10 +53,7 @@ export const HomePage: React.FC = () => {
       title="이번 달 소비 요약"
       headerRight={
         <HeaderRight>
-          <DatePill type="button">
-            <span className="dot" />
-            2025년 4월 ▼
-          </DatePill>
+          <DatePill>2025년 4월</DatePill>
           <DateStamp>2025년 4월 15일 화요일</DateStamp>
         </HeaderRight>
       }

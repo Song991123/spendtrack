@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
+import { tokens } from "../../styles/tokens";
 
 interface FormFieldProps {
   label: string;
@@ -15,18 +16,18 @@ const Wrapper = styled.div`
 `;
 
 const Label = styled.label`
-  font-size: 13px;
-  font-weight: 500;
-  color: #333333;
+  color: ${tokens.color.ink2};
+  font-size: 12px;
+  font-weight: 600;
 `;
 
 const Required = styled.span`
-  color: #E54D4D;
+  color: ${tokens.color.neg};
 `;
 
 const HelpText = styled.span`
-  font-size: 11px;
-  color: #9CA3AF;
+  color: ${tokens.color.ink4};
+  font-size: 11.5px;
   line-height: 1.45;
 `;
 

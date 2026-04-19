@@ -1,6 +1,8 @@
 import React from "react";
 import styled from "styled-components";
 import { Button } from "../../../components/primitives/Button";
+import { FormField } from "../../../components/form/FormField";
+import { TextInput } from "../../../components/form/TextInput";
 import { tokens } from "../../../styles/tokens";
 import { SettingsBlock } from "./SettingsSection";
 
@@ -46,33 +48,9 @@ const Meta = styled.div`
   }
 `;
 
-const Field = styled.div`
-  margin-bottom: 14px;
-
-  label {
-    display: block;
-    margin-bottom: 6px;
-    color: ${tokens.color.ink2};
-    font-size: 12px;
-    font-weight: 600;
-  }
-
-  input {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid ${tokens.color.line};
-    border-radius: 8px;
-    background: ${tokens.color.panel};
-    color: ${tokens.color.ink1};
-    font-family: inherit;
-    font-size: 13.5px;
-    outline: none;
-  }
-
-  input:focus {
-    border-color: ${tokens.color.accent};
-    box-shadow: ${tokens.shadow.focus};
-  }
+const FieldGrid = styled.div`
+  display: grid;
+  gap: 14px;
 `;
 
 const Actions = styled.div`
@@ -94,19 +72,19 @@ export const ProfileSection: React.FC = () => (
             사진 변경
           </Button>
           <Button variant="ghost" size="sm">
-            삭제
+            제거
           </Button>
         </div>
       </Meta>
     </Row>
-    <Field>
-      <label>이름</label>
-      <input defaultValue="홍길동" />
-    </Field>
-    <Field>
-      <label>닉네임</label>
-      <input defaultValue="길동이" />
-    </Field>
+    <FieldGrid>
+      <FormField label="이름">
+        <TextInput defaultValue="홍길동" />
+      </FormField>
+      <FormField label="닉네임">
+        <TextInput defaultValue="길동님" />
+      </FormField>
+    </FieldGrid>
     <Actions>
       <Button variant="primary" size="md">
         변경사항 저장

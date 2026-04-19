@@ -10,7 +10,7 @@ import { ocrEditMockData, type OcrImageItem } from "./data";
 
 const Body = styled.div`
   display: grid;
-  grid-template-columns: 200px 1fr 380px;
+  grid-template-columns: 200px minmax(0, 1fr) 380px;
   gap: 16px;
   align-items: start;
 
@@ -38,13 +38,18 @@ export const OcrEditPage: React.FC = () => {
   return (
     <AppShell activeNav="upload" crumb="입력 · OCR" title="OCR 결과 확인 및 수정">
       <Body>
-        <ImageList images={data.images} selectedId={selectedId} onSelect={setSelectedId} onAdd={() => undefined} />
+        <ImageList
+          images={data.images}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+          onAdd={() => undefined}
+        />
         <ImagePreview image={selected} />
         <EditForm image={selected} />
       </Body>
       <Footer>
         <Button variant="ghost" size="lg">
-          ↻ 다시 OCR 분석
+          다시 OCR 분석
         </Button>
         <Button variant="primary" size="lg">
           저장
