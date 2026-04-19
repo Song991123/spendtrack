@@ -1,41 +1,55 @@
+import type { ReactNode } from "react";
 import styled, { css } from "styled-components";
+import { tokens } from "../../styles/tokens";
 
-type TagVariant = "type" | "status" | "platform" | "source";
+type LegacyVariant = "type" | "status" | "platform" | "source";
+type ModernKind =
+  | "coupang"
+  | "naver"
+  | "musinsa"
+  | "expense"
+  | "income"
+  | "purchase"
+  | "sub"
+  | "cancel"
+  | "refund";
 
 interface TagProps {
-  variant: TagVariant;
-  value: string;
+  kind?: ModernKind;
+  variant?: LegacyVariant;
+  value?: string;
+  children?: ReactNode;
 }
 
-const filledToneMap: Record<string, { bg: string; text: string }> = {
-  "type:지출": { bg: "#FDE8E8", text: "#D92626" },
-  "type:수입": { bg: "#E8F0FE", text: "#3E76FC" },
-  "status:구매": { bg: "#EDF2FF", text: "#3E76FC" },
+const modernStyles = Object.entries(tokens.color.tag).reduce((acc, [key, value]) => {
+  acc[key as ModernKind] = css`
+    background: ${value.bg};
+    color: ${value.fg};
+  `;
+  return acc;
+}, {} as Record<ModernKind, ReturnType<typeof css>>);
+
+const legacyFilledToneMap: Record<string, { bg: string; text: string }> = {
+  "type:지출": { bg: tokens.color.negBg, text: tokens.color.neg },
+  "type:수입": { bg: tokens.color.posBg, text: tokens.color.pos },
+  "status:구매": { bg: tokens.color.tint, text: tokens.color.ink3 },
   "status:환불": { bg: "#FFF5EB", text: "#E58C1A" },
   "status:반품": { bg: "#FFF5EB", text: "#E58C1A" },
-  "status:취소": { bg: "#F0F0F0", text: "#808080" },
-  "status:정기결제": { bg: "#EDF2FF", text: "#3E76FC" },
-  "status:구독": { bg: "#EDF2FF", text: "#3E76FC" },
-  "source:OCR": { bg: "#EDF2FF", text: "#3E76FC" },
-  "source:직접": { bg: "#F0F0F0", text: "#808080" },
+  "status:취소": { bg: tokens.color.negBg, text: tokens.color.neg },
+  "status:정기결제": { bg: tokens.color.accentSubtle, text: tokens.color.accentHover },
+  "status:구독": { bg: tokens.color.accentSubtle, text: tokens.color.accentHover },
+  "source:OCR": { bg: tokens.color.accentSubtle, text: tokens.color.accentHover },
+  "source:직접": { bg: tokens.color.tint, text: tokens.color.ink3 },
 };
 
-const platformToneMap: Record<string, { border: string; text: string }> = {
+const legacyPlatformToneMap: Record<string, { border: string; text: string }> = {
   쿠팡: { border: "#FF4B00", text: "#FF4B00" },
   네이버쇼핑: { border: "#03C75A", text: "#03C75A" },
+  네이버: { border: "#03C75A", text: "#03C75A" },
   무신사: { border: "#222222", text: "#222222" },
 };
 
-const getFilledTone = (variant: Exclude<TagVariant, "platform">, value: string) =>
-  filledToneMap[`${variant}:${value}`] ?? { bg: "#F0F0F0", text: "#808080" };
-
-const getPlatformTone = (value: string) =>
-  platformToneMap[value] ?? { border: "#D9D9D9", text: "#6B7280" };
-
-const StyledTag = styled.span<{
-  $variant: TagVariant;
-  $value: string;
-}>`
+const LegacyTag = styled.span<{ $variant: LegacyVariant; $value: string }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -45,10 +59,10 @@ const StyledTag = styled.span<{
 
   ${({ $variant, $value }) => {
     if ($variant === "platform") {
-      const tone = getPlatformTone($value);
+      const tone = legacyPlatformToneMap[$value] ?? { border: "#D9D9D9", text: "#6B7280" };
 
       return css`
-        background: #FFFFFF;
+        background: #ffffff;
         color: ${tone.text};
         border: 1px solid ${tone.border};
         border-radius: 6px;
@@ -57,7 +71,10 @@ const StyledTag = styled.span<{
       `;
     }
 
-    const tone = getFilledTone($variant, $value);
+    const tone = legacyFilledToneMap[`${$variant}:${$value}`] ?? {
+      bg: "#F0F0F0",
+      text: "#808080",
+    };
 
     return css`
       background: ${tone.bg};
@@ -70,8 +87,24 @@ const StyledTag = styled.span<{
   }}
 `;
 
-export const Tag = ({ variant, value }: TagProps) => (
-  <StyledTag $variant={variant} $value={value}>
-    {value}
-  </StyledTag>
-);
+const ModernTag = styled.span<{ $kind: ModernKind }>`
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: ${tokens.radius.tag};
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  ${({ $kind }) => modernStyles[$kind]}
+`;
+
+export const Tag = ({ kind, variant, value, children }: TagProps) => {
+  if (kind) {
+    return <ModernTag $kind={kind}>{children}</ModernTag>;
+  }
+
+  return (
+    <LegacyTag $variant={variant ?? "status"} $value={value ?? ""}>
+      {value}
+    </LegacyTag>
+  );
+};

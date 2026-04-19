@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import type { NavKey } from "./AppShell";
+import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 
 interface SidebarProps {
@@ -15,148 +16,181 @@ const NAV_ITEMS: Array<{
 }> = [
   { key: "home", label: "홈", path: "/" },
   { key: "upload", label: "업로드", path: "/upload" },
-  { key: "transactions", label: "수입/지출 내역", path: "/transactions" },
+  { key: "transactions", label: "수입·지출 내역", path: "/transactions" },
   { key: "analysis", label: "소비 분석", path: "/analysis" },
 ];
 
 const Aside = styled.aside`
-  width: 220px;
-  background: #ffffff;
-  border-right: 1px solid #e5e7eb;
+  width: 232px;
+  height: 100vh;
+  padding: 18px 14px;
+  background: ${tokens.color.panel};
+  border-right: 1px solid ${tokens.color.line};
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  height: 100vh;
   overflow-y: auto;
 
   ${media.tablet} {
-    width: 200px;
+    width: 220px;
   }
 `;
 
 const LogoArea = styled.div`
-  padding: 20px 16px;
   display: flex;
   align-items: center;
   gap: 10px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 6px 8px 18px;
 `;
 
 const LogoMark = styled.div`
+  display: grid;
   width: 28px;
   height: 28px;
-  background: #3b82f6;
-  border-radius: 7px;
+  place-items: center;
+  background: ${tokens.color.accent};
+  border-radius: 8px;
+  box-shadow: inset 0 -6px 12px rgba(0, 0, 0, 0.18);
+  color: #fff;
   flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
 `;
 
-const LogoText = styled.span`
-  font-weight: 700;
-  font-size: 15px;
-  color: #111827;
-  letter-spacing: -0.2px;
+const BrandText = styled.div`
+  .name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .sub {
+    margin-top: -2px;
+    color: ${tokens.color.ink4};
+    font-size: 11px;
+  }
+`;
+
+const Section = styled.div`
+  padding: 14px 10px 6px;
+  color: ${tokens.color.ink4};
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 `;
 
 const Nav = styled.nav`
-  flex: 1;
-  padding: 16px 10px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 `;
 
 const NavItem = styled.button<{ $active?: boolean }>`
   display: flex;
   align-items: center;
-  height: 38px;
-  padding: 0 14px;
+  gap: 10px;
+  margin: 1px 0;
+  padding: 8px 10px;
   border: none;
-  background: ${({ $active }) => ($active ? "#eef4ff" : "transparent")};
-  color: ${({ $active }) => ($active ? "#2563eb" : "#4b5563")};
-  font-weight: ${({ $active }) => ($active ? 600 : 400)};
+  border-radius: 8px;
+  background: ${({ $active }) => ($active ? tokens.color.accentSubtle : "transparent")};
+  color: ${({ $active }) => ($active ? tokens.color.accentHover : tokens.color.ink2)};
+  cursor: pointer;
   font-family: inherit;
   font-size: 13.5px;
-  border-radius: 8px;
-  cursor: pointer;
+  font-weight: 500;
+  position: relative;
   text-align: left;
-  transition: background 0.12s, color 0.12s;
 
   &:hover {
-    background: ${({ $active }) => ($active ? "#eef4ff" : "#f3f4f6")};
-    color: ${({ $active }) => ($active ? "#2563eb" : "#111827")};
+    background: ${({ $active }) => ($active ? tokens.color.accentSubtle : tokens.color.tint)};
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: -14px;
+    top: 6px;
+    bottom: 6px;
+    width: 3px;
+    background: ${tokens.color.accent};
+    border-radius: 0 3px 3px 0;
+    display: ${({ $active }) => ($active ? "block" : "none")};
   }
 `;
 
 const Footer = styled.div`
-  padding: 16px;
-  border-top: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-top: auto;
+  padding: 10px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: 10px;
 `;
 
 const Avatar = styled.div`
-  width: 32px;
-  height: 32px;
-  border-radius: 16px;
-  background: #3b82f6;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 50%;
+  background: ${tokens.color.accent};
+  color: #fff;
   flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
 `;
 
 const UserMeta = styled.div`
-  display: flex;
-  flex-direction: column;
   min-width: 0;
 
   .name {
-    font-weight: 600;
+    color: ${tokens.color.ink1};
     font-size: 13px;
-    color: #111827;
+    font-weight: 600;
     line-height: 1.3;
   }
 
   .sub {
+    color: ${tokens.color.ink4};
     font-size: 11px;
-    color: #9ca3af;
     line-height: 1.3;
   }
 `;
 
-const SubLink = styled.button`
-  background: none;
+const ActionButton = styled.button`
+  margin-top: 1px;
   border: none;
+  background: none;
   padding: 0;
-  font-size: inherit;
-  font-family: inherit;
-  color: #9ca3af;
+  color: inherit;
   cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
 
   &:hover {
-    color: #6b7280;
+    color: ${tokens.color.ink3};
   }
 `;
 
 export const Sidebar = ({ activeNav, user }: SidebarProps) => {
   const navigate = useNavigate();
-  const handleLogout = () => {
-    navigate("/login");
-  };
 
   return (
     <Aside>
       <LogoArea>
-        <LogoMark />
-        <LogoText>SpendTrack</LogoText>
+        <LogoMark>S</LogoMark>
+        <BrandText>
+          <div className="name">SpendTrack</div>
+          <div className="sub">쇼핑 소비 관리</div>
+        </BrandText>
       </LogoArea>
 
+      <Section>메뉴</Section>
       <Nav>
         {NAV_ITEMS.map((item) => (
           <NavItem
@@ -170,19 +204,27 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
         ))}
       </Nav>
 
+      <Section>도구</Section>
+      <Nav>
+        <NavItem
+          type="button"
+          $active={activeNav === "settings"}
+          onClick={() => navigate("/settings")}
+        >
+          계정 설정
+        </NavItem>
+      </Nav>
+
       <Footer>
         <Avatar>{user.initial}</Avatar>
         <UserMeta>
-          <span className="name">{user.name}</span>
-          <span className="sub">
-            <SubLink type="button" onClick={() => navigate("/settings")}>
-              내 계정 설정
-            </SubLink>
-            {" · "}
-            <SubLink type="button" onClick={handleLogout}>
+          <div className="name">{user.name}</div>
+          <div className="sub">hong@example.com</div>
+          <div className="sub">
+            <ActionButton type="button" onClick={() => navigate("/login")}>
               로그아웃
-            </SubLink>
-          </span>
+            </ActionButton>
+          </div>
         </UserMeta>
       </Footer>
     </Aside>

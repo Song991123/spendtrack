@@ -1,5 +1,5 @@
 export const formatKRW = (value: number): string => {
-  return `${value.toLocaleString("ko-KR")}원`;
+  return `₩${Math.round(value).toLocaleString("ko-KR")}`;
 };
 
 export const formatNumber = (value: number): string => {

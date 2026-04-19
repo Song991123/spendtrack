@@ -2,7 +2,7 @@ import { forwardRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import styled, { css } from "styled-components";
 
-type Variant = "primary" | "secondary" | "ghost";
+type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -10,6 +10,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: Size;
   icon?: ReactNode;
   fullWidth?: boolean;
+  block?: boolean;
   children: ReactNode;
 }
 
@@ -55,6 +56,19 @@ const variantStyles: Record<Variant, ReturnType<typeof css>> = {
     }
     &:active:not(:disabled) {
       background: #e0e7ff;
+    }
+  `,
+  danger: css`
+    background: #fef2f2;
+    color: #b42318;
+    border: 1px solid #fecaca;
+
+    &:hover:not(:disabled) {
+      background: #fee2e2;
+      border-color: #fca5a5;
+    }
+    &:active:not(:disabled) {
+      background: #fecaca;
     }
   `,
 };
@@ -112,6 +126,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = "md",
       icon,
       fullWidth,
+      block,
       type = "button",
       children,
       ...rest
@@ -123,7 +138,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       type={type}
       $variant={variant}
       $size={size}
-      $fullWidth={fullWidth}
+      $fullWidth={fullWidth ?? block}
       {...rest}
     >
       {icon}
