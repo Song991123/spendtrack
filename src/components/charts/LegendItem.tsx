@@ -1,4 +1,9 @@
+﻿/**
+ * 역할: 차트 시각화를 작게 나눈 공통 그래프 컴포넌트입니다.
+ * 위치: src\components\charts\LegendItem.tsx
+ */
 import styled from "styled-components";
+import { tokens } from "../../styles/tokens";
 
 interface LegendItemProps {
   color: string;
@@ -23,17 +28,17 @@ const Dot = styled.span<{ $color: string }>`
 `;
 
 const Label = styled.span`
-  color: #111827;
+  color: ${tokens.color.ink1};
   font-weight: 500;
 `;
 
 const Percent = styled.span`
-  color: #6b7280;
+  color: ${tokens.color.ink3};
   font-weight: 500;
 `;
 
 const Amount = styled.span`
-  color: #374151;
+  color: ${tokens.color.ink2};
   font-weight: 500;
 `;
 
@@ -52,3 +57,4 @@ export default function LegendItem({
     </Wrap>
   );
 }
+

@@ -1,5 +1,10 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Analysis\components\PlatformBars.tsx
+ */
 import React from "react";
 import styled from "styled-components";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
 import { tokens } from "../../../styles/tokens";
 import { formatKRW } from "../../../utils/format";
@@ -11,45 +16,8 @@ export interface PlatformBarItem {
   color: string;
 }
 
-const List = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-`;
-
-const Row = styled.div`
-  display: grid;
-  grid-template-columns: 80px 1fr auto;
-  gap: 12px;
-  align-items: center;
-  font-size: 13px;
-`;
-
-const Track = styled.div`
-  height: 8px;
-  border-radius: 4px;
-  background: ${tokens.color.line2};
-  overflow: hidden;
-`;
-
-const Fill = styled.div<{ $color: string; $percent: number }>`
-  width: ${({ $percent }) => $percent}%;
-  height: 100%;
-  background: ${({ $color }) => $color};
-  border-radius: 4px;
-`;
-
-const Label = styled.span`
-  color: ${tokens.color.ink2};
-  font-weight: 500;
-`;
-
-const Amount = styled.span`
-  color: ${tokens.color.ink2};
-  font-family: ${tokens.font.mono};
-  font-size: 12.5px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+const ChartWrap = styled.div`
+  height: 212px;
 `;
 
 const Summary = styled.div`
@@ -101,19 +69,42 @@ export const PlatformBars: React.FC<{
       <CardTitle>플랫폼별 지출</CardTitle>
     </CardHd>
     <CardBd>
-      <List>
-        {items.map((item) => (
-          <Row key={item.label}>
-            <Label>{item.label}</Label>
-            <Track>
-              <Fill $color={item.color} $percent={item.percent} />
-            </Track>
-            <Amount>
-              {formatKRW(item.value)} ({item.percent}%)
-            </Amount>
-          </Row>
-        ))}
-      </List>
+      <ChartWrap>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={items}
+            layout="vertical"
+            margin={{ top: 8, right: 12, left: 8, bottom: 0 }}
+            barCategoryGap={16}
+          >
+            <XAxis type="number" hide />
+            <YAxis
+              type="category"
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              width={84}
+              tick={{ fill: tokens.color.ink2, fontSize: 12 }}
+            />
+            <Tooltip
+              formatter={(value, _name, entry) => [
+                formatKRW(Number(value ?? 0)),
+                `${entry.payload.percent}%`,
+              ]}
+              contentStyle={{
+                borderRadius: 12,
+                border: `1px solid ${tokens.color.line}`,
+                boxShadow: tokens.shadow.card,
+              }}
+            />
+            <Bar dataKey="value" radius={[0, 8, 8, 0]} isAnimationActive={false}>
+              {items.map((item) => (
+                <Cell key={item.label} fill={item.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartWrap>
       <Summary>
         <div className="row">
           <span className="label">이번 달 총 지출</span>
@@ -124,10 +115,11 @@ export const PlatformBars: React.FC<{
           <span className="value">+{formatKRW(totalIncome)}</span>
         </div>
         <div className="row net">
-          <span className="label">순 지출 (지출 − 수입)</span>
+          <span className="label">순지출(지출 - 수입)</span>
           <span className="value">{formatKRW(netSpend)}</span>
         </div>
       </Summary>
     </CardBd>
   </Card>
 );
+

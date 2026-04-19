@@ -1,5 +1,18 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Analysis\components\MonthlyTrend.tsx
+ */
 import React from "react";
 import styled from "styled-components";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import {
   Card,
   CardBd,
@@ -39,38 +52,9 @@ const HeaderWrap = styled.div`
   }
 `;
 
-const Chart: React.FC<{ points: Point[] }> = ({ points }) => {
-  const width = 1080;
-  const height = 220;
-  const pad = { l: 20, r: 20, t: 20, b: 32 };
-  const innerWidth = width - pad.l - pad.r;
-  const innerHeight = height - pad.t - pad.b;
-  const min = Math.min(...points.map((point) => point.value));
-  const max = Math.max(...points.map((point) => point.value));
-  const stepX = innerWidth / (points.length - 1);
-  const coords = points.map((point, index) => ({
-    x: pad.l + index * stepX,
-    y: pad.t + innerHeight - ((point.value - min) / (max - min || 1)) * innerHeight,
-    label: point.label,
-  }));
-  const line = coords.map((coord, index) => `${index === 0 ? "M" : "L"}${coord.x} ${coord.y}`).join(" ");
-  const area = `${line} L${coords.at(-1)!.x} ${pad.t + innerHeight} L${coords[0].x} ${pad.t + innerHeight} Z`;
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height}>
-      <path d={area} fill={tokens.color.accentSubtle} opacity={0.55} />
-      <path d={line} fill="none" stroke={tokens.color.accent} strokeWidth={2} />
-      {coords.map((coord) => (
-        <g key={coord.label}>
-          <circle cx={coord.x} cy={coord.y} r={4} fill="#fff" stroke={tokens.color.accent} strokeWidth={2} />
-          <text x={coord.x} y={height - 8} textAnchor="middle" fontSize="11" fill={tokens.color.ink4}>
-            {coord.label}
-          </text>
-        </g>
-      ))}
-    </svg>
-  );
-};
+const ChartWrap = styled.div`
+  height: 244px;
+`;
 
 export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
   points,
@@ -80,8 +64,8 @@ export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
     <CardHd>
       <HeaderWrap>
         <div>
-          <CardTitle>월별 소비 추이</CardTitle>
-          <CardSub>최근 6개월간 결제금액 추이</CardSub>
+          <CardTitle>월간 소비 추이</CardTitle>
+          <CardSub>최근 6개월 결제금액 추이</CardSub>
         </div>
         <div className="meta">
           <div className="meta-label">최근 6개월 평균</div>
@@ -90,7 +74,43 @@ export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
       </HeaderWrap>
     </CardHd>
     <CardBd>
-      <Chart points={points} />
+      <ChartWrap>
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={points} margin={{ top: 12, right: 12, left: -12, bottom: 0 }}>
+            <defs>
+              <linearGradient id="analysis-trend-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={tokens.color.accent} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={tokens.color.accent} stopOpacity={0.03} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} stroke={tokens.color.line2} />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tick={{ fill: tokens.color.ink4, fontSize: 11 }}
+            />
+            <YAxis hide domain={["dataMin - 40000", "dataMax + 40000"]} />
+            <Tooltip
+              formatter={(value) => [formatKRW(Number(value ?? 0)), "결제금액"]}
+              contentStyle={{
+                borderRadius: 12,
+                border: `1px solid ${tokens.color.line}`,
+                boxShadow: tokens.shadow.card,
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={tokens.color.accent}
+              strokeWidth={2.5}
+              fill="url(#analysis-trend-fill)"
+              activeDot={{ r: 4, stroke: tokens.color.accent, strokeWidth: 2, fill: "#fff" }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartWrap>
     </CardBd>
   </Card>
 );
+

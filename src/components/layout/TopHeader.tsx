@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 여러 화면이 함께 사용하는 공통 레이아웃 컴포넌트입니다.
+ * 위치: src\components\layout\TopHeader.tsx
+ */
 import type { ReactNode } from "react";
 import styled from "styled-components";
 import { tokens } from "../../styles/tokens";
@@ -68,3 +72,4 @@ export const TopHeader = ({ crumb, title, right }: TopHeaderProps) => (
     {right && <RightSlot>{right}</RightSlot>}
   </Header>
 );
+

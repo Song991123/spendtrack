@@ -1,4 +1,8 @@
-import React from "react";
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\OcrEdit\components\ProductTable.tsx
+ */
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { tokens } from "../../../styles/tokens";
 import type { OcrProduct } from "../data";
@@ -6,7 +10,7 @@ import type { OcrProduct } from "../data";
 const Table = styled.div`
   display: grid;
   grid-template-columns: 1fr 110px 90px 24px;
-  font-size: 12.5px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 const HeaderCell = styled.div`
@@ -42,7 +46,7 @@ const Input = styled.input`
   font-family: inherit;
   font-size: 12.5px;
   outline: none;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color ${tokens.motion.fast}, box-shadow ${tokens.motion.fast};
 
   &:focus {
     border-color: ${tokens.color.accent};
@@ -83,7 +87,7 @@ const AddRow = styled.button`
   color: ${tokens.color.ink3};
   cursor: pointer;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: ${tokens.type.caption.size};
   font-weight: 600;
 
   &:hover {
@@ -92,28 +96,57 @@ const AddRow = styled.button`
   }
 `;
 
-export const ProductTable: React.FC<{ products: OcrProduct[] }> = ({ products }) => (
-  <Table>
-    <HeaderCell>상품명</HeaderCell>
-    <HeaderCell className="right">상품 금액</HeaderCell>
-    <HeaderCell>상품 링크</HeaderCell>
-    <HeaderCell />
-    {products.map((product) => (
-      <Row key={product.id}>
-        <div>
-          <Input defaultValue={product.name} />
-        </div>
-        <div>
-          <Input className="amount" defaultValue={product.price.toLocaleString("ko-KR")} />
-        </div>
-        <div>
-          <Input className="link" placeholder="URL (선택)" defaultValue={product.link ?? ""} />
-        </div>
-        <div style={{ display: "grid", placeItems: "center" }}>
-          <RemoveButton type="button">×</RemoveButton>
-        </div>
-      </Row>
-    ))}
-    <AddRow type="button">+ 상품 직접 추가하기</AddRow>
-  </Table>
-);
+export const ProductTable: React.FC<{ products: OcrProduct[] }> = ({ products }) => {
+  const [rows, setRows] = useState(products);
+
+  useEffect(() => {
+    setRows(products);
+  }, [products]);
+
+  const handleRemove = (id: string) => {
+    setRows((current) => current.filter((product) => product.id !== id));
+  };
+
+  const handleAdd = () => {
+    setRows((current) => [
+      ...current,
+      {
+        id: `local-${Date.now()}`,
+        name: "새 상품",
+        price: 0,
+        link: "",
+      },
+    ]);
+  };
+
+  return (
+    <Table>
+      <HeaderCell>상품명</HeaderCell>
+      <HeaderCell className="right">상품 금액</HeaderCell>
+      <HeaderCell>상품 링크</HeaderCell>
+      <HeaderCell />
+      {rows.map((product) => (
+        <Row key={product.id}>
+          <div>
+            <Input defaultValue={product.name} />
+          </div>
+          <div>
+            <Input className="amount" defaultValue={product.price.toLocaleString("ko-KR")} />
+          </div>
+          <div>
+            <Input className="link" placeholder="URL (선택)" defaultValue={product.link ?? ""} />
+          </div>
+          <div style={{ display: "grid", placeItems: "center" }}>
+            <RemoveButton type="button" onClick={() => handleRemove(product.id)}>
+              ×
+            </RemoveButton>
+          </div>
+        </Row>
+      ))}
+      <AddRow type="button" onClick={handleAdd}>
+        + 상품 직접 추가하기
+      </AddRow>
+    </Table>
+  );
+};
+

@@ -1,5 +1,10 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Analysis\components\CategoryBars.tsx
+ */
 import React from "react";
 import styled from "styled-components";
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
 import { tokens } from "../../../styles/tokens";
 
@@ -9,57 +14,8 @@ export interface CategoryBarItem {
   color: string;
 }
 
-const List = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-`;
-
-const Row = styled.div`
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 10px;
-  align-items: center;
-  font-size: 13px;
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-
-  .label {
-    min-width: 74px;
-    color: ${tokens.color.ink2};
-    font-weight: 500;
-  }
-
-  .pct {
-    color: ${tokens.color.ink3};
-    font-size: 12.5px;
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-`;
-
-const InlineTrackWrap = styled.div`
-  display: grid;
-  grid-template-columns: 86px 1fr;
-  gap: 10px;
-  align-items: center;
-`;
-
-const Track = styled.div`
-  height: 8px;
-  border-radius: 4px;
-  background: ${tokens.color.line2};
-  overflow: hidden;
-`;
-
-const Fill = styled.div<{ $color: string; $percent: number }>`
-  width: ${({ $percent }) => $percent}%;
-  height: 100%;
-  background: ${({ $color }) => $color};
+const ChartWrap = styled.div`
+  height: 212px;
 `;
 
 export const CategoryBars: React.FC<{ items: CategoryBarItem[] }> = ({ items }) => (
@@ -68,20 +24,40 @@ export const CategoryBars: React.FC<{ items: CategoryBarItem[] }> = ({ items }) 
       <CardTitle>카테고리별 지출</CardTitle>
     </CardHd>
     <CardBd>
-      <List>
-        {items.map((item) => (
-          <Row key={item.label}>
-            <span className="dot" style={{ background: item.color }} />
-            <InlineTrackWrap>
-              <span className="label">{item.label}</span>
-              <Track>
-                <Fill $color={item.color} $percent={item.percent} />
-              </Track>
-            </InlineTrackWrap>
-            <span className="pct">{item.percent}%</span>
-          </Row>
-        ))}
-      </List>
+      <ChartWrap>
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            data={items}
+            layout="vertical"
+            margin={{ top: 8, right: 12, left: 8, bottom: 0 }}
+            barCategoryGap={16}
+          >
+            <XAxis type="number" hide domain={[0, 100]} />
+            <YAxis
+              type="category"
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              width={92}
+              tick={{ fill: tokens.color.ink2, fontSize: 12 }}
+            />
+            <Tooltip
+              formatter={(value) => [`${Number(value ?? 0)}%`, "비중"]}
+              contentStyle={{
+                borderRadius: 12,
+                border: `1px solid ${tokens.color.line}`,
+                boxShadow: tokens.shadow.card,
+              }}
+            />
+            <Bar dataKey="percent" radius={[0, 8, 8, 0]} isAnimationActive={false}>
+              {items.map((item) => (
+                <Cell key={item.label} fill={item.color} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartWrap>
     </CardBd>
   </Card>
 );
+

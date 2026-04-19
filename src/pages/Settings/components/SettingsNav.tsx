@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Settings\components\SettingsNav.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Card } from "../../../components/primitives/Card";
@@ -20,7 +24,7 @@ const Wrap = styled(Card)`
 const Item = styled.button<{ $on?: boolean; $danger?: boolean }>`
   display: block;
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px;
   border: none;
   border-radius: 6px;
   background: ${({ $on }) => ($on ? tokens.color.accentSubtle : "transparent")};
@@ -31,7 +35,7 @@ const Item = styled.button<{ $on?: boolean; $danger?: boolean }>`
   font-size: 13px;
   font-weight: ${({ $on }) => ($on ? 600 : 500)};
   text-align: left;
-  transition: background 0.12s;
+  transition: background ${tokens.motion.fast};
 
   & + & {
     margin-top: 2px;
@@ -60,3 +64,4 @@ export const SettingsNav: React.FC<{
     ))}
   </Wrap>
 );
+

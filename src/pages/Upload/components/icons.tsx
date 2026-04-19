@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Upload\components\icons.tsx
+ */
 import React from "react";
 
 export const CameraIcon: React.FC = () => (
@@ -27,3 +31,4 @@ export const PenIcon: React.FC = () => (
     <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4z" />
   </svg>
 );
+

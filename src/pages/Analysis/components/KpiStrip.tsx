@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Analysis\components\KpiStrip.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Card, CardBd } from "../../../components/primitives/Card";
@@ -32,7 +36,7 @@ const Strip = styled.div`
 
 const Label = styled.div`
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.cardSub.size};
   font-weight: 500;
 `;
 
@@ -48,7 +52,7 @@ const Value = styled.div<{ $color?: string }>`
 const Sub = styled.div`
   margin-top: 6px;
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.cardSub.size};
 `;
 
 export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
@@ -57,13 +61,13 @@ export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
       <Card key={kpi.key}>
         <CardBd>
           <Label>{kpi.label}</Label>
-          <Value $color={kpi.valueColor}>
+          <Value className="tnum" $color={kpi.valueColor}>
             {kpi.unit ? `${kpi.value}${kpi.unit}` : formatKRW(kpi.value)}
           </Value>
           {kpi.delta ? (
             <div style={{ marginTop: 6 }}>
               <Chip tone={kpi.delta.tone === "up" ? "up" : "down"}>
-                {kpi.delta.tone === "up" ? "▲" : "▼"} {kpi.delta.text}
+                {kpi.delta.tone === "up" ? "상승" : "하락"} {kpi.delta.text}
               </Chip>
             </div>
           ) : (
@@ -74,3 +78,4 @@ export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
     ))}
   </Strip>
 );
+

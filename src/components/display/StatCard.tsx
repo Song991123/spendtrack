@@ -1,6 +1,11 @@
+﻿/**
+ * 역할: 상태 표시, 미리보기, 요약 카드처럼 정보를 보여주는 공통 컴포넌트입니다.
+ * 위치: src\components\display\StatCard.tsx
+ */
 import type { ReactNode } from "react";
 import styled from "styled-components";
 import { Card } from "../primitives/Card";
+import { tokens } from "../../styles/tokens";
 
 interface StatCardProps {
   label: string;
@@ -31,40 +36,40 @@ const Dot = styled.span<{ $color: string }>`
 `;
 
 const Label = styled.span`
-  font-size: 12px;
-  color: #6b7280;
+  font-size: ${tokens.type.caption.size};
+  color: ${tokens.color.ink3};
   font-weight: 500;
   letter-spacing: 0;
 `;
 
 const Value = styled.strong`
-  font-size: 26px;
-  font-weight: 700;
-  color: #111827;
+  font-size: ${tokens.type.metric.size};
+  font-weight: ${tokens.type.metric.weight};
+  color: ${tokens.color.ink1};
   line-height: 1.15;
-  letter-spacing: -0.5px;
-  margin-top: 2px;
+  letter-spacing: ${tokens.type.metric.tracking};
+  margin-top: ${tokens.space[1]};
 `;
 
 const Trend = styled.span<{ $direction: "up" | "down" | "flat" }>`
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  font-size: 11.5px;
+  gap: ${tokens.space[1]};
+  font-size: ${tokens.type.caption.size};
   font-weight: 500;
-  margin-top: 2px;
+  margin-top: ${tokens.space[1]};
   color: ${({ $direction }) =>
     $direction === "up"
-      ? "#dc2626"
+      ? tokens.color.neg
       : $direction === "down"
-      ? "#16a34a"
-      : "#6b7280"};
+      ? tokens.color.pos
+      : tokens.color.ink3};
 `;
 
 const Footer = styled.span`
-  font-size: 11.5px;
-  color: #9ca3af;
-  margin-top: 1px;
+  font-size: ${tokens.type.caption.size};
+  color: ${tokens.color.ink4};
+  margin-top: ${tokens.space[1]};
 `;
 
 export const StatCard = ({
@@ -101,3 +106,4 @@ export const StatCard = ({
     </Card>
   );
 };
+

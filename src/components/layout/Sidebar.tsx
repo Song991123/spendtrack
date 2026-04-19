@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 여러 화면이 함께 사용하는 공통 레이아웃 컴포넌트입니다.
+ * 위치: src\components\layout\Sidebar.tsx
+ */
 import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import type { NavKey } from "./AppShell";
@@ -52,7 +56,6 @@ const LogoMark = styled.div`
   place-items: center;
   background: ${tokens.color.accent};
   border-radius: 8px;
-  box-shadow: inset 0 -6px 12px rgba(0, 0, 0, 0.18);
   color: #fff;
   flex-shrink: 0;
   font-size: 14px;
@@ -230,3 +233,4 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
     </Aside>
   );
 };
+

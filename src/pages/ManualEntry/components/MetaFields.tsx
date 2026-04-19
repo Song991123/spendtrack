@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\ManualEntry\components\MetaFields.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { FormField } from "../../../components/form/FormField";
@@ -33,10 +37,10 @@ const Textarea = styled.textarea`
   background: ${tokens.color.panel};
   color: ${tokens.color.ink1};
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: ${tokens.type.bodySm.size};
   outline: none;
   resize: vertical;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color ${tokens.motion.fast}, box-shadow ${tokens.motion.fast};
 
   &:focus {
     border-color: ${tokens.color.accent};
@@ -77,3 +81,4 @@ export const MetaFields: React.FC = () => (
     </Field>
   </Grid>
 );
+

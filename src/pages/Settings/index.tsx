@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
+ * 위치: src\pages\Settings\index.tsx
+ */
 import React, { useState } from "react";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
@@ -27,6 +31,7 @@ const Content = styled.div`
 `;
 
 export const SettingsPage: React.FC = () => {
+  // 현재 선택한 설정 섹션만 본문에 보여 주는 탭형 구조입니다.
   const [section, setSection] = useState<SettingsSection>("profile");
 
   return (
@@ -34,6 +39,7 @@ export const SettingsPage: React.FC = () => {
       <Body>
         <SettingsNav value={section} onChange={setSection} />
         <Content>
+          {/* 실제 라우팅을 늘리지 않고 한 화면 안에서 섹션만 전환합니다. */}
           {section === "profile" && <ProfileSection />}
           {section === "account" && <AccountSection />}
           {section === "notifications" && <NotificationSection />}
@@ -44,3 +50,4 @@ export const SettingsPage: React.FC = () => {
     </AppShell>
   );
 };
+

@@ -1,5 +1,10 @@
+﻿/**
+ * 역할: 목록형 데이터를 한 줄 또는 한 블록 단위로 보여주는 공통 컴포넌트입니다.
+ * 위치: src\components\list\TransactionRow.tsx
+ */
 import styled from "styled-components";
 import PlatformBadge from "../display/PlatformBadge";
+import { tokens } from "../../styles/tokens";
 
 interface TransactionRowProps {
   item: {
@@ -14,7 +19,7 @@ interface TransactionRowProps {
 
 const Row = styled.div`
   padding: 10px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid ${tokens.color.line2};
 
   &:last-child {
     border-bottom: none;
@@ -30,13 +35,13 @@ const Top = styled.div`
 const Product = styled.div`
   font-size: 14px;
   font-weight: 500;
-  color: #111827;
+  color: ${tokens.color.ink1};
 `;
 
 const Price = styled.div`
   font-size: 14px;
   font-weight: 700;
-  color: #111827;
+  color: ${tokens.color.ink1};
 `;
 
 const Bottom = styled.div`
@@ -61,3 +66,4 @@ export default function TransactionRow({ item }: TransactionRowProps) {
     </Row>
   );
 }
+

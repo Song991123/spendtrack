@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 해당 페이지에서 사용하는 목업 데이터와 화면 표시용 가공 함수를 모아둔 파일입니다.
+ * 위치: src\pages\OcrEdit\data.ts
+ */
 export type Platform = "coupang" | "naver" | "musinsa";
 export type Status = "purchase" | "sub" | "cancel" | "refund";
 
@@ -38,8 +42,8 @@ export const ocrEditMockData: OcrEditMockData = {
       totalAmount: 258000,
       statusTag: "purchase",
       products: [
-        { id: "p1", name: "나이키 에어포스 1 로우 화이트 270", price: 129000, link: "" },
-        { id: "p2", name: "나이키 에어맥스 90 블랙 265", price: 129000, link: "" },
+        { id: "p1", name: "에어포스 1 로우 화이트 270", price: 129000, link: "" },
+        { id: "p2", name: "에어맥스 90 블랙 265", price: 129000, link: "" },
       ],
     },
     {
@@ -52,7 +56,8 @@ export const ocrEditMockData: OcrEditMockData = {
       productCount: 1,
       totalAmount: 89000,
       statusTag: "purchase",
-      products: [{ id: "p3", name: "카바낫 스트릿 후드집업", price: 89000 }],
+      products: [{ id: "p3", name: "캔버스 백 화이트", price: 89000 }],
     },
   ],
 };
+

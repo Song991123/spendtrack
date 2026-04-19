@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\OcrUpload\components\UploadZone.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { tokens } from "../../../styles/tokens";
@@ -9,7 +13,7 @@ const Zone = styled.div`
   border-radius: ${tokens.radius.card};
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.12s, background 0.12s;
+  transition: border-color ${tokens.motion.fast}, background ${tokens.motion.fast};
 
   &:hover {
     border-color: ${tokens.color.accent};
@@ -43,7 +47,7 @@ const Title = styled.div`
 const Sub = styled.div`
   margin-bottom: 16px;
   color: ${tokens.color.ink4};
-  font-size: 11.5px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 const PickButton = styled.button`
@@ -81,15 +85,25 @@ export const UploadZone: React.FC<{
   acceptedTypes: string;
   maxSize: string;
   maxCount: number;
-}> = ({ acceptedTypes, maxSize, maxCount }) => (
-  <Zone>
+  onPick: () => void;
+}> = ({ acceptedTypes, maxSize, maxCount, onPick }) => (
+  <Zone onClick={onPick}>
     <IconBox>
       <UpIcon />
     </IconBox>
-    <Title>여러 장의 주문내역 캡처를 한 번에 업로드하세요</Title>
+    <Title>여러 장의 주문내역 캡처를 한 번에 업로드해 보세요</Title>
     <Sub>
-      {acceptedTypes} · 최대 {maxSize} · 한 번에 {maxCount}장까지 동시 분석
+      {acceptedTypes} · 최대 {maxSize} · 한 번에 {maxCount}장까지 분석할 수 있어요
     </Sub>
-    <PickButton type="button">파일 선택하기</PickButton>
+    <PickButton
+      type="button"
+      onClick={(event) => {
+        event.stopPropagation();
+        onPick();
+      }}
+    >
+      파일 선택하기
+    </PickButton>
   </Zone>
 );
+

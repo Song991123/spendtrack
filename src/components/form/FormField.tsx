@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 입력 흐름에서 재사용하는 폼 관련 공통 컴포넌트입니다.
+ * 위치: src\components\form\FormField.tsx
+ */
 import type { ReactNode } from "react";
 import styled from "styled-components";
 import { tokens } from "../../styles/tokens";
@@ -27,7 +31,7 @@ const Required = styled.span`
 
 const HelpText = styled.span`
   color: ${tokens.color.ink4};
-  font-size: 11.5px;
+  font-size: ${tokens.type.caption.size};
   line-height: 1.45;
 `;
 
@@ -46,3 +50,4 @@ export const FormField = ({
     {helpText && <HelpText>{helpText}</HelpText>}
   </Wrapper>
 );
+

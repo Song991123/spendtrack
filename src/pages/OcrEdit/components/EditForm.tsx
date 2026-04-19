@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\OcrEdit\components\EditForm.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Card, CardBd } from "../../../components/primitives/Card";
@@ -5,19 +9,7 @@ import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
 import type { OcrImageItem } from "../data";
 import { ProductTable } from "./ProductTable";
-
-const PLATFORM_LABEL = {
-  coupang: "쿠팡",
-  naver: "네이버쇼핑",
-  musinsa: "무신사",
-} as const;
-
-const STATUS_LABEL = {
-  purchase: "구매",
-  sub: "정기결제",
-  cancel: "취소",
-  refund: "환불",
-} as const;
+import { PLATFORM_LABELS, STATUS_LABELS } from "../../../constants/labels";
 
 const MetaRow = styled.div`
   display: flex;
@@ -105,7 +97,7 @@ export const EditForm: React.FC<{ image?: OcrImageItem }> = ({ image }) => {
     <Card>
       <CardBd>
         <MetaRow>
-          <Tag kind={image.platform}>{PLATFORM_LABEL[image.platform]}</Tag>
+          <Tag kind={image.platform}>{PLATFORM_LABELS[image.platform]}</Tag>
           <MetaSeparator />
           <MetaCell>
             <div className="label">주문일자</div>
@@ -117,19 +109,20 @@ export const EditForm: React.FC<{ image?: OcrImageItem }> = ({ image }) => {
             <div className="value">{image.productCount}개</div>
           </MetaCell>
           <MetaSeparator />
-          <Tag kind={image.statusTag}>{STATUS_LABEL[image.statusTag]}</Tag>
+          <Tag kind={image.statusTag}>{STATUS_LABELS[image.statusTag]}</Tag>
         </MetaRow>
 
         <Total>
           <div className="label">전체 거래금액</div>
-          <div className="value">₩ {image.totalAmount.toLocaleString("ko-KR")}</div>
+          <div className="value">₩{image.totalAmount.toLocaleString("ko-KR")}</div>
         </Total>
 
         <SectionLabel>상품 목록</SectionLabel>
         <ProductTable products={image.products} />
 
-        <Hint>OCR 결과는 초안이에요. 수정 후 저장하면 내역에 반영됩니다.</Hint>
+        <Hint>OCR 결과는 초안 상태예요. 수정 후 저장하면 거래 내역에 반영됩니다.</Hint>
       </CardBd>
     </Card>
   );
 };
+

@@ -1,5 +1,10 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Home\components\KpiStrip.tsx
+ */
 import React from "react";
 import styled from "styled-components";
+import { Area, AreaChart, ResponsiveContainer } from "recharts";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
 import { Chip } from "../../../components/primitives/Chip";
 import { tokens } from "../../../styles/tokens";
@@ -42,7 +47,7 @@ const Big = styled.div`
 const Sub = styled.div`
   margin-top: 6px;
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.cardSub.size};
 `;
 
 const MetaRow = styled.div`
@@ -64,31 +69,35 @@ const LabelRow = styled.div`
   align-items: center;
   gap: 6px;
   color: ${tokens.color.ink3};
-  font-size: 12px;
+  font-size: ${tokens.type.caption.size};
   font-weight: 500;
 `;
 
 const Spark: React.FC<{ data: number[] }> = ({ data }) => {
-  const width = 260;
-  const height = 40;
-  const pad = 2;
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const step = (width - pad * 2) / (data.length - 1);
-  const points = data.map((value, index) => {
-    const x = pad + index * step;
-    const y =
-      height - pad - ((value - min) / (max - min || 1)) * (height - pad * 2);
-    return [x, y] as const;
-  });
-  const line = points.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x} ${y}`).join(" ");
-  const area = `${line} L${points[points.length - 1][0]} ${height} L${points[0][0]} ${height} Z`;
+  const chartData = data.map((value, index) => ({ index, value }));
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} style={{ marginTop: 10 }}>
-      <path d={area} fill={tokens.color.accentSubtle} opacity={0.6} />
-      <path d={line} fill="none" stroke={tokens.color.accent} strokeWidth={2} />
-    </svg>
+    <div style={{ height: 44, marginTop: 10 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
+          <defs>
+            <linearGradient id="home-kpi-spark" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={tokens.color.accent} stopOpacity={0.28} />
+              <stop offset="100%" stopColor={tokens.color.accent} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <Area
+            type="monotone"
+            dataKey="value"
+            stroke={tokens.color.accent}
+            strokeWidth={2}
+            fill="url(#home-kpi-spark)"
+            fillOpacity={1}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 
@@ -107,7 +116,7 @@ export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
           {kpi.delta && (
             <MetaRow>
               <Chip tone={kpi.delta.tone === "up" ? "up" : "down"}>
-                {kpi.delta.tone === "up" ? "▲" : "▼"} {kpi.delta.text}
+                {kpi.delta.tone === "up" ? "상승" : "하락"} {kpi.delta.text}
               </Chip>
             </MetaRow>
           )}
@@ -118,3 +127,4 @@ export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
     ))}
   </Strip>
 );
+

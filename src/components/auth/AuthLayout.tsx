@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 인증 화면에서 공통으로 재사용하는 레이아웃 컴포넌트입니다.
+ * 위치: src\components\auth\AuthLayout.tsx
+ */
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
@@ -119,3 +123,4 @@ export const AuthLayout = ({
     </Container>
   </Page>
 );
+

@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Settings\components\NotificationSection.tsx
+ */
 import React, { useState } from "react";
 import styled from "styled-components";
 import { Toggle } from "../../../components/primitives/Toggle";
@@ -41,7 +45,7 @@ const INIT: Pref[] = [
   {
     key: "monthly",
     label: "월간 지출 요약",
-    desc: "매월 1일, 지난달 지출과 수입 요약을 이메일로 받아요.",
+    desc: "매월 1일 지난달 지출과 수입 요약을 이메일로 받아요.",
     on: true,
   },
   {
@@ -85,3 +89,4 @@ export const NotificationSection: React.FC = () => {
     </SettingsBlock>
   );
 };
+

@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Upload\components\MethodCard.tsx
+ */
 import React from "react";
 import { Link } from "react-router-dom";
 import styled from "styled-components";
@@ -22,7 +26,10 @@ const Card = styled(Link)`
   box-shadow: ${tokens.shadow.card};
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.12s, transform 0.12s, box-shadow 0.12s;
+  transition:
+    border-color ${tokens.motion.fast},
+    transform ${tokens.motion.fast},
+    box-shadow ${tokens.motion.fast};
 
   &:hover {
     border-color: ${tokens.color.accent};
@@ -114,3 +121,4 @@ export const MethodCard: React.FC<MethodCardProps> = ({
     <Foot>{footnote}</Foot>
   </Card>
 );
+

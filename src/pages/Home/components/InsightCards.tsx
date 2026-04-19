@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Home\components\InsightCards.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { tokens } from "../../../styles/tokens";
@@ -55,3 +59,4 @@ export const InsightCards: React.FC<{ items: InsightItem[] }> = ({ items }) => (
     ))}
   </Grid>
 );
+
