@@ -16,6 +16,8 @@ export type TxPlatform = "coupang" | "naver" | "musinsa";
 export type TxStatus = "purchase" | "cancel" | "refund" | "sub";
 export type TxCategory = "living" | "fashion" | "digital" | "food";
 
+export type TxSource = "mock" | "csv" | "ocr" | "manual";
+
 export interface TxRow {
   id: string;
   type: TxType;
@@ -25,6 +27,11 @@ export interface TxRow {
   title: string;
   amount: number;
   status: TxStatus;
+  /**
+   * 거래가 어떤 반입 경로로 생성됐는지 표시합니다.
+   * mock: 초기 시드, csv: 카드 CSV 업로드, ocr: OCR 저장, manual: 수동 입력.
+   */
+  source?: TxSource;
   detail?: {
     items: { name: string; price: number }[];
     source?: "OCR" | "MANUAL";

@@ -1,5 +1,7 @@
-﻿/**
+/**
  * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
+ *       거래 데이터는 transactionsStore(localStorage 기반)를 통해 읽고,
+ *       월 단위 필터·검색·선택 상태를 화면 내부에서 관리합니다.
  * 위치: src\pages\Transactions\index.tsx
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -13,8 +15,12 @@ import { SummaryStrip } from "./components/SummaryStrip";
 import { FilterBar } from "./components/FilterBar";
 import { TransactionTable } from "./components/TransactionTable";
 import { DetailPanel } from "./components/DetailPanel";
-import { buildTransactionSummary, getTransactionsMockData } from "./data";
+import { buildTransactionSummary } from "./data";
 import { getMonthOption } from "../../constants/months";
+import {
+  transactionsStore,
+  useTransactionsStore,
+} from "../../stores/transactionsStore";
 
 const Body = styled.div<{ $hasPanel: boolean }>`
   display: grid;
@@ -73,6 +79,14 @@ const Grid = styled.div`
   gap: 16px;
 `;
 
+function toMonthKey(dateStr: string): string {
+  // "2026.04.19" → "2026-04" 형식으로 변환해 월 필터 키로 사용합니다.
+  const match = dateStr.match(/(\d{4})[./-](\d{1,2})/);
+  if (!match) return "";
+  const [, year, month] = match;
+  return `${year}-${month.padStart(2, "0")}`;
+}
+
 export const TransactionsPage: React.FC = () => {
   const navigate = useNavigate();
   // 필터 상태는 모두 페이지 상단에서 관리해서 표와 상세 패널이 같은 기준을 보게 합니다.
@@ -81,21 +95,19 @@ export const TransactionsPage: React.FC = () => {
   const [platform, setPlatform] = useState<"all" | "coupang" | "naver" | "musinsa">("all");
   const [category, setCategory] = useState<"all" | "living" | "fashion" | "digital" | "food">("all");
 
-  const data = useMemo(() => getTransactionsMockData(month), [month]);
-  const [rows, setRows] = useState(data.rows);
-  const [selectedId, setSelectedId] = useState<string>(data.rows[0]?.id ?? "");
+  // 거래 원본은 스토어에서 구독해 가져옵니다. CSV 업로드·삭제 등 변경이 자동 반영됩니다.
+  const allRows = useTransactionsStore();
+  const monthRows = useMemo(
+    () => allRows.filter((row) => toMonthKey(row.date) === month),
+    [allRows, month]
+  );
   const monthOption = getMonthOption(month);
-
-  useEffect(() => {
-    setRows(data.rows);
-    setSelectedId(data.rows[0]?.id ?? "");
-  }, [data.rows]);
 
   const filteredRows = useMemo(() => {
     // 검색어, 플랫폼, 카테고리 조건을 한 번에 적용해 실제 표에 보여줄 후보 목록을 만듭니다.
     const query = search.trim().toLowerCase();
 
-    return rows.filter((row) => {
+    return monthRows.filter((row) => {
       if (platform !== "all" && row.platform !== platform) {
         return false;
       }
@@ -111,16 +123,25 @@ export const TransactionsPage: React.FC = () => {
       const itemText = row.detail?.items.map((item) => item.name).join(" ").toLowerCase() ?? "";
       return row.title.toLowerCase().includes(query) || itemText.includes(query);
     });
-  }, [category, platform, rows, search]);
+  }, [category, monthRows, platform, search]);
 
   const INITIAL_VISIBLE = 20;
   const LOAD_STEP = 20;
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const [selectedId, setSelectedId] = useState<string>(monthRows[0]?.id ?? "");
 
   useEffect(() => {
-    // 조건이 바뀌면 "더 보기" 개수도 처음 상태로 되돌려 다시 탐색하게 합니다.
+    // 월이 바뀌면 선택과 가시 개수를 초기화합니다.
     setVisibleCount(INITIAL_VISIBLE);
-  }, [month, search, platform, category]);
+    setSelectedId((current) =>
+      monthRows.some((row) => row.id === current) ? current : monthRows[0]?.id ?? ""
+    );
+  }, [month, monthRows]);
+
+  useEffect(() => {
+    // 필터가 바뀌면 "더 보기" 개수도 처음 상태로 되돌려 다시 탐색하게 합니다.
+    setVisibleCount(INITIAL_VISIBLE);
+  }, [search, platform, category]);
 
   const visibleRows = useMemo(
     () => filteredRows.slice(0, visibleCount),
@@ -172,7 +193,7 @@ export const TransactionsPage: React.FC = () => {
       filteredRows[currentIndex - 1]?.id ??
       "";
 
-    setRows((prevRows) => prevRows.filter((row) => row.id !== selected.id));
+    transactionsStore.removeOne(selected.id);
     setSelectedId(nextSelectedId);
   };
 
@@ -184,7 +205,7 @@ export const TransactionsPage: React.FC = () => {
       headerRight={<MonthPicker value={month} onChange={setMonth} />}
     >
       <Grid>
-        <SummaryStrip summary={buildTransactionSummary(rows)} />
+        <SummaryStrip summary={buildTransactionSummary(monthRows)} />
         <Body $hasPanel={isOpen}>
           <Left>
             {/* 왼쪽 영역은 필터와 표, 오른쪽 영역은 상세 패널로 역할을 분리합니다. */}
@@ -223,4 +244,3 @@ export const TransactionsPage: React.FC = () => {
     </AppShell>
   );
 };
-

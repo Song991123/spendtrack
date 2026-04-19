@@ -32,27 +32,29 @@ export interface OcrEditMockData {
 export const ocrEditMockData: OcrEditMockData = {
   images: [
     {
+      // 샘플 CSV의 첫 행(쿠팡 139,000원 / 2026-04-19)과 일치시켜 매칭 테스트가 바로 되게 합니다.
       id: "img1",
       fileName: "이미지 1",
       thumbUrl: "",
       status: "analyzed",
       platform: "coupang",
-      orderDate: "2025.04.14",
+      orderDate: "2026.04.19",
       productCount: 2,
-      totalAmount: 258000,
+      totalAmount: 139000,
       statusTag: "purchase",
       products: [
-        { id: "p1", name: "에어포스 1 로우 화이트 270", price: 129000, link: "" },
-        { id: "p2", name: "에어맥스 90 블랙 265", price: 129000, link: "" },
+        { id: "p1", name: "에어포스 1 로우 화이트 270", price: 79000, link: "" },
+        { id: "p2", name: "양말 3족 세트", price: 60000, link: "" },
       ],
     },
     {
+      // 두 번째 이미지는 CSV와 매칭되지 않는 경우를 시연하기 위해 다른 날짜/금액으로 둡니다.
       id: "img2",
       fileName: "이미지 2",
       thumbUrl: "",
       status: "pending",
       platform: "naver",
-      orderDate: "2025.04.12",
+      orderDate: "2026.04.11",
       productCount: 1,
       totalAmount: 89000,
       statusTag: "purchase",

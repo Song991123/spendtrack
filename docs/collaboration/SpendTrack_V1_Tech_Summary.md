@@ -16,7 +16,7 @@ SpendTrack v1은 쇼핑 주문내역 기반 소비관리 서비스를 가정하�
 | 라우팅 | React Router DOM 7 | 화면 전환과 경로 관리 |
 | 스타일링 | styled-components 6 | 컴포넌트 단위 스타일 작성 |
 | 차트 | Recharts 3 | Home, Analysis 화면의 시각화 UI 구현 |
-| 데이터 | mockTransactions 및 페이지별 mock data | 서버 없이 화면 흐름 검증 |
+| 데이터 | 페이지별 mock 시드 + localStorage 기반 전역 스토어 | 서버 없이 화면 흐름 검증, CSV/OCR 반입 결과의 세션 간 유지 |
 
 ## 3. 프로젝트 구조
 - `src/App.tsx`
@@ -34,7 +34,12 @@ SpendTrack v1은 쇼핑 주문내역 기반 소비관리 서비스를 가정하�
 - `src/types`
   거래, 상품, 플랫폼 등 핵심 타입을 관리합니다.
 - `src/utils`
-  포맷팅, 거래 계산 같은 공통 로직을 관리합니다.
+  포맷팅, 거래 계산, CSV 파싱/정규화/매칭 같은 공통 로직을 관리합니다.
+- `src/stores`
+  거래 데이터를 localStorage 기반으로 보관하는 전역 스토어를 관리합니다.
+  추후 Firestore 등 원격 저장소로 교체할 때 이 레이어의 공개 API만 유지하면 됩니다.
+- `public/samples`
+  CSV 업로드 기능 시연/테스트용 샘플 CSV와 포맷 설명을 둡니다.
 
 ## 4. 현재 구현된 화면
 - `Login`
@@ -58,20 +63,21 @@ SpendTrack v1은 쇼핑 주문내역 기반 소비관리 서비스를 가정하�
 ## 6. 현재 포함된 기능 범위
 - 로그인/회원가입 UI
 - OCR 업로드 UI
-- OCR 결과 수정 UI
+- OCR 결과 수정 UI (주문일자 수정 가능)
 - 수동 거래 입력 UI
+- 카드 CSV 업로드 UI (결제내역 벌크 반입)
+- CSV/OCR 결합: 기존 거래에 상품 병합 vs 새 거래 저장 선택 모달
 - 거래 검색 및 필터 UI
 - 월별 소비/수입 요약 UI
 - 플랫폼/카테고리 분석 UI
 - 설정 화면 UI
 
 ## 7. 현재 제외된 기능
-- 실제 OCR 추출 엔진
+- 실제 OCR 추출 엔진 (UI와 편집 흐름만 구현)
 - 실제 인증
-- 데이터베이스 저장
-- 서버 기반 거래 수정/삭제
+- 원격 데이터베이스 저장 (localStorage 기반 임시 저장까지만 제공)
 - AI 인사이트 실연동
-- 외부 쇼핑몰/카드사 연동
+- 외부 쇼핑몰/카드사 API 직접 연동 (CSV 업로드로 대체)
 
 ## 8. 팀원이 코드를 읽는 추천 순서
 1. `src/App.tsx`에서 전체 화면 구성을 확인합니다.
@@ -82,8 +88,8 @@ SpendTrack v1은 쇼핑 주문내역 기반 소비관리 서비스를 가정하�
 
 ## 9. 다음 단계로 자연스럽게 이어질 기술
 - Firebase Authentication
-- Firestore 또는 다른 저장소 연동
-- OCR 엔진 연결
+- Firestore 또는 다른 저장소 연동 (현재 transactionsStore의 공개 API를 그대로 유지하면서 교체 가능)
+- OCR 엔진 연결 (Tesseract.js 또는 CLOVA)
 - AI 인사이트 API 연결
 - 실제 배포 파이프라인 구성
 

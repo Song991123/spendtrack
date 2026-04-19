@@ -32,3 +32,19 @@ export const PenIcon: React.FC = () => (
   </svg>
 );
 
+export const SpreadsheetIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="M3 10h18" />
+    <path d="M3 15h18" />
+    <path d="M10 4v16" />
+  </svg>
+);
+
