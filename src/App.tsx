@@ -2,7 +2,7 @@
  * 역할: 애플리케이션의 전체 라우팅을 연결하는 최상위 컴포넌트입니다.
  * 위치: src\App.tsx
  */
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { HomePage } from "./pages/HomePage";
@@ -17,8 +17,10 @@ import { SettingsPage } from "./pages/SettingsPage";
 
 function App() {
   return (
-    <BrowserRouter>
-      {/* v1에서 확정한 화면 경로를 이곳에서 한 번에 관리합니다. */}
+    <HashRouter>
+      {/* v1에서 확정한 화면 경로를 이곳에서 한 번에 관리합니다.
+          GitHub Pages처럼 SPA fallback을 제공하지 않는 정적 호스팅에서도
+          깊은 링크가 안전하게 동작하도록 HashRouter를 사용합니다. */}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -34,7 +36,7 @@ function App() {
         {/* 정의되지 않은 경로는 홈으로 되돌려서 데모 흐름이 끊기지 않게 합니다. */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
