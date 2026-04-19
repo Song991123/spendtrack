@@ -8,7 +8,7 @@ import { AppShell } from "../../components/layout/AppShell";
 import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 import { MethodCard } from "./components/MethodCard";
-import { CameraIcon, PenIcon } from "./components/icons";
+import { CameraIcon, PenIcon, SpreadsheetIcon } from "./components/icons";
 
 const Wrap = styled.div`
   display: grid;
@@ -33,8 +33,12 @@ const Prompt = styled.h2`
 
 const Options = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 20px;
+
+  ${media.tablet} {
+    grid-template-columns: 1fr 1fr;
+  }
 
   ${media.mobile} {
     grid-template-columns: 1fr;
@@ -65,6 +69,15 @@ export const UploadPage: React.FC = () => (
             ctaVariant="ghost"
             footnote="상품도 팝업으로 간편하게 추가"
             href="/manual-entry"
+          />
+          <MethodCard
+            icon={<SpreadsheetIcon />}
+            title="카드 CSV 가져오기"
+            description={`카드사에서 내려받은 CSV로\n결제내역을 한 번에 불러옵니다.`}
+            ctaLabel="CSV 업로드 시작"
+            ctaVariant="ghost"
+            footnote="OCR로 상품 상세를 나중에 덧붙일 수 있어요"
+            href="/csv-upload"
           />
         </Options>
       </Inner>

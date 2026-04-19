@@ -1,5 +1,6 @@
-﻿/**
+/**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ *       OCR 추출 결과를 보여주고 주문일자를 수정할 수 있도록 인풋으로 제공합니다.
  * 위치: src\pages\OcrEdit\components\EditForm.tsx
  */
 import React from "react";
@@ -35,6 +36,29 @@ const MetaCell = styled.div`
     color: ${tokens.color.ink1};
     font-size: 12.5px;
     font-weight: 500;
+  }
+`;
+
+const DateInput = styled.input`
+  margin-top: 2px;
+  width: 120px;
+  padding: 4px 6px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.panel};
+  color: ${tokens.color.ink1};
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  outline: none;
+  transition:
+    border-color ${tokens.motion.fast} ease,
+    box-shadow ${tokens.motion.fast} ease;
+
+  &:focus,
+  &:focus-visible {
+    border-color: ${tokens.color.accent};
+    box-shadow: ${tokens.shadow.focus};
   }
 `;
 
@@ -80,7 +104,12 @@ const Hint = styled.div`
   line-height: 1.5;
 `;
 
-export const EditForm: React.FC<{ image?: OcrImageItem }> = ({ image }) => {
+interface EditFormProps {
+  image?: OcrImageItem;
+  onOrderDateChange?: (value: string) => void;
+}
+
+export const EditForm: React.FC<EditFormProps> = ({ image, onOrderDateChange }) => {
   if (!image) {
     return (
       <Card>
@@ -101,7 +130,17 @@ export const EditForm: React.FC<{ image?: OcrImageItem }> = ({ image }) => {
           <MetaSeparator />
           <MetaCell>
             <div className="label">주문일자</div>
-            <div className="value">{image.orderDate}</div>
+            {onOrderDateChange ? (
+              <DateInput
+                type="text"
+                value={image.orderDate}
+                placeholder="YYYY.MM.DD"
+                onChange={(event) => onOrderDateChange(event.target.value)}
+                aria-label="주문일자"
+              />
+            ) : (
+              <div className="value">{image.orderDate}</div>
+            )}
           </MetaCell>
           <MetaSeparator />
           <MetaCell>
@@ -120,9 +159,8 @@ export const EditForm: React.FC<{ image?: OcrImageItem }> = ({ image }) => {
         <SectionLabel>상품 목록</SectionLabel>
         <ProductTable products={image.products} />
 
-        <Hint>OCR 결과는 초안 상태예요. 수정 후 저장하면 거래 내역에 반영됩니다.</Hint>
+        <Hint>OCR 결과는 초안 상태예요. 주문일자가 오인식됐다면 위 입력에서 바로 수정할 수 있습니다.</Hint>
       </CardBd>
     </Card>
   );
 };
-
