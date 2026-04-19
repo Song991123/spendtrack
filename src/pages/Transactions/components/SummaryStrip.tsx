@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Transactions\components\SummaryStrip.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Card, CardBd } from "../../../components/primitives/Card";
@@ -32,7 +36,7 @@ const Strip = styled.div`
 
 const Label = styled.div`
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.cardSub.size};
   font-weight: 500;
 `;
 
@@ -48,7 +52,7 @@ const Value = styled.div<{ $color?: string }>`
 const Sub = styled.div`
   margin-top: 6px;
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.cardSub.size};
 `;
 
 export const SummaryStrip: React.FC<{ summary: SummaryData }> = ({ summary }) => (
@@ -56,32 +60,35 @@ export const SummaryStrip: React.FC<{ summary: SummaryData }> = ({ summary }) =>
     <Card>
       <CardBd>
         <Label>전체 거래</Label>
-        <Value>{summary.total}건</Value>
-        <Sub>
-          지출 {summary.spendCount}건, 수입 {summary.incomeCount}건
-        </Sub>
+        <Value className="tnum">{summary.total}건</Value>
+        <Sub>{summary.countLabel}</Sub>
       </CardBd>
     </Card>
     <Card>
       <CardBd>
         <Label>총 지출</Label>
-        <Value $color={tokens.color.neg}>{formatKRW(summary.totalSpend)}</Value>
-        <Sub>전월 대비 +12%</Sub>
+        <Value className="tnum" $color={tokens.color.neg}>
+          {formatKRW(summary.totalSpend)}
+        </Value>
+        <Sub>지출 거래 {summary.spendCount}건</Sub>
       </CardBd>
     </Card>
     <Card>
       <CardBd>
         <Label>총 수입·환불</Label>
-        <Value $color={tokens.color.pos}>+{formatKRW(summary.incomeAndRefund)}</Value>
+        <Value className="tnum" $color={tokens.color.pos}>
+          +{formatKRW(summary.incomeAndRefund)}
+        </Value>
         <Sub>환불 {summary.refundCount}건</Sub>
       </CardBd>
     </Card>
     <Card>
       <CardBd>
         <Label>순지출</Label>
-        <Value>{formatKRW(summary.netSpend)}</Value>
-        <Sub>지출에서 수입 차감</Sub>
+        <Value className="tnum">{formatKRW(summary.netSpend)}</Value>
+        <Sub>지출에서 수입을 차감한 값</Sub>
       </CardBd>
     </Card>
   </Strip>
 );
+

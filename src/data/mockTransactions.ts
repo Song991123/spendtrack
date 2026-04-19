@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 프로젝트 전체에서 재사용하는 목업 데이터 원본을 보관합니다.
+ * 위치: src\data\mockTransactions.ts
+ */
 import type { Transaction } from "../types/transaction";
 
 export const mockTransactions: Transaction[] = [
@@ -125,3 +129,4 @@ export const mockTransactions: Transaction[] = [
     ],
   },
 ];
+

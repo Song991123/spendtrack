@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 해당 페이지에서 사용하는 목업 데이터와 화면 표시용 가공 함수를 모아둔 파일입니다.
+ * 위치: src\pages\OcrUpload\data.ts
+ */
 export interface UploadedImage {
   id: string;
   thumbUrl: string;
@@ -23,3 +27,4 @@ export const ocrUploadMockData: OcrUploadMockData = {
     { id: "u3", thumbUrl: "", fileName: "order-04-10.png", sizeLabel: "1.4 MB", status: "ready" },
   ],
 };
+

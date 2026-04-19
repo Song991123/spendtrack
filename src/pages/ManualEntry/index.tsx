@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
+ * 위치: src\pages\ManualEntry\index.tsx
+ */
 import React, { useState } from "react";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
@@ -57,6 +61,7 @@ const AddButton = styled.button`
 `;
 
 export const ManualEntryPage: React.FC = () => {
+  // 수동 입력 화면은 거래 유형, 상태, 상품 목록을 한 페이지에서 바로 조정합니다.
   const [type, setType] = useState<TxType>("expense");
   const [status, setStatus] = useState<StatusKey | null>("purchase");
   const [products, setProducts] = useState<ManualProduct[]>([
@@ -66,6 +71,7 @@ export const ManualEntryPage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleAdd = (product: Omit<ManualProduct, "id">) => {
+    // 데모 단계에서는 간단히 현재 시간값을 id로 써서 새 상품 행을 구분합니다.
     setProducts((current) => [...current, { ...product, id: String(Date.now()) }]);
     setModalOpen(false);
   };
@@ -74,7 +80,7 @@ export const ManualEntryPage: React.FC = () => {
     <AppShell activeNav="upload" crumb="입력 · 수동" title="수동 입력">
       <Card>
         <CardBd>
-          <Lead>지출 또는 수입 내역을 직접 기록하세요.</Lead>
+          <Lead>지출 또는 수입 내역을 직접 기록해 보세요.</Lead>
 
           <SectionLabel>거래 유형</SectionLabel>
           <div style={{ marginBottom: 16 }}>
@@ -94,12 +100,11 @@ export const ManualEntryPage: React.FC = () => {
               + 상품 추가
             </AddButton>
           </SectionHeader>
-          <SectionHint>상품을 추가하면 거래에 포함된 구매 상품을 함께 기록할 수 있어요.</SectionHint>
+          {/* 거래 하나 안에 여러 상품이 들어갈 수 있다는 점을 여기서 보여줍니다. */}
+          <SectionHint>상품을 추가하면 거래에 포함된 구매 항목을 함께 기록할 수 있어요.</SectionHint>
           <ProductRows
             products={products}
-            onRemove={(id) =>
-              setProducts((current) => current.filter((product) => product.id !== id))
-            }
+            onRemove={(id) => setProducts((current) => current.filter((product) => product.id !== id))}
           />
 
           <SaveBar>
@@ -108,15 +113,12 @@ export const ManualEntryPage: React.FC = () => {
             </Button>
           </SaveBar>
 
-          <Foot>상품 추가 후 상품명, 금액, 링크를 함께 입력할 수 있어요.</Foot>
+          <Foot>상품 추가 후 상품명, 금액, 링크를 한 번에 입력할 수 있어요.</Foot>
         </CardBd>
       </Card>
 
-      <ProductAddModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onAdd={handleAdd}
-      />
+      <ProductAddModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onAdd={handleAdd} />
     </AppShell>
   );
 };
+

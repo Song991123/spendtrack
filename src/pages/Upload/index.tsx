@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
+ * 위치: src\pages\Upload\index.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
@@ -41,7 +45,8 @@ export const UploadPage: React.FC = () => (
   <AppShell activeNav="upload" crumb="입력" title="내역 입력">
     <Wrap>
       <Inner>
-        <Prompt>어떤 방법으로 내역을 입력하시겠어요?</Prompt>
+        {/* v1에서는 OCR 흐름과 수동 입력 흐름을 여기서 명확히 갈라 줍니다. */}
+        <Prompt>어떤 방식으로 내역을 입력하시겠어요?</Prompt>
         <Options>
           <MethodCard
             icon={<CameraIcon />}
@@ -49,16 +54,16 @@ export const UploadPage: React.FC = () => (
             description={`쇼핑몰 주문내역 캡처를 인식해\n자동으로 입력합니다.`}
             ctaLabel="OCR 업로드 시작"
             ctaVariant="primary"
-            footnote="취소·반품·환불·정기결제 자동 감지"
+            footnote="취소, 반품, 환불, 정기결제까지 함께 감지"
             href="/ocr-upload"
           />
           <MethodCard
             icon={<PenIcon />}
             title="수동 입력"
-            description={`지출·수입 내역을 직접\n기록할 수 있습니다.`}
+            description={`지출과 수입 내역을 직접\n기록할 수 있습니다.`}
             ctaLabel="직접 입력 시작"
             ctaVariant="ghost"
-            footnote="상품은 팝업으로 간편하게 추가"
+            footnote="상품도 팝업으로 간편하게 추가"
             href="/manual-entry"
           />
         </Options>
@@ -66,3 +71,4 @@ export const UploadPage: React.FC = () => (
     </Wrap>
   </AppShell>
 );
+

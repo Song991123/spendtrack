@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 여러 화면이 함께 참조하는 상수 데이터를 정의합니다.
+ * 위치: src\constants\labels.ts
+ */
 export const PLATFORM_LABELS = {
   coupang: "쿠팡",
   naver: "네이버쇼핑",
@@ -9,7 +13,6 @@ export const STATUS_LABELS = {
   cancel: "취소",
   refund: "환불",
   sub: "정기결제",
-  subscription: "구독",
 } as const;
 
 export const TYPE_LABELS = {
@@ -21,3 +24,11 @@ export const SOURCE_LABELS = {
   OCR: "OCR",
   MANUAL: "수동 입력",
 } as const;
+
+export const CATEGORY_LABELS = {
+  living: "생활용품",
+  fashion: "패션/의류",
+  digital: "전자기기",
+  food: "식품/음료",
+} as const;
+

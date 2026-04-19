@@ -1,87 +1,269 @@
+﻿/**
+ * 역할: 해당 페이지에서 사용하는 목업 데이터와 화면 표시용 가공 함수를 모아둔 파일입니다.
+ * 위치: src\pages\Transactions\data.ts
+ */
 import type { SummaryData } from "./components/SummaryStrip";
-import type { TxRow } from "./components/TransactionTable";
+import type {
+  TxCategory,
+  TxPlatform,
+  TxRow,
+  TxStatus,
+  TxType,
+} from "./components/TransactionTable";
 
 export interface TransactionsMockData {
   summary: SummaryData;
   rows: TxRow[];
 }
 
-export const transactionsMockData: TransactionsMockData = {
-  summary: {
-    total: 12,
-    spendCount: 10,
-    incomeCount: 2,
-    totalSpend: 1252000,
-    incomeAndRefund: 970000,
-    refundCount: 2,
-    netSpend: 282000,
-    countLabel: "총 12건(지출 10건, 수입 2건)",
-  },
-  rows: [
-    {
-      id: "t1",
-      type: "expense",
-      date: "2025.04.14",
-      platform: "coupang",
-      title: "에어포스 1 로우 2건",
-      amount: -258000,
-      status: "purchase",
-      detail: {
-        items: [
-          { name: "에어포스 1 로우 화이트 270", price: 129000 },
-          { name: "에어맥스 90 블랙 265", price: 129000 },
-        ],
-        source: "OCR",
-      },
-    },
-    {
-      id: "t2",
-      type: "expense",
-      date: "2025.04.12",
-      platform: "musinsa",
-      title: "캔버스 백 화이트",
-      amount: -89000,
-      status: "purchase",
-      detail: {
-        items: [{ name: "캔버스 백 화이트", price: 89000 }],
-        source: "MANUAL",
-      },
-    },
-    {
-      id: "t3",
-      type: "expense",
-      date: "2025.04.10",
-      platform: "naver",
-      title: "애플 에어팟 프로 2세대",
-      amount: -289000,
-      status: "purchase",
-    },
-    {
-      id: "t4",
-      type: "income",
-      date: "2025.04.08",
-      platform: "coupang",
-      title: "다이슨 에어랩 환불",
-      amount: 650000,
-      status: "refund",
-    },
-    {
-      id: "t5",
-      type: "expense",
-      date: "2025.04.05",
-      platform: "musinsa",
-      title: "인사이드아웃 후드집업 1건",
-      amount: -329000,
-      status: "purchase",
-    },
-    {
-      id: "t6",
-      type: "expense",
-      date: "2025.04.02",
-      platform: "naver",
-      title: "삼성 갤럭시워치6",
-      amount: -189000,
-      status: "cancel",
-    },
+const TITLE_POOLS: Record<TxCategory, string[]> = {
+  living: [
+    "무선 청소기 필터",
+    "책상 정리 트레이",
+    "주방 세제 리필",
+    "데스크 매트 XL",
+    "욕실 발매트",
+    "제습제 3P 세트",
+    "LED 무드 스탠드",
+    "소형 탁상 선풍기",
+    "스테인리스 물병",
+    "세탁 볼 세트",
+  ],
+  fashion: [
+    "에어조던 1 로우 07",
+    "와이드 파우치",
+    "세일러 워싱 올리브",
+    "와이드 집업 재킷",
+    "패딩 베스트 블랙",
+    "오버핏 스웻셔츠",
+    "리넨 하프 셔츠",
+    "슬림 기모 슬랙스",
+    "코튼 후디 그레이",
+    "크로스 숄더백",
+  ],
+  digital: [
+    "갤럭시 버즈3 프로 케이스",
+    "블루투스 스피커",
+    "멀티탭 충전 스탠드",
+    "USB-C 허브 7in1",
+    "무선 기계식 키보드",
+    "모니터 암 싱글",
+    "고속 무선 충전기",
+    "게이밍 마우스",
+    "4K 웹캠",
+    "노이즈 캔슬링 이어폰",
+  ],
+  food: [
+    "홈카페 원두 1kg",
+    "유기농 파스타면",
+    "그릭 요거트 세트",
+    "견과류 믹스 박스",
+    "초콜릿 선물세트",
+    "그래놀라 500g",
+    "오트밀크 12팩",
+    "캡슐 커피 120개",
+    "건조과일 팩",
+    "홍차 컬렉션",
   ],
 };
+
+const SUBSCRIPTIONS: Array<{
+  title: string;
+  price: number;
+  platform: TxPlatform;
+  category: TxCategory;
+}> = [
+  { title: "넷플릭스 스탠다드", price: 13500, platform: "coupang", category: "digital" },
+  { title: "쿠팡 와우 멤버십", price: 7890, platform: "coupang", category: "living" },
+  { title: "네이버플러스 멤버십", price: 4900, platform: "naver", category: "digital" },
+  { title: "유튜브 프리미엄", price: 14900, platform: "coupang", category: "digital" },
+  { title: "스포티파이 개인", price: 13900, platform: "naver", category: "digital" },
+  { title: "밀리의 서재", price: 9900, platform: "naver", category: "digital" },
+];
+
+const REFUND_TITLES = ["부분 환불", "주문 환불", "상품 환불", "배송 오류 환불"];
+
+const AMOUNT_RANGE: Record<TxCategory, [number, number]> = {
+  living: [8000, 85000],
+  fashion: [29000, 210000],
+  digital: [19000, 410000],
+  food: [9000, 95000],
+};
+
+const PLATFORM_WEIGHT: Array<[TxPlatform, number]> = [
+  ["coupang", 40],
+  ["naver", 35],
+  ["musinsa", 25],
+];
+
+const CATEGORY_WEIGHT: Array<[TxCategory, number]> = [
+  ["living", 28],
+  ["fashion", 30],
+  ["digital", 28],
+  ["food", 14],
+];
+
+const STATUS_WEIGHT: Array<[TxStatus, number]> = [
+  ["purchase", 74],
+  ["refund", 10],
+  ["cancel", 9],
+  ["sub", 7],
+];
+
+function mulberry32(seed: number): () => number {
+  let s = seed;
+  return () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashString(input: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i += 1) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function pickWeighted<T>(rand: () => number, items: Array<[T, number]>): T {
+  const total = items.reduce((sum, [, weight]) => sum + weight, 0);
+  let r = rand() * total;
+  for (const [item, weight] of items) {
+    r -= weight;
+    if (r <= 0) return item;
+  }
+  return items[items.length - 1][0];
+}
+
+function pickFrom<T>(rand: () => number, pool: T[]): T {
+  return pool[Math.floor(rand() * pool.length)];
+}
+
+function roundTo(value: number, step: number): number {
+  return Math.round(value / step) * step;
+}
+
+function daysInMonth(monthKey: string): number {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month, 0).getDate();
+}
+
+function formatDate(monthKey: string, day: number): string {
+  return `${monthKey.replace("-", ".")}.${String(day).padStart(2, "0")}`;
+}
+
+const TOTAL_ROWS_PER_MONTH = 62;
+
+function generateRows(monthKey: string): TxRow[] {
+  const rand = mulberry32(hashString(monthKey));
+  const totalDays = daysInMonth(monthKey);
+  const rows: TxRow[] = [];
+
+  for (let i = 0; i < TOTAL_ROWS_PER_MONTH; i += 1) {
+    const status = pickWeighted(rand, STATUS_WEIGHT);
+    const day = Math.min(totalDays, Math.max(1, Math.ceil(rand() * totalDays)));
+    const date = formatDate(monthKey, day);
+    const id = `${monthKey}-${i + 1}`;
+
+    let row: TxRow;
+
+    if (status === "sub") {
+      const sub = pickFrom(rand, SUBSCRIPTIONS);
+      row = {
+        id,
+        type: "expense",
+        date,
+        platform: sub.platform,
+        category: sub.category,
+        title: sub.title,
+        amount: -sub.price,
+        status: "sub",
+      };
+    } else if (status === "refund") {
+      const category = pickWeighted(rand, CATEGORY_WEIGHT);
+      const platform = pickWeighted(rand, PLATFORM_WEIGHT);
+      const [lo, hi] = AMOUNT_RANGE[category];
+      const price = roundTo(lo + rand() * (hi - lo) * 0.7, 1000);
+      row = {
+        id,
+        type: "income",
+        date,
+        platform,
+        category,
+        title: pickFrom(rand, REFUND_TITLES),
+        amount: price,
+        status: "refund",
+      };
+    } else {
+      const category = pickWeighted(rand, CATEGORY_WEIGHT);
+      const platform = pickWeighted(rand, PLATFORM_WEIGHT);
+      const [lo, hi] = AMOUNT_RANGE[category];
+      const price = roundTo(lo + rand() * (hi - lo), 1000);
+      const title = pickFrom(rand, TITLE_POOLS[category]);
+      const type: TxType = "expense";
+      const useDetail = rand() < 0.55;
+      const source: "OCR" | "MANUAL" = rand() < 0.5 ? "OCR" : "MANUAL";
+      row = {
+        id,
+        type,
+        date,
+        platform,
+        category,
+        title,
+        amount: -price,
+        status,
+        ...(useDetail
+          ? { detail: { items: [{ name: title, price }], source } }
+          : {}),
+      };
+    }
+
+    rows.push(row);
+  }
+
+  return rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+}
+
+const CACHE = new Map<string, TxRow[]>();
+
+function getRowsForMonth(monthKey: string): TxRow[] {
+  const cached = CACHE.get(monthKey);
+  if (cached) return cached;
+  const rows = generateRows(monthKey);
+  CACHE.set(monthKey, rows);
+  return rows;
+}
+
+export const buildTransactionSummary = (rows: TxRow[]): SummaryData => {
+  const total = rows.length;
+  const spendRows = rows.filter((row) => row.type === "expense");
+  const incomeRows = rows.filter((row) => row.type === "income");
+  const totalSpend = spendRows.reduce((sum, row) => sum + Math.abs(Math.min(row.amount, 0)), 0);
+  const incomeAndRefund = incomeRows.reduce((sum, row) => sum + Math.max(row.amount, 0), 0);
+  const refundCount = rows.filter((row) => row.status === "refund").length;
+
+  return {
+    total,
+    spendCount: spendRows.length,
+    incomeCount: incomeRows.length,
+    totalSpend,
+    incomeAndRefund,
+    refundCount,
+    netSpend: totalSpend - incomeAndRefund,
+    countLabel: `총 ${total}건 · 지출 ${spendRows.length}건 · 수입 ${incomeRows.length}건`,
+  };
+};
+
+export const getTransactionsMockData = (monthKey: string): TransactionsMockData => {
+  const rows = getRowsForMonth(monthKey);
+  return {
+    rows,
+    summary: buildTransactionSummary(rows),
+  };
+};
+

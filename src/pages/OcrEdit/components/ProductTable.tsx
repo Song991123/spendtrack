@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\OcrEdit\components\ProductTable.tsx
+ */
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { tokens } from "../../../styles/tokens";
@@ -6,7 +10,7 @@ import type { OcrProduct } from "../data";
 const Table = styled.div`
   display: grid;
   grid-template-columns: 1fr 110px 90px 24px;
-  font-size: 12.5px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 const HeaderCell = styled.div`
@@ -42,7 +46,7 @@ const Input = styled.input`
   font-family: inherit;
   font-size: 12.5px;
   outline: none;
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color ${tokens.motion.fast}, box-shadow ${tokens.motion.fast};
 
   &:focus {
     border-color: ${tokens.color.accent};
@@ -83,7 +87,7 @@ const AddRow = styled.button`
   color: ${tokens.color.ink3};
   cursor: pointer;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: ${tokens.type.caption.size};
   font-weight: 600;
 
   &:hover {
@@ -145,3 +149,4 @@ export const ProductTable: React.FC<{ products: OcrProduct[] }> = ({ products })
     </Table>
   );
 };
+

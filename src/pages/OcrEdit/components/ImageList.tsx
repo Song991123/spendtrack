@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\OcrEdit\components\ImageList.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
@@ -22,7 +26,7 @@ const Row = styled.li<{ $active?: boolean }>`
   border-radius: 8px;
   background: ${({ $active }) => ($active ? tokens.color.accentSubtle : "transparent")};
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background ${tokens.motion.fast};
 
   &:hover {
     background: ${({ $active }) => ($active ? tokens.color.accentSubtle : tokens.color.tint)};
@@ -52,7 +56,7 @@ const Meta = styled.div`
   .name {
     margin-bottom: 4px;
     color: ${tokens.color.ink1};
-    font-size: 12.5px;
+    font-size: ${tokens.type.caption.size};
     font-weight: 600;
   }
 
@@ -132,3 +136,4 @@ export const ImageList: React.FC<{
     </CardBd>
   </Card>
 );
+

@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Analysis\components\CategoryBars.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -56,3 +60,4 @@ export const CategoryBars: React.FC<{ items: CategoryBarItem[] }> = ({ items }) 
     </CardBd>
   </Card>
 );
+

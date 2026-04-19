@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 차트 시각화를 작게 나눈 공통 그래프 컴포넌트입니다.
+ * 위치: src\components\charts\StackedBar.tsx
+ */
 import styled from "styled-components";
 
 interface Segment {

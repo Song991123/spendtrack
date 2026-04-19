@@ -1,3 +1,8 @@
+﻿/**
+ * 역할: 프로젝트 전반에서 공유하는 스타일 토큰이나 전역 스타일을 정의합니다.
+ * 위치: src\styles\tokens.ts
+ */
+// 화면 전반에서 반복되는 색상, 간격, 타이포 값을 한곳에 모아둡니다.
 export const tokens = {
   color: {
     bg: "#F6F7F9",
@@ -13,6 +18,7 @@ export const tokens = {
     line2: "#EEF1F5",
     accent: "#4F46E5",
     accentHover: "#4338CA",
+    accentActive: "#3730A3",
     accentSubtle: "#EEF0FF",
     accentBorder: "#E0E4FF",
     pos: "#067A55",
@@ -43,26 +49,44 @@ export const tokens = {
   radius: {
     card: "12px",
     control: "8px",
+    controlLg: "10px",
     chip: "999px",
     tag: "4px",
     modal: "16px",
   },
+  space: {
+    1: "4px",
+    2: "8px",
+    3: "12px",
+    4: "16px",
+    5: "20px",
+    6: "24px",
+  },
   shadow: {
     card: "0 1px 2px rgba(16,24,40,.04), 0 1px 1px rgba(16,24,40,.03)",
-    focus: "0 0 0 3px #E0E4FF",
+    cardHover: "0 6px 18px rgba(16,24,40,.08)",
+    focus: "0 0 0 3px rgba(79, 70, 229, 0.18)",
     modal: "0 20px 40px rgba(0,0,0,.12)",
   },
+  motion: {
+    fast: "120ms",
+  },
   font: {
-    sans: '"Pretendard Variable","Inter","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif',
-    mono: '"JetBrains Mono","Inter",monospace',
+    sans: '"Pretendard Variable","Noto Sans KR",system-ui,sans-serif',
+    mono: '"JetBrains Mono","SF Mono","Menlo","Consolas",monospace',
   },
   type: {
-    h1: { size: "22px", weight: 700, tracking: "-0.02em" },
-    cardTitle: { size: "13px", weight: 600 },
-    cardSub: { size: "11px", weight: 400 },
-    body: { size: "13.5px", weight: 500 },
+    h1: { size: "20px", weight: 700, tracking: "-0.02em" },
+    metric: { size: "26px", weight: 700, tracking: "-0.02em" },
+    titleLg: { size: "16px", weight: 700, tracking: "-0.02em" },
+    cardTitle: { size: "14px", weight: 600, tracking: "-0.01em" },
+    body: { size: "14px", weight: 500 },
+    bodySm: { size: "13px", weight: 500 },
+    caption: { size: "12px", weight: 500 },
+    cardSub: { size: "12px", weight: 400 },
     navSect: { size: "10px", weight: 600, tracking: "0.08em", upper: true },
   },
 } as const;
 
 export type Tokens = typeof tokens;
+

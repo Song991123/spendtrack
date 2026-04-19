@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 여러 화면이 함께 사용하는 공통 레이아웃 컴포넌트입니다.
+ * 위치: src\components\layout\AppShell.tsx
+ */
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
@@ -16,6 +20,7 @@ interface AppShellProps {
   children: ReactNode;
 }
 
+// 데스크톱에서는 좌측 사이드바와 본문 2단 구조를 사용합니다.
 const Shell = styled.div`
   display: grid;
   grid-template-columns: 232px minmax(0, 1fr);
@@ -38,6 +43,7 @@ const Main = styled.main`
   width: 100%;
 `;
 
+// 모바일에서는 사이드바 대신 가벼운 텍스트 네비게이션을 따로 보여 줍니다.
 const MobileNav = styled.nav`
   display: none;
 
@@ -100,10 +106,12 @@ export const AppShell = ({ activeNav, crumb, title, headerRight, children }: App
       </SidebarWrapper>
       <Main>
         <Content>
+          {/* 모든 화면이 같은 헤더 패턴을 공유하도록 셸에서 먼저 감쌉니다. */}
           <TopHeader crumb={crumb} title={title} right={headerRight} />
           {children}
         </Content>
         <MobileNav>
+          {/* 모바일에서는 핵심 메뉴만 짧은 라벨로 유지해 화면 폭을 아낍니다. */}
           <MobileNavItem $active={activeNav === "home"} onClick={() => navigate("/")}>
             홈
           </MobileNavItem>
@@ -131,3 +139,4 @@ export const AppShell = ({ activeNav, crumb, title, headerRight, children }: App
     </Shell>
   );
 };
+

@@ -1,8 +1,12 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\OcrUpload\components\PlatformSelect.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
-import { tokens } from "../../../styles/tokens";
 import { PLATFORM_LABELS } from "../../../constants/labels";
+import { tokens } from "../../../styles/tokens";
 
 export type Platform = "coupang" | "naver" | "musinsa";
 
@@ -20,9 +24,12 @@ const Option = styled.button<{ $on?: boolean }>`
   color: ${({ $on }) => ($on ? tokens.color.accentHover : tokens.color.ink2)};
   cursor: pointer;
   font-family: inherit;
-  font-size: 13px;
+  font-size: ${tokens.type.bodySm.size};
   font-weight: 600;
-  transition: all 0.12s;
+  transition:
+    background ${tokens.motion.fast},
+    border-color ${tokens.motion.fast},
+    color ${tokens.motion.fast};
 
   &:hover {
     background: ${({ $on }) => ($on ? tokens.color.accentSubtle : tokens.color.tint)};
@@ -53,3 +60,4 @@ export const PlatformSelect: React.FC<{
     </CardBd>
   </Card>
 );
+

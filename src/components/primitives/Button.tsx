@@ -1,6 +1,11 @@
+﻿/**
+ * 역할: 버튼, 카드처럼 여러 화면에서 재사용하는 기본 UI 컴포넌트입니다.
+ * 위치: src\components\primitives\Button.tsx
+ */
 import { forwardRef } from "react";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import styled, { css } from "styled-components";
+import { tokens } from "../../styles/tokens";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 type Size = "sm" | "md" | "lg";
@@ -16,59 +21,64 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<Variant, ReturnType<typeof css>> = {
   primary: css`
-    background: #4f6ef7;
-    color: #ffffff;
-    border: 1px solid #4f6ef7;
-    box-shadow: 0 1px 2px rgba(79, 110, 247, 0.18);
+    background: ${tokens.color.accent};
+    color: #fff;
+    border: 1px solid ${tokens.color.accent};
+    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.2);
 
     &:hover:not(:disabled) {
-      background: #4060e6;
-      border-color: #4060e6;
-      box-shadow: 0 2px 6px rgba(79, 110, 247, 0.28);
+      background: ${tokens.color.accentHover};
+      border-color: ${tokens.color.accentHover};
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.22);
     }
+
     &:active:not(:disabled) {
-      background: #3752d0;
+      background: ${tokens.color.accentActive};
+      border-color: ${tokens.color.accentActive};
       box-shadow: none;
     }
   `,
   secondary: css`
-    background: #ffffff;
-    color: #374151;
-    border: 1px solid #d1d5db;
+    background: #fff;
+    color: ${tokens.color.ink2};
+    border: 1px solid ${tokens.color.line};
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 
     &:hover:not(:disabled) {
-      background: #f9fafb;
-      border-color: #bfc5cd;
+      background: ${tokens.color.foot};
+      border-color: ${tokens.color.accentBorder};
     }
+
     &:active:not(:disabled) {
-      background: #f3f4f6;
+      background: ${tokens.color.tint};
     }
   `,
   ghost: css`
     background: transparent;
-    color: #4f6ef7;
-    border: 1px dashed #d1d5db;
+    color: ${tokens.color.accent};
+    border: 1px dashed ${tokens.color.accentBorder};
 
     &:hover:not(:disabled) {
-      background: #eef2ff;
-      border-color: #a5b4fc;
+      background: ${tokens.color.accentSubtle};
+      border-color: ${tokens.color.accent};
     }
+
     &:active:not(:disabled) {
-      background: #e0e7ff;
+      background: ${tokens.color.accentBorder};
     }
   `,
   danger: css`
-    background: #fef2f2;
-    color: #b42318;
-    border: 1px solid #fecaca;
+    background: ${tokens.color.negSubtle};
+    color: ${tokens.color.neg};
+    border: 1px solid ${tokens.color.negBorder};
 
     &:hover:not(:disabled) {
-      background: #fee2e2;
-      border-color: #fca5a5;
+      background: ${tokens.color.negBg};
+      border-color: ${tokens.color.neg};
     }
+
     &:active:not(:disabled) {
-      background: #fecaca;
+      background: ${tokens.color.negBorder};
     }
   `,
 };
@@ -77,20 +87,20 @@ const sizeStyles: Record<Size, ReturnType<typeof css>> = {
   sm: css`
     height: 32px;
     padding: 0 12px;
-    font-size: 12px;
-    border-radius: 8px;
+    font-size: ${tokens.type.caption.size};
+    border-radius: ${tokens.radius.control};
   `,
   md: css`
     height: 40px;
     padding: 0 16px;
-    font-size: 13.5px;
-    border-radius: 10px;
+    font-size: ${tokens.type.bodySm.size};
+    border-radius: ${tokens.radius.controlLg};
   `,
   lg: css`
-    height: 46px;
+    height: 48px;
     padding: 0 22px;
-    font-size: 14.5px;
-    border-radius: 12px;
+    font-size: ${tokens.type.body.size};
+    border-radius: ${tokens.radius.card};
   `,
 };
 
@@ -102,13 +112,20 @@ const StyledButton = styled.button<{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  letter-spacing: -0.1px;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  gap: 8px;
   width: ${({ $fullWidth }) => ($fullWidth ? "100%" : "auto")};
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition:
+    background ${tokens.motion.fast} ease,
+    border-color ${tokens.motion.fast} ease,
+    box-shadow ${tokens.motion.fast} ease;
+
+  &:focus-visible {
+    box-shadow: ${tokens.shadow.focus};
+  }
 
   &:disabled {
     opacity: 0.45;
@@ -148,3 +165,4 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
+

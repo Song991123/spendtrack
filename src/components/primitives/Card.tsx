@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 버튼, 카드처럼 여러 화면에서 재사용하는 기본 UI 컴포넌트입니다.
+ * 위치: src\components\primitives\Card.tsx
+ */
 import type { HTMLAttributes, ReactNode } from "react";
 import styled from "styled-components";
 import { tokens } from "../../styles/tokens";
@@ -19,34 +23,37 @@ const Container = styled.div<{ $padding: string }>`
   border-radius: ${tokens.radius.card};
   padding: ${({ $padding }) => $padding};
   box-shadow: ${tokens.shadow.card};
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  transition:
+    transform ${tokens.motion.fast} ease,
+    box-shadow ${tokens.motion.fast} ease,
+    border-color ${tokens.motion.fast} ease;
 `;
 
 const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: ${tokens.space[3]};
+  margin-bottom: ${tokens.space[3]};
 
   .titles {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: ${tokens.space[1]};
   }
 
   h3 {
     margin: 0;
     color: ${tokens.color.ink2};
-    font-size: 14.5px;
-    font-weight: 700;
-    letter-spacing: -0.15px;
+    font-size: ${tokens.type.titleLg.size};
+    font-weight: ${tokens.type.titleLg.weight};
+    letter-spacing: ${tokens.type.titleLg.tracking};
   }
 
   .subtitle {
     color: ${tokens.color.ink4};
-    font-size: 11.5px;
-    font-weight: 400;
+    font-size: ${tokens.type.cardSub.size};
+    font-weight: ${tokens.type.cardSub.weight};
   }
 `;
 
@@ -54,40 +61,40 @@ export const CardHd = styled.div<{ bare?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 10px;
+  padding: ${tokens.space[4]} ${tokens.space[4]} ${tokens.space[3]};
   border-bottom: ${({ bare }) => (bare ? "none" : `1px solid ${tokens.color.line2}`)};
 `;
 
 export const CardTitle = styled.h3`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: ${tokens.space[2]};
   margin: 0;
   color: ${tokens.color.ink2};
-  font-size: 13px;
-  font-weight: 600;
+  font-size: ${tokens.type.cardTitle.size};
+  font-weight: ${tokens.type.cardTitle.weight};
 `;
 
 export const CardSub = styled.p`
   margin: 2px 0 0;
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.cardSub.size};
 `;
 
 export const CardBd = styled.div`
-  padding: 16px;
+  padding: ${tokens.space[4]};
 `;
 
 export const CardFoot = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
+  padding: ${tokens.space[3]} ${tokens.space[4]};
   background: ${tokens.color.foot};
   border-top: 1px solid ${tokens.color.line2};
   border-radius: 0 0 ${tokens.radius.card} ${tokens.radius.card};
   color: ${tokens.color.ink3};
-  font-size: 12px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 export const Card = ({ padding = 20, children, ...rest }: CardProps) => {
@@ -108,3 +115,4 @@ export const CardHeader = ({ title, subtitle, right }: CardHeaderProps) => (
     {right}
   </Header>
 );
+

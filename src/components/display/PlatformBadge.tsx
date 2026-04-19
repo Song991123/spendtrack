@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 상태 표시, 미리보기, 요약 카드처럼 정보를 보여주는 공통 컴포넌트입니다.
+ * 위치: src\components\display\PlatformBadge.tsx
+ */
 import styled from "styled-components";
 import type { Platform } from "../../types/platform";
 import { PLATFORM_COLORS } from "../../tokens/platforms";

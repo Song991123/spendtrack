@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 해당 페이지에서 사용하는 목업 데이터와 화면 표시용 가공 함수를 모아둔 파일입니다.
+ * 위치: src\pages\OcrEdit\data.ts
+ */
 export type Platform = "coupang" | "naver" | "musinsa";
 export type Status = "purchase" | "sub" | "cancel" | "refund";
 
@@ -56,3 +60,4 @@ export const ocrEditMockData: OcrEditMockData = {
     },
   ],
 };
+

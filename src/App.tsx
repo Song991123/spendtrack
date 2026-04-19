@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 애플리케이션의 전체 라우팅을 연결하는 최상위 컴포넌트입니다.
+ * 위치: src\App.tsx
+ */
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -13,6 +17,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 function App() {
   return (
     <BrowserRouter>
+      {/* v1에서 확정한 화면 경로를 이곳에서 한 번에 관리합니다. */}
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
@@ -24,6 +29,7 @@ function App() {
         <Route path="/transactions" element={<TransactionsPage />} />
         <Route path="/analysis" element={<AnalysisPage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        {/* 정의되지 않은 경로는 홈으로 되돌려서 데모 흐름이 끊기지 않게 합니다. */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
@@ -31,3 +37,4 @@ function App() {
 }
 
 export default App;
+

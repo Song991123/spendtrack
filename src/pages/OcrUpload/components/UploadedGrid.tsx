@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\OcrUpload\components\UploadedGrid.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
@@ -15,7 +19,7 @@ const Thumb = styled.div`
   aspect-ratio: 1;
   overflow: hidden;
   border: 1px solid ${tokens.color.line};
-  border-radius: 10px;
+  border-radius: ${tokens.radius.controlLg};
   background: ${tokens.color.tint};
 
   .placeholder {
@@ -49,7 +53,7 @@ const Remove = styled.button`
   color: #fff;
   cursor: pointer;
   font-size: 12px;
-  transition: background 0.12s;
+  transition: background ${tokens.motion.fast};
 
   &:hover {
     background: rgba(11, 18, 32, 0.95);
@@ -107,3 +111,4 @@ export const UploadedGrid: React.FC<{
     </CardBd>
   </Card>
 );
+

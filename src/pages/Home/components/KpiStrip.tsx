@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ * 위치: src\pages\Home\components\KpiStrip.tsx
+ */
 import React from "react";
 import styled from "styled-components";
 import { Area, AreaChart, ResponsiveContainer } from "recharts";
@@ -43,7 +47,7 @@ const Big = styled.div`
 const Sub = styled.div`
   margin-top: 6px;
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.cardSub.size};
 `;
 
 const MetaRow = styled.div`
@@ -65,7 +69,7 @@ const LabelRow = styled.div`
   align-items: center;
   gap: 6px;
   color: ${tokens.color.ink3};
-  font-size: 12px;
+  font-size: ${tokens.type.caption.size};
   font-weight: 500;
 `;
 
@@ -123,3 +127,4 @@ export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
     ))}
   </Strip>
 );
+

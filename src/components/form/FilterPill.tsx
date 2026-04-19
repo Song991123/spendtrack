@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 입력 흐름에서 재사용하는 폼 관련 공통 컴포넌트입니다.
+ * 위치: src\components\form\FilterPill.tsx
+ */
 import styled from "styled-components";
 
 interface Props {

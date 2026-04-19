@@ -1,3 +1,7 @@
+﻿/**
+ * 역할: 모달 레이어를 통해 보조 입력 흐름을 처리하는 공통 컴포넌트입니다.
+ * 위치: src\components\modal\Modal.tsx
+ */
 import type { ReactNode } from "react";
 import styled from "styled-components";
 import { media } from "../../tokens/breakpoints";
@@ -95,3 +99,4 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
     </>
   );
 };
+
