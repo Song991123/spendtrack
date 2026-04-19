@@ -24,11 +24,7 @@ const BodyStack = styled.div`
   gap: 16px;
 `;
 
-export const ProductAddModal = ({
-  isOpen,
-  onClose,
-  onAdd,
-}: ProductAddModalProps) => {
+export const ProductAddModal = ({ isOpen, onClose, onAdd }: ProductAddModalProps) => {
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [link, setLink] = useState("");
@@ -69,27 +65,27 @@ export const ProductAddModal = ({
         <FormField label="상품명" required>
           <TextInput
             value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="예: 나이키 에어포스 1 로우"
+            onChange={(event) => setName(event.target.value)}
+            placeholder="예: 에어팟 프로 1 로우"
           />
         </FormField>
 
         <FormField label="상품금액" required>
           <TextInput
             value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            placeholder="₩ 0"
+            onChange={(event) => setPrice(event.target.value)}
+            placeholder="예: 129000"
             inputMode="numeric"
           />
         </FormField>
 
         <FormField
-          label="상품링크"
-          helpText="링크는 나중에 추가하거나 수정할 수 있어요."
+          label="상품 링크"
+          helpText="링크는 추후에 추가하거나 수정할 수 있어요."
         >
           <TextInput
             value={link}
-            onChange={(e) => setLink(e.target.value)}
+            onChange={(event) => setLink(event.target.value)}
             placeholder="상품 URL을 입력하거나 비워두세요"
           />
         </FormField>

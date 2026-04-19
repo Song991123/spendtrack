@@ -1,62 +1,70 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
+import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 
 interface TopHeaderProps {
+  crumb?: string;
   title: string;
   right?: ReactNode;
 }
 
 const Header = styled.header`
-  min-height: 56px;
-  padding: 0 32px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
-  flex-shrink: 0;
+  margin-bottom: 18px;
 
   ${media.mobile} {
-    padding: 0 16px;
-    height: 48px;
-    min-height: 48px;
+    flex-direction: column;
+    align-items: flex-start;
   }
+`;
+
+const Heading = styled.div`
+  min-width: 0;
+`;
+
+const Crumb = styled.div`
+  color: ${tokens.color.ink4};
+  font-size: 12px;
+  font-weight: 500;
 `;
 
 const Title = styled.h1`
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
-  color: #111827;
-  letter-spacing: -0.2px;
+  margin: 2px 0 0;
+  color: ${tokens.color.ink1};
+  font-size: ${tokens.type.h1.size};
+  font-weight: ${tokens.type.h1.weight};
+  letter-spacing: ${tokens.type.h1.tracking};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-
-  ${media.mobile} {
-    font-size: 15px;
-  }
 `;
 
 const RightSlot = styled.div`
-  font-size: 13px;
-  color: #6b7280;
-  font-weight: 400;
   display: flex;
   align-items: center;
   justify-content: flex-end;
   min-width: 0;
+  margin-left: auto;
+  color: ${tokens.color.ink3};
+  font-size: 13px;
+  font-weight: 400;
 
-  @media (max-width: 640px) {
+  ${media.mobile} {
     width: 100%;
+    margin-left: 0;
+    justify-content: stretch;
   }
 `;
 
-export const TopHeader = ({ title, right }: TopHeaderProps) => (
+export const TopHeader = ({ crumb, title, right }: TopHeaderProps) => (
   <Header>
-    <Title>{title}</Title>
+    <Heading>
+      {crumb && <Crumb>{crumb}</Crumb>}
+      <Title>{title}</Title>
+    </Heading>
     {right && <RightSlot>{right}</RightSlot>}
   </Header>
 );

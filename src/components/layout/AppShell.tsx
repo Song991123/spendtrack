@@ -3,33 +3,27 @@ import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { Sidebar } from "./Sidebar";
 import { TopHeader } from "./TopHeader";
+import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 
-export type NavKey =
-  | "home"
-  | "upload"
-  | "transactions"
-  | "analysis"
-  | "settings";
+export type NavKey = "home" | "upload" | "transactions" | "analysis" | "settings";
 
 interface AppShellProps {
   activeNav: NavKey;
+  crumb?: string;
   title: string;
   headerRight?: ReactNode;
   children: ReactNode;
 }
 
 const Shell = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
   min-height: 100vh;
-  background: #f8fafc;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    sans-serif;
-  color: #111827;
-  -webkit-font-smoothing: antialiased;
+  background: ${tokens.color.bg};
 
   ${media.mobile} {
-    flex-direction: column;
+    grid-template-columns: 1fr;
   }
 `;
 
@@ -40,11 +34,8 @@ const SidebarWrapper = styled.div`
 `;
 
 const Main = styled.main`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
   min-width: 0;
-  overflow-y: auto;
+  width: 100%;
 `;
 
 const MobileNav = styled.nav`
@@ -53,41 +44,41 @@ const MobileNav = styled.nav`
   ${media.mobile} {
     display: flex;
     gap: 16px;
-    padding: 0 16px;
-    height: 44px;
     align-items: center;
-    border-bottom: 1px solid #e5e7eb;
-    background: #ffffff;
+    height: 44px;
+    padding: 0 16px;
+    background: ${tokens.color.panel};
+    border-bottom: 1px solid ${tokens.color.line};
     overflow-x: auto;
   }
 `;
 
 const MobileNavItem = styled.button<{ $active?: boolean }>`
+  border: none;
+  background: none;
+  padding: 0;
+  color: ${({ $active }) => ($active ? tokens.color.accentHover : tokens.color.ink4)};
+  cursor: pointer;
+  font-family: inherit;
   font-size: 13px;
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
-  color: ${({ $active }) => ($active ? "#4F6EF7" : "#6B7280")};
   white-space: nowrap;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-family: inherit;
 `;
 
 const MobileNavDivider = styled.div`
   width: 1px;
   height: 16px;
-  background: #e5e7eb;
+  background: ${tokens.color.line};
   flex-shrink: 0;
 `;
 
 const Content = styled.div`
-  flex: 1;
-  padding: 24px 32px 48px;
+  width: 100%;
+  min-width: 0;
+  padding: 20px 28px 40px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  width: 100%;
   box-sizing: border-box;
 
   ${media.tablet} {
@@ -99,12 +90,7 @@ const Content = styled.div`
   }
 `;
 
-export const AppShell = ({
-  activeNav,
-  title,
-  headerRight,
-  children,
-}: AppShellProps) => {
+export const AppShell = ({ activeNav, crumb, title, headerRight, children }: AppShellProps) => {
   const navigate = useNavigate();
 
   return (
@@ -113,33 +99,27 @@ export const AppShell = ({
         <Sidebar activeNav={activeNav} user={{ name: "홍길동", initial: "홍" }} />
       </SidebarWrapper>
       <Main>
-        <TopHeader title={title} right={headerRight} />
+        <Content>
+          <TopHeader crumb={crumb} title={title} right={headerRight} />
+          {children}
+        </Content>
         <MobileNav>
           <MobileNavItem $active={activeNav === "home"} onClick={() => navigate("/")}>
             홈
           </MobileNavItem>
-          <MobileNavItem
-            $active={activeNav === "upload"}
-            onClick={() => navigate("/upload")}
-          >
-            업로드
+          <MobileNavItem $active={activeNav === "upload"} onClick={() => navigate("/upload")}>
+            입력
           </MobileNavItem>
           <MobileNavItem
             $active={activeNav === "transactions"}
             onClick={() => navigate("/transactions")}
           >
-            내역
+            거래
           </MobileNavItem>
-          <MobileNavItem
-            $active={activeNav === "analysis"}
-            onClick={() => navigate("/analysis")}
-          >
+          <MobileNavItem $active={activeNav === "analysis"} onClick={() => navigate("/analysis")}>
             분석
           </MobileNavItem>
-          <MobileNavItem
-            $active={activeNav === "settings"}
-            onClick={() => navigate("/settings")}
-          >
+          <MobileNavItem $active={activeNav === "settings"} onClick={() => navigate("/settings")}>
             설정
           </MobileNavItem>
           <MobileNavDivider />
@@ -147,7 +127,6 @@ export const AppShell = ({
             로그아웃
           </MobileNavItem>
         </MobileNav>
-        <Content>{children}</Content>
       </Main>
     </Shell>
   );

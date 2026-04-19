@@ -1,26 +1,29 @@
 import type { InputHTMLAttributes } from "react";
 import styled from "styled-components";
+import { tokens } from "../../styles/tokens";
 
 type TextInputProps = InputHTMLAttributes<HTMLInputElement>;
 
 const StyledInput = styled.input`
-  height: 44px;
-  padding: 0 16px;
-  border: 1px solid #D9D9D9;
-  border-radius: 10px;
-  font-size: 13px;
-  color: #111827;
-  background: #FFFFFF;
-  font-family: inherit;
-  box-sizing: border-box;
   width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.panel};
+  color: ${tokens.color.ink1};
+  font-family: inherit;
+  font-size: 13.5px;
+  box-sizing: border-box;
+  transition: border-color 0.12s, box-shadow 0.12s;
 
   &::placeholder {
-    color: #B0B0B0;
+    color: ${tokens.color.ink5};
   }
 
   &:focus {
-    border-color: #4F6EF7;
+    border-color: ${tokens.color.accent};
+    box-shadow: ${tokens.shadow.focus};
     outline: none;
   }
 `;
