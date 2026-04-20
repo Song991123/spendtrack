@@ -72,9 +72,9 @@ export const UploadPage: React.FC = () => (
           />
           <MethodCard
             icon={<SpreadsheetIcon />}
-            title="카드 CSV 가져오기"
-            description={`카드사에서 내려받은 CSV로\n결제내역을 한 번에 불러옵니다.`}
-            ctaLabel="CSV 업로드 시작"
+            title="카드 내역 가져오기"
+            description={`카드사에서 내려받은 CSV/엑셀로\n결제내역을 한 번에 불러옵니다.`}
+            ctaLabel="파일 업로드 시작"
             ctaVariant="ghost"
             footnote="OCR로 상품 상세를 나중에 덧붙일 수 있어요"
             href="/csv-upload"

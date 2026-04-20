@@ -1,7 +1,7 @@
 /**
- * 역할: 카드 CSV 문자열을 SpendTrack의 TxRow[]로 변환합니다.
- *       MVP에서는 한 가지 표준 포맷(이용일, 가맹점명, 이용금액, [카테고리])을 지원하며,
- *       흔한 헤더 변형을 함께 받아 유연하게 파싱합니다.
+ * 역할: 카드사 이용내역(CSV/XLSX)에서 뽑아낸 행 데이터를 SpendTrack의 TxRow[]로 변환합니다.
+ *       CSV 텍스트 진입점(importCsv)과 행 배열 진입점(importRows)을 모두 노출해
+ *       XLSX 파서도 같은 변환 로직을 재사용할 수 있게 했습니다.
  * 위치: src\utils\csvImport.ts
  */
 import type {
@@ -9,7 +9,7 @@ import type {
   TxRow,
   TxStatus,
 } from "../pages/Transactions/components/TransactionTable";
-import { parseCsv } from "./csvParse";
+import { parseCsv, type CsvRow } from "./csvParse";
 import { normalizeMerchant } from "./merchantNormalize";
 
 const CATEGORY_MAP: Record<string, TxCategory> = {
@@ -51,8 +51,11 @@ export interface CsvImportResult {
   skipped: CsvImportSkipped[];
 }
 
-export function importCsv(text: string): CsvImportResult {
-  const parsed = parseCsv(text);
+/**
+ * 이미 CsvRow[] 형태로 파싱된 데이터를 TxRow[]로 변환합니다.
+ * CSV와 XLSX 양쪽 모두 이 함수를 공용으로 재사용합니다.
+ */
+export function importRows(parsed: CsvRow[]): CsvImportResult {
   const imported: TxRow[] = [];
   const skipped: CsvImportSkipped[] = [];
   const now = Date.now();
@@ -115,4 +118,11 @@ export function importCsv(text: string): CsvImportResult {
   });
 
   return { total: parsed.length, imported, skipped };
+}
+
+/**
+ * CSV 텍스트를 받아 TxRow[]로 변환합니다. 내부적으로 parseCsv + importRows를 합친 형태입니다.
+ */
+export function importCsv(text: string): CsvImportResult {
+  return importRows(parseCsv(text));
 }

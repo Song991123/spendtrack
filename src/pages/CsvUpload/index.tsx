@@ -1,6 +1,7 @@
 /**
- * 역할: 카드사 CSV 파일을 읽어 거래 스토어에 결제내역을 벌크 등록하는 화면입니다.
+ * 역할: 카드사 이용내역 파일(CSV/XLSX)을 읽어 거래 스토어에 결제내역을 벌크 등록하는 화면입니다.
  *       업로드 → 파싱 프리뷰 → 사용자 확정 → 스토어 저장의 3단 흐름을 가집니다.
+ *       확장자를 감지해 CSV/XLSX 파서를 자동으로 선택합니다.
  * 위치: src\pages\CsvUpload\index.tsx
  */
 import React, { useMemo, useRef, useState } from "react";
@@ -12,7 +13,8 @@ import { Card, CardBd, CardHd, CardTitle } from "../../components/primitives/Car
 import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 import { transactionsStore } from "../../stores/transactionsStore";
-import { importCsv, type CsvImportResult } from "../../utils/csvImport";
+import type { CsvImportResult } from "../../utils/csvImport";
+import { importFile, UnsupportedFileTypeError } from "../../utils/fileImport";
 import { PreviewTable } from "./components/PreviewTable";
 
 const Body = styled.div`
@@ -143,16 +145,19 @@ export const CsvUploadPage: React.FC = () => {
     setError(null);
     setFileName(file.name);
     try {
-      const text = await file.text();
-      const parsed = importCsv(text);
+      const parsed = await importFile(file);
       setResult(parsed);
     } catch (cause) {
       setResult(null);
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "파일을 읽는 중 문제가 발생했어요."
-      );
+      if (cause instanceof UnsupportedFileTypeError) {
+        setError(cause.message);
+      } else {
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "파일을 읽는 중 문제가 발생했어요."
+        );
+      }
     }
   };
 
@@ -174,13 +179,13 @@ export const CsvUploadPage: React.FC = () => {
   return (
     <AppShell
       activeNav="upload"
-      crumb="입력 · 카드 CSV"
-      title="카드 CSV 가져오기"
+      crumb="입력 · 카드 내역"
+      title="카드 내역 가져오기"
     >
       <Body>
         <Card padding={0}>
           <CardHd>
-            <CardTitle>CSV 업로드</CardTitle>
+            <CardTitle>CSV 또는 엑셀 업로드</CardTitle>
           </CardHd>
           <CardBd>
             <Dropzone
@@ -202,15 +207,17 @@ export const CsvUploadPage: React.FC = () => {
               }}
             >
               <div className="title">
-                {fileName ? fileName : "카드사 CSV 파일을 올려주세요"}
+                {fileName ? fileName : "카드사 이용내역 파일을 올려주세요"}
               </div>
               <div className="hint">
-                클릭하거나 파일을 끌어다 놓으세요. 헤더는 이용일 / 가맹점명 / 이용금액 / (선택)카테고리 형식을 따릅니다.
+                CSV 또는 XLSX 모두 지원합니다. 클릭하거나 파일을 끌어다 놓으세요.
+                <br />
+                헤더는 이용일 / 가맹점명 / 이용금액 / (선택)카테고리 형식을 따르며, 상단 안내 행이 있어도 자동으로 건너뜁니다.
               </div>
               <input
                 ref={inputRef}
                 type="file"
-                accept=".csv,text/csv"
+                accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) handleFile(file);
@@ -279,7 +286,7 @@ export const CsvUploadPage: React.FC = () => {
               </SkippedBlock>
             )}
             <Hint>
-              카드사 CSV는 상품 상세를 포함하지 않아, 여기서는 플랫폼·금액·날짜 중심으로 등록됩니다.
+              카드사 이용내역 파일은 상품 상세를 포함하지 않아, 여기서는 플랫폼·금액·날짜 중심으로 등록됩니다.
               상품 정보는 이후 OCR 업로드 또는 수동 입력에서 해당 거래에 덧붙일 수 있습니다.
             </Hint>
           </Card>
