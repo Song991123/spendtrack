@@ -4,7 +4,7 @@
  * 위치: src\utils\fileImport.ts
  */
 import { importRows, type CsvImportResult } from "./csvImport";
-import { parseCsv } from "./csvParse";
+import { decodeCsvBuffer, parseCsv } from "./csvParse";
 import { readXlsxAsRows } from "./xlsxImport";
 
 export type SupportedFileKind = "csv" | "xlsx";
@@ -26,7 +26,7 @@ export function detectFileKind(fileName: string): SupportedFileKind | null {
 export async function importFile(file: File): Promise<CsvImportResult> {
   const kind = detectFileKind(file.name);
   if (kind === "csv") {
-    const text = await file.text();
+    const text = decodeCsvBuffer(await file.arrayBuffer());
     return importRows(parseCsv(text));
   }
   if (kind === "xlsx") {

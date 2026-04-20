@@ -3,6 +3,8 @@
  *       Excel/카드사 CSV에서 흔한 BOM과 따옴표로 감싼 셀을 처리할 수 있게 만들었습니다.
  * 위치: src\utils\csvParse.ts
  */
+import { findHeaderRowIndex } from "./importHeaders";
+
 export type CsvRow = Record<string, string>;
 
 function splitCsvLine(line: string): string[] {
@@ -29,18 +31,47 @@ function splitCsvLine(line: string): string[] {
   return cells;
 }
 
-export function parseCsv(text: string): CsvRow[] {
-  const cleaned = text.replace(/^\uFEFF/, "");
-  const lines = cleaned.split(/\r?\n/).filter((line) => line.trim() !== "");
-  if (lines.length < 2) return [];
+export function decodeCsvBuffer(buffer: ArrayBuffer): string {
+  const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
+  if (!utf8.includes("\uFFFD")) return utf8;
 
-  const headers = splitCsvLine(lines[0]).map((header) => header.trim());
-  return lines.slice(1).map((line) => {
-    const cells = splitCsvLine(line);
+  try {
+    return new TextDecoder("euc-kr").decode(buffer);
+  } catch {
+    return utf8;
+  }
+}
+
+export function parseCsvMatrix(text: string): string[][] {
+  const cleaned = text.replace(/^\uFEFF/, "");
+  return cleaned
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== "")
+    .map((line) => splitCsvLine(line).map((cell) => cell.trim()));
+}
+
+export function rowsToCsvRows(rows: string[][], headerIndex = 0): CsvRow[] {
+  if (rows.length <= headerIndex + 1) return [];
+
+  const headers = (rows[headerIndex] ?? []).map((header) => header.trim());
+  return rows.slice(headerIndex + 1).reduce<CsvRow[]>((acc, cells) => {
     const row: CsvRow = {};
+    let hasValue = false;
+
     headers.forEach((header, index) => {
-      row[header] = (cells[index] ?? "").trim();
+      if (!header) return;
+      const value = (cells[index] ?? "").trim();
+      row[header] = value;
+      if (value !== "") hasValue = true;
     });
-    return row;
-  });
+
+    if (hasValue) acc.push(row);
+    return acc;
+  }, []);
+}
+
+export function parseCsv(text: string): CsvRow[] {
+  const matrix = parseCsvMatrix(text);
+  if (matrix.length < 2) return [];
+  return rowsToCsvRows(matrix, findHeaderRowIndex(matrix));
 }
