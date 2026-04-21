@@ -49,10 +49,34 @@ const StepButton = styled.button`
   }
 `;
 
+/**
+ * 레퍼런스 스크린샷처럼 월 선택 pill 안쪽 왼쪽에 작은 브랜드 컬러 점을 올립니다.
+ * 네이티브 <select>는 내부 컨텐츠를 커스터마이즈하기 어려우므로 relative 컨테이너 위에
+ * 절대 위치 dot를 얹어 같은 pill 안에 있는 것처럼 보이게 했습니다.
+ */
+const SelectWrap = styled.div`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+`;
+
+const SelectDot = styled.span`
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: ${tokens.color.accent};
+  pointer-events: none;
+`;
+
 const Select = styled.select`
   height: 32px;
   min-width: 132px;
-  padding: 0 32px 0 12px;
+  /* 왼쪽에 6px 점 + 여백을 두기 위해 padding-left를 26px로 늘렸습니다. */
+  padding: 0 32px 0 26px;
   border: 1px solid ${tokens.color.line};
   border-radius: ${tokens.radius.control};
   background: ${tokens.color.panel};
@@ -83,13 +107,16 @@ export const MonthPicker = ({ value, onChange }: MonthPickerProps) => {
       >
         ‹
       </StepButton>
-      <Select value={value} onChange={(event) => onChange(event.target.value)} aria-label="월 선택">
-        {MONTH_OPTIONS.map((option) => (
-          <option key={option.key} value={option.key}>
-            {option.label}
-          </option>
-        ))}
-      </Select>
+      <SelectWrap>
+        <SelectDot aria-hidden />
+        <Select value={value} onChange={(event) => onChange(event.target.value)} aria-label="월 선택">
+          {MONTH_OPTIONS.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.label}
+            </option>
+          ))}
+        </Select>
+      </SelectWrap>
       <StepButton
         type="button"
         onClick={() => onChange(MONTH_OPTIONS[currentIndex + 1].key)}
