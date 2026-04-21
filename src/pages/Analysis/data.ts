@@ -119,16 +119,23 @@ function buildPlatform(rows: TxRow[]): {
   return { items, totalSpend, totalIncome, netSpend: totalSpend - totalIncome };
 }
 
-const CATEGORY_COLOR: Record<TxCategory, string> = {
-  living: tokens.color.cat2,
-  fashion: tokens.color.cat1,
-  digital: tokens.color.cat4,
-  food: tokens.color.cat3,
-  // "기타"는 의도적으로 중립적인 회색 계열 cat5를 씁니다 — 차트에서 다른 카테고리를 더 두드러지게 하기 위함입니다.
-  etc: tokens.color.cat5,
-};
-
-function buildCategory(rows: TxRow[]): CategoryBarItem[] {
+/**
+ * 카테고리별 집계. 색상은 호출부에서 주입받는 colorMap을 그대로 사용해,
+ * 설정 화면에서 사용자가 바꾼 색이 분석 차트에 즉시 반영되도록 합니다.
+ * colorMap을 전달하지 않으면 기본 팔레트를 폴백으로 사용합니다.
+ */
+function buildCategory(
+  rows: TxRow[],
+  colorMap?: Record<TxCategory, string>
+): CategoryBarItem[] {
+  const resolvedColors: Record<TxCategory, string> = colorMap ?? {
+    living: tokens.color.cat2,
+    fashion: tokens.color.cat1,
+    digital: tokens.color.cat4,
+    food: tokens.color.cat3,
+    // "기타"는 의도적으로 중립적인 회색 계열 cat5를 씁니다 — 차트에서 다른 카테고리를 더 두드러지게 하기 위함입니다.
+    etc: tokens.color.cat5,
+  };
   const totals: Record<TxCategory, number> = {
     living: 0,
     fashion: 0,
@@ -146,7 +153,7 @@ function buildCategory(rows: TxRow[]): CategoryBarItem[] {
       label: CATEGORY_LABELS[key],
       amount,
       percent: total > 0 ? Math.round((amount / total) * 100) : 0,
-      color: CATEGORY_COLOR[key],
+      color: resolvedColors[key],
     }))
     .sort((a, b) => b.amount - a.amount);
   return entries;
@@ -366,12 +373,20 @@ function buildSummary(
   return `이번 달은 ${composition}${deltaText}`;
 }
 
-export const buildAnalysisData = (rows: TxRow[], monthKey: string): AnalysisMockData => {
+export const buildAnalysisData = (
+  rows: TxRow[],
+  monthKey: string,
+  /**
+   * 표준 카테고리 키 → 색상 맵. 설정 화면에서 사용자가 지정한 색을 그대로 쓰기 위해
+   * 페이지에서 categoriesStore 구독 결과를 주입합니다. 미전달 시 기본 팔레트로 폴백합니다.
+   */
+  categoryColorMap?: Record<TxCategory, string>
+): AnalysisMockData => {
   const thisMonth = rows.filter((row) => toMonthKey(row.date) === monthKey);
   const prevMonth = rows.filter((row) => toMonthKey(row.date) === getPrevMonthKey(monthKey));
 
   const platform = buildPlatform(thisMonth);
-  const category = buildCategory(thisMonth);
+  const category = buildCategory(thisMonth, categoryColorMap);
   const repeat = buildRepeat(thisMonth);
   const { items: subscriptions, total: subscriptionTotal } = buildSubscriptions(thisMonth, monthKey);
   const trend = buildTrend(rows, monthKey);

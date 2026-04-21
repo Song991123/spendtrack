@@ -9,7 +9,13 @@ import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
-import { PLATFORM_LABELS, STATUS_LABELS, TYPE_LABELS } from "../../../constants/labels";
+import {
+  CATEGORY_LABELS,
+  PLATFORM_LABELS,
+  STATUS_LABELS,
+  TYPE_LABELS,
+} from "../../../constants/labels";
+import { useCategoryColorMap } from "../../../stores/categoriesStore";
 
 export type TxType = "expense" | "income";
 export type TxPlatform = "coupang" | "naver" | "musinsa";
@@ -46,11 +52,12 @@ export interface TxRow {
 
 const Table = styled.div`
   display: grid;
-  grid-template-columns: 76px 110px 108px 1fr 140px 96px;
+  /* 7번째 컬럼(카테고리 색)은 거래명과 금액 사이에 좁게 끼워 넣어서, 색 박스 + hover 툴팁만 담당합니다. */
+  grid-template-columns: 76px 110px 108px 1fr 52px 140px 96px;
   font-size: 13px;
 
   ${media.tablet} {
-    grid-template-columns: 76px 96px 100px 1fr 132px 96px;
+    grid-template-columns: 76px 96px 100px 1fr 44px 132px 96px;
   }
 `;
 
@@ -174,6 +181,65 @@ const DataCell = styled.div<{
     `}
 `;
 
+/**
+ * 카테고리 색상 셀의 hover 범위. 색상 정사각형 위에 마우스가 오면 카테고리 이름 툴팁을
+ * 위쪽에 띄워 보여줍니다. 포지셔닝을 위해 relative를 걸어두고, 툴팁의 기준점이 됩니다.
+ */
+const CategoryCell = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* 부모 DataCell 폭을 가득 채워 색상 정사각형이 컬럼 정중앙에 오게 합니다. */
+  width: 100%;
+`;
+
+/**
+ * 카테고리 색을 보여주는 정사각형. 각 행에서 "이 거래가 어느 카테고리인지"를
+ * 최소 시각 노이즈로 전달하는 역할이라 테두리 없이 배경색만 씁니다.
+ */
+const ColorSquare = styled.span<{ $color: string }>`
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: ${({ $color }) => $color};
+  /* 배경과 섞이지 않도록 아주 연한 윤곽선을 깔아 둡니다. 흰 배경에도, hover 배경에도 안정적입니다. */
+  box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.08);
+`;
+
+/**
+ * 카테고리 이름을 카테고리 색으로 보여주는 툴팁.
+ * 평소엔 hidden, 부모(CategoryCell) hover 시에만 opacity/translate로 부드럽게 등장합니다.
+ * 색상 가독성을 위해 흰 배경/그림자를 깔고 글씨만 해당 카테고리 색으로 강조합니다.
+ */
+const CategoryTooltip = styled.span<{ $color: string }>`
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  padding: 4px 8px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.panel};
+  box-shadow: ${tokens.shadow.cardHover};
+  color: ${({ $color }) => $color};
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity ${tokens.motion.fast} ease,
+    transform ${tokens.motion.fast} ease;
+  z-index: 2;
+
+  ${CategoryCell}:hover & {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+`;
+
 const Amount = styled.span<{ $positive?: boolean }>`
   color: ${({ $positive }) => ($positive ? tokens.color.pos : tokens.color.neg)};
   font-family: ${tokens.font.mono};
@@ -233,6 +299,8 @@ export const TransactionTable: React.FC<Props> = ({
 }) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [hoveredId, setHoveredId] = useState<string>("");
+  // 카테고리 색상은 설정 화면에서 사용자가 편집할 수 있으므로, 직접 스토어를 구독해 즉시 반영합니다.
+  const categoryColorMap = useCategoryColorMap();
   const hasMore = rows.length < totalCount;
   const loadMoreRef = useRef(onLoadMore);
   loadMoreRef.current = onLoadMore;
@@ -297,6 +365,8 @@ export const TransactionTable: React.FC<Props> = ({
         </SortableHeader>
         <HeaderCell className="tag">플랫폼</HeaderCell>
         <HeaderCell>거래명</HeaderCell>
+        {/* 카테고리 컬럼은 색상 정사각형만 표시하고 제목도 짧게 표기합니다. */}
+        <HeaderCell style={{ textAlign: "center", padding: "10px 0" }}>분류</HeaderCell>
         <HeaderCell className="right">금액</HeaderCell>
         <HeaderCell className="tag">상태</HeaderCell>
         {rows.map((row, rowIndex) => {
@@ -331,6 +401,21 @@ export const TransactionTable: React.FC<Props> = ({
                 <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
               </DataCell>
               <DataCell {...common}>{row.title}</DataCell>
+              <DataCell {...common} style={{ ...common.style, padding: "12px 0" }}>
+                {/* 색상 정사각형 + hover 툴팁. 툴팁 글씨는 해당 카테고리 색으로 나와 시각 연관을 만듭니다. */}
+                <CategoryCell>
+                  <ColorSquare
+                    $color={categoryColorMap[row.category]}
+                    aria-label={CATEGORY_LABELS[row.category]}
+                  />
+                  <CategoryTooltip
+                    role="tooltip"
+                    $color={categoryColorMap[row.category]}
+                  >
+                    {CATEGORY_LABELS[row.category]}
+                  </CategoryTooltip>
+                </CategoryCell>
+              </DataCell>
               <DataCell {...common} $right>
                 <Amount $positive={row.amount > 0}>
                   {row.amount > 0 ? "+" : "-"}

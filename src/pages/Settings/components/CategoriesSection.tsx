@@ -1,6 +1,8 @@
 /**
  * 역할: 설정 화면의 카테고리 관리 블록.
- *       - "기타"는 모든 미지정 거래의 폴백이라 삭제할 수 없게 잠가둡니다.
+ *       - 목록/색상은 categoriesStore에서 구독하므로, 이 화면에서 편집한 값이
+ *         분석(카테고리별 지출)과 거래 내역(카테고리 색상 컬럼)에 즉시 반영됩니다.
+ *       - "기타"는 모든 미지정 거래의 폴백이라 삭제할 수 없게 잠가두고, 목록 맨 위에 고정합니다.
  *       - 그 외 카테고리는 언제든 삭제할 수 있고, 사용자가 원하는 이름/색으로 추가할 수도 있습니다.
  *       - 각 행의 건수는 transactionsStore를 구독해 실제 거래 수를 반영합니다.
  *         사용자 정의 카테고리는 아직 거래와 연결되지 않으므로 0건으로 표시됩니다.
@@ -11,44 +13,13 @@ import styled from "styled-components";
 import { tokens } from "../../../styles/tokens";
 import { SettingsBlock } from "./SettingsSection";
 import { Button } from "../../../components/primitives/Button";
-import { CATEGORY_LABELS, DEFAULT_CATEGORY_KEY } from "../../../constants/labels";
 import { useTransactionsStore } from "../../../stores/transactionsStore";
+import {
+  categoriesStore,
+  useCategoriesStore,
+} from "../../../stores/categoriesStore";
 import type { TxCategory } from "../../../pages/Transactions/components/TransactionTable";
 import { CategoryAddModal, type CategoryAddPayload } from "./CategoryAddModal";
-
-/**
- * 한 카테고리 엔트리. 표준 5종(living/fashion/digital/food/etc)은 id를 TxCategory 키로 두고,
- * 사용자가 직접 만든 카테고리는 `custom_...` 접두사로 구분합니다.
- * isLocked는 "기타"만 true입니다 — 삭제 버튼 자체를 숨기고 행을 한 톤 흐리게 렌더합니다.
- * isStandard는 TxCategory enum에 속한 항목으로, 실제 거래 건수를 계산할 수 있습니다.
- */
-interface CategoryEntry {
-  id: string;
-  name: string;
-  color: string;
-  isStandard: boolean;
-  isLocked: boolean;
-}
-
-/**
- * 초기 카테고리 집합. CATEGORY_LABELS의 5종을 기본 색상과 함께 등록합니다.
- * "기타"는 잠금 플래그를 달아 삭제되지 않게 합니다.
- */
-const INITIAL_CATEGORIES: CategoryEntry[] = [
-  {
-    id: DEFAULT_CATEGORY_KEY,
-    name: CATEGORY_LABELS.etc,
-    color: tokens.color.cat5,
-    isStandard: true,
-    // 기타는 미지정 거래가 수렴되는 폴백이라 목록에서 없앨 수 없습니다. 목록의 첫 줄에 고정해
-    // "기본값"이라는 정체성을 시각적으로도 강조합니다.
-    isLocked: true,
-  },
-  { id: "living", name: CATEGORY_LABELS.living, color: tokens.color.cat2, isStandard: true, isLocked: false },
-  { id: "fashion", name: CATEGORY_LABELS.fashion, color: tokens.color.cat1, isStandard: true, isLocked: false },
-  { id: "digital", name: CATEGORY_LABELS.digital, color: tokens.color.cat4, isStandard: true, isLocked: false },
-  { id: "food", name: CATEGORY_LABELS.food, color: tokens.color.cat3, isStandard: true, isLocked: false },
-];
 
 const HeaderBar = styled.div`
   display: flex;
@@ -172,7 +143,7 @@ function isTxCategoryKey(id: string): id is TxCategory {
 
 export const CategoriesSection: React.FC = () => {
   const rows = useTransactionsStore();
-  const [categories, setCategories] = useState<CategoryEntry[]>(INITIAL_CATEGORIES);
+  const categories = useCategoriesStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   /**
@@ -194,15 +165,11 @@ export const CategoriesSection: React.FC = () => {
   }, [rows]);
 
   const handleAdd = (payload: CategoryAddPayload) => {
-    const id = `custom_${Date.now()}`;
-    setCategories((prev) => [
-      ...prev,
-      { id, name: payload.name, color: payload.color, isStandard: false, isLocked: false },
-    ]);
+    categoriesStore.addCustom(payload);
   };
 
   const handleDelete = (id: string) => {
-    setCategories((prev) => prev.filter((category) => !(category.id === id && !category.isLocked)));
+    categoriesStore.remove(id);
   };
 
   const existingNames = categories.map((category) => category.name);
