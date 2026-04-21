@@ -30,6 +30,8 @@ const CATEGORY_MAP: Record<string, TxCategory> = {
   "식품/음료": "food",
   식품: "food",
   음료: "food",
+  // CSV에 "기타"라고 적혀 있거나 카테고리 칸이 비어 있으면 모두 "기타"로 분류합니다.
+  기타: "etc",
 };
 
 function pickFirstValue(row: CsvRow, headers: readonly string[]): string {
@@ -135,7 +137,8 @@ export function importRows(parsed: CsvRow[]): CsvImportResult {
       return;
     }
 
-    const category = (CATEGORY_MAP[categoryRaw.trim()] ?? "living") as TxCategory;
+    // 사용자가 카테고리를 지정하지 않았거나 알 수 없는 값이면 "기타"로 자동 분류합니다.
+    const category = (CATEGORY_MAP[categoryRaw.trim()] ?? "etc") as TxCategory;
     const status = inferStatus(statusRaw, amount);
     const txShape = toTxShape(amount, status);
 

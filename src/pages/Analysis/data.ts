@@ -124,6 +124,8 @@ const CATEGORY_COLOR: Record<TxCategory, string> = {
   fashion: tokens.color.cat1,
   digital: tokens.color.cat4,
   food: tokens.color.cat3,
+  // "기타"는 의도적으로 중립적인 회색 계열 cat5를 씁니다 — 차트에서 다른 카테고리를 더 두드러지게 하기 위함입니다.
+  etc: tokens.color.cat5,
 };
 
 function buildCategory(rows: TxRow[]): CategoryBarItem[] {
@@ -132,6 +134,7 @@ function buildCategory(rows: TxRow[]): CategoryBarItem[] {
     fashion: 0,
     digital: 0,
     food: 0,
+    etc: 0,
   };
   for (const row of rows) {
     if (row.type !== "expense" || row.status === "cancel") continue;

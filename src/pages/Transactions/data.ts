@@ -65,6 +65,17 @@ const TITLE_POOLS: Record<TxCategory, string[]> = {
     "건조과일 팩",
     "홍차 컬렉션",
   ],
+  // "기타"는 사용자가 카테고리를 지정하지 않은 거래의 기본값이라 seed에서도 분류가 애매한 타이틀만 담았습니다.
+  etc: [
+    "기타 주문",
+    "용도 미분류",
+    "판매자 증정품",
+    "포장 박스 구입",
+    "기프티콘 교환",
+    "이벤트 경품 교환",
+    "디지털 상품권",
+    "소량 구매",
+  ],
 };
 
 const SUBSCRIPTIONS: Array<{
@@ -88,6 +99,8 @@ const AMOUNT_RANGE: Record<TxCategory, [number, number]> = {
   fashion: [29000, 210000],
   digital: [19000, 410000],
   food: [9000, 95000],
+  // "기타"는 성격이 다양해서 범위를 넓게 잡았습니다.
+  etc: [5000, 120000],
 };
 
 const PLATFORM_WEIGHT: Array<[TxPlatform, number]> = [

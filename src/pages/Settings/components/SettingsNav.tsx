@@ -7,12 +7,11 @@ import styled from "styled-components";
 import { Card } from "../../../components/primitives/Card";
 import { tokens } from "../../../styles/tokens";
 
-export type SettingsSection = "profile" | "account" | "notifications" | "categories" | "danger";
+export type SettingsSection = "profile" | "account" | "categories" | "danger";
 
 const ITEMS: { key: SettingsSection; label: string }[] = [
   { key: "profile", label: "프로필" },
   { key: "account", label: "계정" },
-  { key: "notifications", label: "알림" },
   { key: "categories", label: "카테고리" },
   { key: "danger", label: "계정 삭제" },
 ];

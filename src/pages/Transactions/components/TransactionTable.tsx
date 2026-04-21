@@ -14,7 +14,11 @@ import { PLATFORM_LABELS, STATUS_LABELS, TYPE_LABELS } from "../../../constants/
 export type TxType = "expense" | "income";
 export type TxPlatform = "coupang" | "naver" | "musinsa";
 export type TxStatus = "purchase" | "cancel" | "refund" | "sub";
-export type TxCategory = "living" | "fashion" | "digital" | "food";
+/**
+ * "etc"(기타)는 사용자가 카테고리를 지정하지 않은 모든 거래의 안전한 기본값입니다.
+ * CSV/OCR/수동 입력 모든 경로에서 카테고리가 비었거나 알 수 없으면 "etc"로 수렴시킵니다.
+ */
+export type TxCategory = "living" | "fashion" | "digital" | "food" | "etc";
 
 export type TxSource = "mock" | "csv" | "ocr" | "manual";
 

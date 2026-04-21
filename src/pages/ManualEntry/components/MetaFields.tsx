@@ -12,7 +12,8 @@ import { media } from "../../../tokens/breakpoints";
 
 export type CategoryKey = keyof typeof CATEGORY_LABELS;
 
-const CATEGORY_OPTIONS: CategoryKey[] = ["living", "fashion", "digital", "food"];
+// "기타"를 맨 뒤에 두어, 사용자가 특정 카테고리를 고르지 못했을 때 마지막 선택지로 눈에 띄게 합니다.
+const CATEGORY_OPTIONS: CategoryKey[] = ["living", "fashion", "digital", "food", "etc"];
 
 /**
  * 수동 입력 폼의 메타 필드들. 상위 ManualEntry 페이지가 저장 버튼을 눌렀을 때

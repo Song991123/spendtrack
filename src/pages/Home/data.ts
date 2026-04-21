@@ -171,6 +171,7 @@ function buildInsights(rows: TxRow[], monthKey: string): InsightItem[] {
     fashion: "패션/의류",
     digital: "전자기기",
     food: "식품/음료",
+    etc: "기타",
   };
 
   const insights: InsightItem[] = [];

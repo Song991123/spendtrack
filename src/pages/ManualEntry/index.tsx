@@ -32,13 +32,19 @@ function mapPlatform(input: string): TxPlatform {
   return "coupang"; // fallback: 대시보드 집계가 망가지지 않도록 알려진 플랫폼으로 수렴시킵니다.
 }
 
-/** 수동 입력 카테고리 키를 TransactionTable의 TxCategory와 매핑합니다. */
+/**
+ * 수동 입력 카테고리 키를 TransactionTable의 TxCategory와 매핑합니다.
+ * 사용자가 카테고리를 아무것도 선택하지 않았거나 표준 4개(living/fashion/digital/food)에
+ * 해당하지 않는 커스텀 카테고리만 선택했다면 "기타"로 수렴시킵니다.
+ */
 function mapCategory(keys: string[]): TxCategory {
-  const first = keys[0];
-  if (first === "fashion") return "fashion";
-  if (first === "digital") return "digital";
-  if (first === "food") return "food";
-  return "living";
+  const standard: TxCategory[] = ["living", "fashion", "digital", "food"];
+  const hit = keys.find((key) => (standard as string[]).includes(key));
+  if (hit === "fashion") return "fashion";
+  if (hit === "digital") return "digital";
+  if (hit === "food") return "food";
+  if (hit === "living") return "living";
+  return "etc";
 }
 
 function mapStatus(key: StatusKey | null): TxStatus {
@@ -116,7 +122,9 @@ const EMPTY_META: MetaFieldValues = {
   amount: "",
   platform: "",
   date: "",
-  categories: ["living"],
+  // 사용자가 카테고리를 명시적으로 선택하기 전까지는 "기타"가 디폴트로 체크돼 있습니다.
+  // 사용자가 다른 카테고리를 고르면 그대로 덮어 써집니다.
+  categories: ["etc"],
   memo: "",
 };
 

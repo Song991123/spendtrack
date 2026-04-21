@@ -51,7 +51,9 @@ const Footer = styled.div`
 `;
 
 function buildCandidate(image: OcrImageItem): TxRow {
-  const category: TxCategory = "living";
+  // OCR 결과만으로는 카테고리를 단정할 수 없으므로 지정 전까지는 "기타"로 저장합니다.
+  // EditForm의 카테고리 체크박스가 상위로 승격되면 여기서 선택값을 주입하게 됩니다.
+  const category: TxCategory = "etc";
   const title = image.products[0]?.name ?? "OCR 거래";
   return {
     id: `ocr-${Date.now()}`,

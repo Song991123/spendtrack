@@ -30,5 +30,14 @@ export const CATEGORY_LABELS = {
   fashion: "패션/의류",
   digital: "전자기기",
   food: "식품/음료",
+  // "기타"는 사용자가 카테고리를 지정하지 않았을 때 자동으로 적용되는 폴백 카테고리입니다.
+  // 어떤 경로(수동 입력, CSV 업로드, OCR 저장)를 타더라도 미지정이면 이 값으로 수렴됩니다.
+  etc: "기타",
 } as const;
+
+/**
+ * 카테고리를 지정하지 않은 거래에 자동으로 붙는 기본값 키입니다.
+ * TxCategory와 타입이 같도록 const assertion으로 좁혀둡니다.
+ */
+export const DEFAULT_CATEGORY_KEY = "etc" as const;
 
