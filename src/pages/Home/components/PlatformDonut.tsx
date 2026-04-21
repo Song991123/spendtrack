@@ -56,7 +56,8 @@ const Body = styled.div`
 const Legend = styled.ul`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  /* Analysis BarRow/RepeatTop3/SubscriptionList의 12px 리듬에 맞춰 리스트 간격을 12px로 통일. */
+  gap: 12px;
   width: 100%;
   margin: 0;
   padding: 0;

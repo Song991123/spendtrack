@@ -45,7 +45,8 @@ const Strip = styled.div`
 `;
 
 const Cell = styled.div`
-  padding: 14px 18px;
+  /* Home/Analysis KpiStrip과 동일한 16px 20px 패딩으로 통일. 셀 내부 리듬이 페이지 간 동일하게 느껴지도록 맞췄습니다. */
+  padding: 16px 20px;
   border-right: 1px solid ${tokens.color.line2};
 
   &:last-child {
@@ -75,17 +76,19 @@ const Cell = styled.div`
 `;
 
 const Label = styled.div`
-  color: ${tokens.color.ink4};
-  font-size: 11px;
+  /* Home KpiStrip LabelRow(12px)와 통일해 상단 스트립 라벨 톤을 맞춥니다. */
+  color: ${tokens.color.ink3};
+  font-size: 12px;
   font-weight: 500;
 `;
 
 const Value = styled.div<{ $color?: string }>`
-  margin-top: 4px;
+  /* KpiStrip 비-primary 셀과 동일한 22px/margin 6px로 통일. 페이지 간 상단 숫자 크기 인상이 맞도록. */
+  margin-top: 6px;
   color: ${({ $color }) => $color ?? tokens.color.ink1};
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 `;
 
@@ -93,9 +96,10 @@ const Sub = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 3px;
+  /* Analysis KpiStrip SubRow와 통일(caption 12px). */
+  margin-top: 4px;
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 const Chip = styled.span<{ $tone: "up" | "down" | "flat" }>`

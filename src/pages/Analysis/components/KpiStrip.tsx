@@ -44,7 +44,8 @@ const Strip = styled.div`
 `;
 
 const Cell = styled.div`
-  padding: 16px 18px;
+  /* Home KpiStrip과 동일한 16px 20px로 통일해 페이지 간 상단 스트립의 셀 밀도를 맞췄습니다. */
+  padding: 16px 20px;
   border-right: 1px solid ${tokens.color.line2};
 
   &:last-child {
@@ -72,13 +73,15 @@ const Cell = styled.div`
 `;
 
 const Label = styled.div`
-  color: ${tokens.color.ink4};
-  font-size: 11px;
+  /* Home/SummaryStrip Label과 통일(ink3 · 12px). */
+  color: ${tokens.color.ink3};
+  font-size: 12px;
   font-weight: 500;
 `;
 
 const Value = styled.div<{ $color?: string }>`
-  margin: 4px 0 2px;
+  /* Home/SummaryStrip과 통일(margin-top 6px, 22px, letter-spacing -0.02em). */
+  margin: 6px 0 0;
   color: ${({ $color }) => $color ?? tokens.color.ink1};
   font-size: 22px;
   font-weight: 700;
@@ -90,8 +93,10 @@ const SubRow = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
+  /* caption(12px)과 맞춰 상단 스트립 서브텍스트 톤을 통일. */
+  margin-top: 4px;
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 export const KpiStrip: React.FC<{ kpis: KpiItem[] }> = ({ kpis }) => (
