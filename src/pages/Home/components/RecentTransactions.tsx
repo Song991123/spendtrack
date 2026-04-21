@@ -47,10 +47,23 @@ const Row = styled.li`
   grid-template-columns: 32px minmax(0, 1fr) auto auto;
   gap: 12px;
   align-items: center;
-  padding: 10px 0;
+  padding: 10px 12px;
+  margin: 0 -12px;
+  border-radius: ${tokens.radius.control};
+  transition: background ${tokens.motion.fast} ease;
+  cursor: pointer;
 
   & + & {
     border-top: 1px solid ${tokens.color.line2};
+  }
+
+  &:hover {
+    background: ${tokens.color.tint};
+    border-top-color: transparent;
+  }
+
+  &:hover + & {
+    border-top-color: transparent;
   }
 `;
 
@@ -81,7 +94,7 @@ const Meta = styled.div`
 `;
 
 const Amount = styled.div<{ $negative?: boolean }>`
-  color: ${({ $negative }) => ($negative ? tokens.color.ink1 : tokens.color.pos)};
+  color: ${({ $negative }) => ($negative ? tokens.color.neg : tokens.color.pos)};
   font-family: ${tokens.font.mono};
   font-size: 13.5px;
   font-weight: 600;

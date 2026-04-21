@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
  * 위치: src\pages\ManualEntry\index.tsx
  */
@@ -7,7 +7,10 @@ import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { Card, CardBd } from "../../components/primitives/Card";
 import { Button } from "../../components/primitives/Button";
-import { ProductAddModal } from "../../components/modal/ProductAddModal";
+import {
+  ProductAddModal,
+  type ProductAddPayload,
+} from "../../components/modal/ProductAddModal";
 import { tokens } from "../../styles/tokens";
 import { TypeSegment, type TxType } from "./components/TypeSegment";
 import { MetaFields } from "./components/MetaFields";
@@ -60,6 +63,12 @@ const AddButton = styled.button`
   font-weight: 600;
 `;
 
+/**
+ * 모달은 '추가'와 '수정' 두 모드로 동작합니다. editingId가 설정되면 수정 모드,
+ * null이면 추가 모드입니다. 이렇게 한 모달로 두 흐름을 공유해 UI 일관성을 유지합니다.
+ */
+type ModalMode = { type: "add" } | { type: "edit"; id: string };
+
 export const ManualEntryPage: React.FC = () => {
   // 수동 입력 화면은 거래 유형, 상태, 상품 목록을 한 페이지에서 바로 조정합니다.
   const [type, setType] = useState<TxType>("expense");
@@ -68,12 +77,29 @@ export const ManualEntryPage: React.FC = () => {
     { id: "p1", name: "에어포스 1 로우", price: 129000 },
     { id: "p2", name: "에어맥스 90 블랙", price: 129000 },
   ]);
-  const [modalOpen, setModalOpen] = useState(false);
+  const [modal, setModal] = useState<ModalMode | null>(null);
 
-  const handleAdd = (product: Omit<ManualProduct, "id">) => {
-    // 데모 단계에서는 간단히 현재 시간값을 id로 써서 새 상품 행을 구분합니다.
-    setProducts((current) => [...current, { ...product, id: String(Date.now()) }]);
-    setModalOpen(false);
+  const editingProduct =
+    modal?.type === "edit"
+      ? products.find((product) => product.id === modal.id) ?? null
+      : null;
+
+  const handleSubmit = (payload: ProductAddPayload) => {
+    if (modal?.type === "edit") {
+      // 수정 저장 시 해당 id의 상품 항목만 새 값으로 교체합니다.
+      setProducts((current) =>
+        current.map((product) =>
+          product.id === modal.id ? { ...product, ...payload } : product
+        )
+      );
+    } else {
+      // 데모 단계에서는 간단히 현재 시간값을 id로 써서 새 상품 행을 구분합니다.
+      setProducts((current) => [
+        ...current,
+        { ...payload, id: String(Date.now()) },
+      ]);
+    }
+    setModal(null);
   };
 
   return (
@@ -96,15 +122,23 @@ export const ManualEntryPage: React.FC = () => {
 
           <SectionHeader>
             <SectionLabel style={{ margin: 0 }}>등록된 상품</SectionLabel>
-            <AddButton type="button" onClick={() => setModalOpen(true)}>
+            <AddButton type="button" onClick={() => setModal({ type: "add" })}>
               + 상품 추가
             </AddButton>
           </SectionHeader>
           {/* 거래 하나 안에 여러 상품이 들어갈 수 있다는 점을 여기서 보여줍니다. */}
-          <SectionHint>상품을 추가하면 거래에 포함된 구매 항목을 함께 기록할 수 있어요.</SectionHint>
+          <SectionHint>
+            상품을 추가하면 거래에 포함된 구매 항목을 함께 기록할 수 있어요.
+            수정이 필요하면 행의 '수정'을 눌러보세요.
+          </SectionHint>
           <ProductRows
             products={products}
-            onRemove={(id) => setProducts((current) => current.filter((product) => product.id !== id))}
+            onEdit={(id) => setModal({ type: "edit", id })}
+            onRemove={(id) =>
+              setProducts((current) =>
+                current.filter((product) => product.id !== id)
+              )
+            }
           />
 
           <SaveBar>
@@ -117,8 +151,12 @@ export const ManualEntryPage: React.FC = () => {
         </CardBd>
       </Card>
 
-      <ProductAddModal isOpen={modalOpen} onClose={() => setModalOpen(false)} onAdd={handleAdd} />
+      <ProductAddModal
+        isOpen={modal !== null}
+        initialValues={editingProduct}
+        onClose={() => setModal(null)}
+        onSubmit={handleSubmit}
+      />
     </AppShell>
   );
 };
-

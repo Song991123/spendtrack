@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
  * 위치: src\pages\ManualEntry\components\ProductRows.tsx
  */
@@ -20,7 +20,7 @@ const Wrap = styled.div`
 
 const Row = styled.div`
   display: grid;
-  grid-template-columns: 1fr 120px 50px 24px;
+  grid-template-columns: 1fr 120px 50px 50px 24px;
   gap: 12px;
   align-items: center;
   padding: 10px 4px;
@@ -51,6 +51,21 @@ const LinkButton = styled.button`
   font-weight: 600;
 `;
 
+const EditButton = styled.button`
+  border: none;
+  background: none;
+  color: ${tokens.color.ink3};
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  transition: color ${tokens.motion.fast} ease;
+
+  &:hover {
+    color: ${tokens.color.accentHover};
+  }
+`;
+
 const RemoveButton = styled.button`
   border: none;
   background: none;
@@ -72,8 +87,9 @@ const Empty = styled.div`
 
 export const ProductRows: React.FC<{
   products: ManualProduct[];
+  onEdit: (id: string) => void;
   onRemove: (id: string) => void;
-}> = ({ products, onRemove }) => (
+}> = ({ products, onEdit, onRemove }) => (
   <Wrap>
     {products.length === 0 ? (
       <Empty>아직 등록된 상품이 없어요.</Empty>
@@ -83,6 +99,9 @@ export const ProductRows: React.FC<{
           <Name>{product.name}</Name>
           <Price>₩{product.price.toLocaleString("ko-KR")}</Price>
           <LinkButton type="button">링크</LinkButton>
+          <EditButton type="button" onClick={() => onEdit(product.id)}>
+            수정
+          </EditButton>
           <RemoveButton type="button" onClick={() => onRemove(product.id)}>
             ×
           </RemoveButton>
@@ -91,4 +110,3 @@ export const ProductRows: React.FC<{
     )}
   </Wrap>
 );
-

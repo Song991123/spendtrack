@@ -8,7 +8,8 @@ import { useEffect, useState } from "react";
 import type { TxRow } from "../pages/Transactions/components/TransactionTable";
 import { getTransactionsMockData } from "../pages/Transactions/data";
 
-const STORAGE_KEY = "spendtrack:transactions:v1";
+// v2: 거래 상세 상품 아이템에 link 필드가 추가된 시드. 이전 v1 캐시가 있어도 새 시드를 받도록 버전을 올립니다.
+const STORAGE_KEY = "spendtrack:transactions:v2";
 const SEED_MONTHS = ["2026-01", "2026-02", "2026-03", "2026-04"];
 
 type Listener = (rows: TxRow[]) => void;
@@ -72,7 +73,7 @@ export const transactionsStore = {
   },
   appendItemsToTransaction(
     id: string,
-    items: { name: string; price: number }[],
+    items: { name: string; price: number; link?: string }[],
     source: "OCR" | "MANUAL" = "OCR"
   ): void {
     const current = ensureSeeded();

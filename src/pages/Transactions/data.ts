@@ -148,6 +148,15 @@ function roundTo(value: number, step: number): number {
   return Math.round(value / step) * step;
 }
 
+// 플랫폼별로 상품명을 넣으면 검색 결과로 열릴 만한 URL 패턴을 가지고 있습니다.
+// 실제 상품 URL이 아니어도 사용자가 해당 플랫폼에서 바로 상품을 확인할 수 있도록 돕습니다.
+const PLATFORM_SEARCH_URL: Record<TxPlatform, (q: string) => string> = {
+  coupang: (q) =>
+    `https://www.coupang.com/np/search?q=${encodeURIComponent(q)}`,
+  naver: (q) => `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(q)}`,
+  musinsa: (q) => `https://www.musinsa.com/search/musinsa/goods?q=${encodeURIComponent(q)}`,
+};
+
 function daysInMonth(monthKey: string): number {
   const [year, month] = monthKey.split("-").map(Number);
   return new Date(year, month, 0).getDate();
@@ -208,6 +217,9 @@ function generateRows(monthKey: string): TxRow[] {
       const type: TxType = "expense";
       const useDetail = rand() < 0.55;
       const source: "OCR" | "MANUAL" = rand() < 0.5 ? "OCR" : "MANUAL";
+      // 대부분의 상품에 링크를 달아두되, 일부는 일부러 비워서 "링크 없는 케이스"도 UI에서 확인할 수 있게 합니다.
+      const withLink = rand() < 0.7;
+      const link = withLink ? PLATFORM_SEARCH_URL[platform](title) : undefined;
       row = {
         id,
         type,
@@ -218,7 +230,12 @@ function generateRows(monthKey: string): TxRow[] {
         amount: -price,
         status,
         ...(useDetail
-          ? { detail: { items: [{ name: title, price }], source } }
+          ? {
+              detail: {
+                items: [{ name: title, price, ...(link ? { link } : {}) }],
+                source,
+              },
+            }
           : {}),
       };
     }
@@ -239,13 +256,35 @@ function getRowsForMonth(monthKey: string): TxRow[] {
   return rows;
 }
 
-export const buildTransactionSummary = (rows: TxRow[]): SummaryData => {
+function sumSpend(rows: TxRow[]): number {
+  return rows
+    .filter((row) => row.type === "expense")
+    .reduce((sum, row) => sum + Math.abs(Math.min(row.amount, 0)), 0);
+}
+
+export const buildTransactionSummary = (
+  rows: TxRow[],
+  prevRows?: TxRow[],
+): SummaryData => {
   const total = rows.length;
   const spendRows = rows.filter((row) => row.type === "expense");
   const incomeRows = rows.filter((row) => row.type === "income");
   const totalSpend = spendRows.reduce((sum, row) => sum + Math.abs(Math.min(row.amount, 0)), 0);
   const incomeAndRefund = incomeRows.reduce((sum, row) => sum + Math.max(row.amount, 0), 0);
   const refundCount = rows.filter((row) => row.status === "refund").length;
+
+  let spendDelta: SummaryData["spendDelta"];
+  if (prevRows && prevRows.length > 0) {
+    const prevSpend = sumSpend(prevRows);
+    if (prevSpend > 0) {
+      const ratio = (totalSpend - prevSpend) / prevSpend;
+      const percent = Math.round(ratio * 100);
+      spendDelta = {
+        percent,
+        direction: percent > 0 ? "up" : percent < 0 ? "down" : "flat",
+      };
+    }
+  }
 
   return {
     total,
@@ -256,7 +295,19 @@ export const buildTransactionSummary = (rows: TxRow[]): SummaryData => {
     refundCount,
     netSpend: totalSpend - incomeAndRefund,
     countLabel: `총 ${total}건 · 지출 ${spendRows.length}건 · 수입 ${incomeRows.length}건`,
+    spendDelta,
   };
+};
+
+/** "2026-04" → "2026-03"처럼 한 달 앞 키를 반환. */
+export const getPrevMonthKey = (monthKey: string): string => {
+  const [yearStr, monthStr] = monthKey.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  if (!year || !month) return monthKey;
+  const prevMonthIdx = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  return `${prevYear}-${String(prevMonthIdx).padStart(2, "0")}`;
 };
 
 export const getTransactionsMockData = (monthKey: string): TransactionsMockData => {

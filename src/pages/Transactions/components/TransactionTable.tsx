@@ -2,7 +2,7 @@
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
  * 위치: src\pages\Transactions\components\TransactionTable.tsx
  */
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled, { css, keyframes } from "styled-components";
 import { Card } from "../../../components/primitives/Card";
 import { Tag } from "../../../components/primitives/Tag";
@@ -32,19 +32,21 @@ export interface TxRow {
    * mock: 초기 시드, csv: 카드 CSV 업로드, ocr: OCR 저장, manual: 수동 입력.
    */
   source?: TxSource;
+  /** 수동 입력 시 작성한 메모. 레퍼런스 상세 패널에 노출됩니다. */
+  memo?: string;
   detail?: {
-    items: { name: string; price: number }[];
+    items: { name: string; price: number; link?: string }[];
     source?: "OCR" | "MANUAL";
   };
 }
 
 const Table = styled.div`
   display: grid;
-  grid-template-columns: 72px 110px 110px 1fr 140px 80px;
+  grid-template-columns: 76px 110px 108px 1fr 140px 96px;
   font-size: 13px;
 
   ${media.tablet} {
-    grid-template-columns: 72px 96px 96px 1fr 132px 80px;
+    grid-template-columns: 76px 96px 100px 1fr 132px 96px;
   }
 `;
 
@@ -58,12 +60,17 @@ const HeaderCell = styled.div`
   letter-spacing: 0.05em;
   text-transform: uppercase;
 
+  /* Tag 내부 7px 패딩만큼 헤더 텍스트 시작점도 밀어 데이터와 정렬을 맞춥니다. */
+  &.tag {
+    padding-left: 21px;
+  }
+
   &.right {
     text-align: right;
   }
 `;
 
-const DataCell = styled.div<{ $right?: boolean; $active?: boolean }>`
+const DataCell = styled.div<{ $right?: boolean; $active?: boolean; $hovered?: boolean }>`
   display: flex;
   align-items: center;
   padding: 12px 14px;
@@ -75,15 +82,20 @@ const DataCell = styled.div<{ $right?: boolean; $active?: boolean }>`
     css`
       justify-content: flex-end;
     `}
-  ${({ $active }) =>
-    $active &&
-    css`
-      background: ${tokens.color.accentSubtle};
-    `}
+  ${({ $active, $hovered }) =>
+    $active
+      ? css`
+          background: ${tokens.color.accentSubtle};
+        `
+      : $hovered
+        ? css`
+            background: ${tokens.color.foot};
+          `
+        : ""}
 `;
 
 const Amount = styled.span<{ $positive?: boolean }>`
-  color: ${({ $positive }) => ($positive ? tokens.color.pos : tokens.color.ink1)};
+  color: ${({ $positive }) => ($positive ? tokens.color.pos : tokens.color.neg)};
   font-family: ${tokens.font.mono};
   font-size: 13px;
   font-weight: 600;
@@ -134,6 +146,7 @@ export const TransactionTable: React.FC<Props> = ({
   onLoadMore,
 }) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const [hoveredId, setHoveredId] = useState<string>("");
   const hasMore = rows.length < totalCount;
   const loadMoreRef = useRef(onLoadMore);
   loadMoreRef.current = onLoadMore;
@@ -159,17 +172,22 @@ export const TransactionTable: React.FC<Props> = ({
   return (
     <Card padding={0}>
       <Table>
-        <HeaderCell>유형</HeaderCell>
+        <HeaderCell className="tag">유형</HeaderCell>
         <HeaderCell>주문일</HeaderCell>
-        <HeaderCell>플랫폼</HeaderCell>
+        <HeaderCell className="tag">플랫폼</HeaderCell>
         <HeaderCell>거래명</HeaderCell>
         <HeaderCell className="right">금액</HeaderCell>
-        <HeaderCell>상태</HeaderCell>
+        <HeaderCell className="tag">상태</HeaderCell>
         {rows.map((row) => {
           const active = row.id === selectedId;
+          const hovered = row.id === hoveredId && !active;
           const common = {
             $active: active,
+            $hovered: hovered,
             onClick: () => onSelect(row.id),
+            onMouseEnter: () => setHoveredId(row.id),
+            onMouseLeave: () =>
+              setHoveredId((current) => (current === row.id ? "" : current)),
             style: { cursor: "pointer" },
           };
 

@@ -72,7 +72,7 @@ export const HomePage: React.FC = () => {
         <KpiStrip kpis={data.kpis} />
         <Row2>
           <PlatformDonut total={data.platformDonut.total} items={data.platformDonut.items} />
-          <TrendChart points={data.trend.points} average={data.trend.average} />
+          <TrendChart points={data.trend.points} />
         </Row2>
         <RecentTransactions items={data.recent} />
         <InsightCards items={data.insights} />

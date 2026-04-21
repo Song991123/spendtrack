@@ -98,6 +98,7 @@ const ModernTag = styled.span<{ $kind: ModernKind }>`
   font-size: 10.5px;
   font-weight: 600;
   line-height: 1.5;
+  white-space: nowrap;
   ${({ $kind }) => modernStyles[$kind]}
 `;
 

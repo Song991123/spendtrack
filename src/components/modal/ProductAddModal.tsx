@@ -1,8 +1,8 @@
-﻿/**
+/**
  * 역할: 모달 레이어를 통해 보조 입력 흐름을 처리하는 공통 컴포넌트입니다.
  * 위치: src\components\modal\ProductAddModal.tsx
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { Button } from "../primitives/Button";
 import { FormField } from "../form/FormField";
@@ -10,16 +10,24 @@ import { TextInput } from "../form/TextInput";
 import { Modal } from "./Modal";
 import { parsePrice } from "../../utils/format";
 
-interface ProductAddPayload {
+export interface ProductAddPayload {
   name: string;
   price: number;
   link?: string;
 }
 
+export interface ProductInitialValues extends ProductAddPayload {
+  id?: string;
+}
+
 interface ProductAddModalProps {
   isOpen: boolean;
+  /**
+   * 전달되면 수정 모드로 동작하고, 제목/버튼 라벨과 초기값이 함께 바뀝니다.
+   */
+  initialValues?: ProductInitialValues | null;
   onClose: () => void;
-  onAdd: (product: ProductAddPayload) => void;
+  onSubmit: (product: ProductAddPayload) => void;
 }
 
 const BodyStack = styled.div`
@@ -28,10 +36,24 @@ const BodyStack = styled.div`
   gap: 16px;
 `;
 
-export const ProductAddModal = ({ isOpen, onClose, onAdd }: ProductAddModalProps) => {
+export const ProductAddModal = ({
+  isOpen,
+  initialValues,
+  onClose,
+  onSubmit,
+}: ProductAddModalProps) => {
+  const isEdit = Boolean(initialValues);
   const [name, setName] = useState("");
   const [price, setPrice] = useState("");
   const [link, setLink] = useState("");
+
+  useEffect(() => {
+    // 모달이 열릴 때마다 전달된 초기값(수정 모드) 혹은 빈 값(추가 모드)으로 필드를 재설정합니다.
+    if (!isOpen) return;
+    setName(initialValues?.name ?? "");
+    setPrice(initialValues ? String(initialValues.price) : "");
+    setLink(initialValues?.link ?? "");
+  }, [isOpen, initialValues]);
 
   const resetFields = () => {
     setName("");
@@ -44,7 +66,7 @@ export const ProductAddModal = ({ isOpen, onClose, onAdd }: ProductAddModalProps
     onClose();
   };
 
-  const handleAdd = () => {
+  const handleSubmit = () => {
     const trimmedName = name.trim();
     const parsedPrice = parsePrice(price);
     const trimmedLink = link.trim();
@@ -53,7 +75,7 @@ export const ProductAddModal = ({ isOpen, onClose, onAdd }: ProductAddModalProps
       return;
     }
 
-    onAdd({
+    onSubmit({
       name: trimmedName,
       price: parsedPrice,
       link: trimmedLink || undefined,
@@ -64,7 +86,11 @@ export const ProductAddModal = ({ isOpen, onClose, onAdd }: ProductAddModalProps
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="상품 추가">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={isEdit ? "상품 수정" : "상품 추가"}
+    >
       <BodyStack>
         <FormField label="상품명" required>
           <TextInput
@@ -94,11 +120,10 @@ export const ProductAddModal = ({ isOpen, onClose, onAdd }: ProductAddModalProps
           />
         </FormField>
 
-        <Button variant="primary" size="lg" fullWidth onClick={handleAdd}>
-          상품 추가하기
+        <Button variant="primary" size="lg" fullWidth onClick={handleSubmit}>
+          {isEdit ? "수정 저장하기" : "상품 추가하기"}
         </Button>
       </BodyStack>
     </Modal>
   );
 };
-

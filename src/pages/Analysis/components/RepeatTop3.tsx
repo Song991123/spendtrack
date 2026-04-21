@@ -18,10 +18,15 @@ export interface RepeatItem {
   amount: number;
 }
 
-const RANK_COLOR: Record<number, string> = {
-  1: "#B45309",
-  2: "#9A8A32",
-  3: "#6B7280",
+/**
+ * 레퍼런스 HTML `.rep-num` / `.rep-num.top` 규칙을 그대로 가져옵니다.
+ * 1위만 accent 팔레트로 강조하고, 2/3위는 중립 tint + ink3로 보여 주어
+ * 과한 원색 사용을 피하고 정보 위계를 맞춥니다.
+ */
+const RANK_STYLE: Record<number, { bg: string; fg: string }> = {
+  1: { bg: tokens.color.accentSubtle, fg: tokens.color.accentHover },
+  2: { bg: tokens.color.tint, fg: tokens.color.ink3 },
+  3: { bg: tokens.color.tint, fg: tokens.color.ink3 },
 };
 
 const List = styled.ul`
@@ -32,26 +37,30 @@ const List = styled.ul`
 
 const Row = styled.li`
   display: grid;
-  grid-template-columns: 28px 1fr auto auto;
+  grid-template-columns: 22px 1fr auto auto;
   gap: 12px;
   align-items: center;
-  padding: 10px 0;
+  padding: 12px 0;
 
   & + & {
     border-top: 1px solid ${tokens.color.line2};
   }
 `;
 
-const Rank = styled.div<{ $color: string }>`
+const Rank = styled.div<{ $bg: string; $fg: string }>`
   display: grid;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   place-items: center;
   border-radius: 50%;
-  background: ${({ $color }) => $color};
-  color: #fff;
-  font-size: 12px;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+  font-size: 11px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  /* 숫자 폭이 제각각이어도 원 정중앙에 놓이도록 라인-하이트를 명시합니다. */
+  line-height: 1;
+  text-align: center;
 `;
 
 const Title = styled.div`
@@ -88,19 +97,24 @@ export const RepeatTop3: React.FC<{ items: RepeatItem[] }> = ({ items }) => (
     </CardHd>
     <CardBd>
       <List>
-        {items.map((item) => (
-          <Row key={item.rank}>
-            <Rank $color={RANK_COLOR[item.rank]}>{item.rank}</Rank>
-            <div>
-              <Title>{item.title}</Title>
-              <Meta>
-                {item.platform} · {item.category}
-              </Meta>
-            </div>
-            <Count>{item.count}회</Count>
-            <Amount>{formatKRW(item.amount)}</Amount>
-          </Row>
-        ))}
+        {items.map((item) => {
+          const style = RANK_STYLE[item.rank];
+          return (
+            <Row key={item.rank}>
+              <Rank $bg={style.bg} $fg={style.fg}>
+                {item.rank}
+              </Rank>
+              <div>
+                <Title>{item.title}</Title>
+                <Meta>
+                  {item.platform} · {item.category}
+                </Meta>
+              </div>
+              <Count>{item.count}회</Count>
+              <Amount>{formatKRW(item.amount)}</Amount>
+            </Row>
+          );
+        })}
       </List>
     </CardBd>
   </Card>

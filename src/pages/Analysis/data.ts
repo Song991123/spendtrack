@@ -7,6 +7,7 @@ import type { PlatformBarItem } from "./components/PlatformBars";
 import type { CategoryBarItem } from "./components/CategoryBars";
 import type { RepeatItem } from "./components/RepeatTop3";
 import type { SubscriptionItem } from "./components/SubscriptionList";
+import type { WeeklyDay } from "./components/WeeklyPattern";
 import { tokens } from "../../styles/tokens";
 
 export interface AnalysisMockData {
@@ -23,15 +24,72 @@ export interface AnalysisMockData {
   subscriptions: SubscriptionItem[];
   subscriptionTotal: number;
   trend: { points: { label: string; value: number }[]; average: number };
+  weekly: { days: WeeklyDay[]; note: string };
 }
+
+/**
+ * 월별 요일 지출 합계 시드.
+ * 배열은 월~일 순서로 고정해 컴포넌트에서 그대로 렌더됩니다.
+ * 주말(금·토·일) 쪽에 큰 값을 몰아 주말 집중 경향을 시각적으로 살립니다.
+ */
+const WEEKLY_BY_MONTH: Record<string, { days: WeeklyDay[]; note: string }> = {
+  "2026-01": {
+    days: [
+      { day: "월", amount: 42000 },
+      { day: "화", amount: 31000 },
+      { day: "수", amount: 35000 },
+      { day: "목", amount: 48000 },
+      { day: "금", amount: 76000, emphasize: true },
+      { day: "토", amount: 118000, emphasize: true },
+      { day: "일", amount: 71000, emphasize: true },
+    ],
+    note: "금·토·일에 전체의 **63%**가 집중돼요. 주말 쇼핑 한도를 정하면 지출 조절에 도움이 돼요.",
+  },
+  "2026-02": {
+    days: [
+      { day: "월", amount: 48000 },
+      { day: "화", amount: 36000 },
+      { day: "수", amount: 41000 },
+      { day: "목", amount: 56000 },
+      { day: "금", amount: 83000, emphasize: true },
+      { day: "토", amount: 124000, emphasize: true },
+      { day: "일", amount: 80000, emphasize: true },
+    ],
+    note: "금·토·일에 전체의 **61%**가 집중돼요. 평일 쪽 주문은 꾸준한 편이에요.",
+  },
+  "2026-03": {
+    days: [
+      { day: "월", amount: 53000 },
+      { day: "화", amount: 38000 },
+      { day: "수", amount: 45000 },
+      { day: "목", amount: 61000 },
+      { day: "금", amount: 94000, emphasize: true },
+      { day: "토", amount: 137000, emphasize: true },
+      { day: "일", amount: 106000, emphasize: true },
+    ],
+    note: "금·토·일에 전체의 **63%**가 집중돼요. 이번 달은 토요일 피크가 특히 높았어요.",
+  },
+  "2026-04": {
+    days: [
+      { day: "월", amount: 56000 },
+      { day: "화", amount: 41000 },
+      { day: "수", amount: 47000 },
+      { day: "목", amount: 64000 },
+      { day: "금", amount: 98000, emphasize: true },
+      { day: "토", amount: 141000, emphasize: true },
+      { day: "일", amount: 142000, emphasize: true },
+    ],
+    note: "금·토·일에 전체의 **65%**가 집중돼요. 주말 쇼핑 한도를 설정하면 지출 조절에 도움이 돼요.",
+  },
+};
 
 const MONTHLY_ANALYSIS_DATA: Record<string, AnalysisMockData> = {
   "2026-01": {
-    summary: "1월은 연초 소비가 안정적으로 시작됐고, 생활용품과 겨울 의류가 중심이었어요.",
+    summary: "1월은 연초 소비가 **안정적으로 시작**됐고, **생활용품(35%)**과 **겨울 의류**가 중심이었어요. 지난달 대비 **지출은 −4.1% 감소**했어요.",
     kpis: [
-      { key: "spend", label: "총 지출", value: 421000, delta: { tone: "down", text: "전월 대비 4.1%" } },
+      { key: "spend", label: "총 지출", value: 421000, delta: { tone: "down", text: "−4.1%" } },
       { key: "count", label: "쇼핑 횟수", value: 10, unit: "건", sub: "주간 평균 수준" },
-      { key: "avg", label: "평균 주문금액", value: 42100, delta: { tone: "down", text: "전월 대비 2%" } },
+      { key: "avg", label: "평균 주문금액", value: 42100, delta: { tone: "down", text: "−2%" } },
       { key: "refund", label: "환불·취소", value: 46000, sub: "환불 2건", valueColor: tokens.color.neg },
     ],
     platform: {
@@ -72,13 +130,14 @@ const MONTHLY_ANALYSIS_DATA: Record<string, AnalysisMockData> = {
       ],
       average: 423833,
     },
+    weekly: WEEKLY_BY_MONTH["2026-01"],
   },
   "2026-02": {
-    summary: "2월은 주요 액세서리와 데스크 셋업 결제로 평균 주문금액이 조금 커졌어요.",
+    summary: "2월은 주요 **액세서리**와 **데스크 셋업** 결제로 평균 주문금액이 **₩42,545**로 조금 커졌어요. 지난달 대비 **지출은 +11.2% 증가**했어요.",
     kpis: [
-      { key: "spend", label: "총 지출", value: 468000, delta: { tone: "up", text: "전월 대비 11.2%" } },
+      { key: "spend", label: "총 지출", value: 468000, delta: { tone: "up", text: "+11.2%" } },
       { key: "count", label: "쇼핑 횟수", value: 11, unit: "건", sub: "주간 평균 수준" },
-      { key: "avg", label: "평균 주문금액", value: 42545, delta: { tone: "up", text: "전월 대비 1%" } },
+      { key: "avg", label: "평균 주문금액", value: 42545, delta: { tone: "up", text: "+1%" } },
       { key: "refund", label: "환불·취소", value: 51000, sub: "환불 2건", valueColor: tokens.color.neg },
     ],
     platform: {
@@ -119,13 +178,14 @@ const MONTHLY_ANALYSIS_DATA: Record<string, AnalysisMockData> = {
       ],
       average: 435833,
     },
+    weekly: WEEKLY_BY_MONTH["2026-02"],
   },
   "2026-03": {
-    summary: "3월은 봄 시즌 의류와 데스크 정리 소품이 동시에 늘면서 소비 폭이 커졌어요.",
+    summary: "3월은 **봄 시즌 의류(33%)**와 **데스크 정리 소품**이 동시에 늘면서 총 지출이 **₩534,000**까지 커졌어요. 지난달 대비 **지출은 +14.1% 증가**했어요.",
     kpis: [
-      { key: "spend", label: "총 지출", value: 534000, delta: { tone: "up", text: "전월 대비 14.1%" } },
+      { key: "spend", label: "총 지출", value: 534000, delta: { tone: "up", text: "+14.1%" } },
       { key: "count", label: "쇼핑 횟수", value: 12, unit: "건", sub: "주간 평균 수준" },
-      { key: "avg", label: "평균 주문금액", value: 44500, delta: { tone: "up", text: "전월 대비 4.6%" } },
+      { key: "avg", label: "평균 주문금액", value: 44500, delta: { tone: "up", text: "+4.6%" } },
       { key: "refund", label: "환불·취소", value: 63000, sub: "환불 2건", valueColor: tokens.color.neg },
     ],
     platform: {
@@ -166,13 +226,14 @@ const MONTHLY_ANALYSIS_DATA: Record<string, AnalysisMockData> = {
       ],
       average: 457833,
     },
+    weekly: WEEKLY_BY_MONTH["2026-03"],
   },
   "2026-04": {
-    summary: "4월은 최신 데이터 기준으로, 고가 패션과 전자 액세서리 결제가 겹치며 최근 흐름 중 가장 강한 소비가 나타났어요.",
+    summary: "4월은 취소 건을 제외한 실 지출은 **₩515,000**이에요. **패션/의류(36%)**가 가장 많이 쓰고 있고, **쿠팡** 비중이 가장 높아요. 지난달 대비 **지출은 +10.3% 증가**했어요.",
     kpis: [
-      { key: "spend", label: "총 지출", value: 589000, delta: { tone: "up", text: "전월 대비 10.3%" } },
+      { key: "spend", label: "총 지출", value: 589000, delta: { tone: "up", text: "+10.3%" } },
       { key: "count", label: "쇼핑 횟수", value: 13, unit: "건", sub: "주간 평균보다 높음" },
-      { key: "avg", label: "평균 주문금액", value: 45308, delta: { tone: "up", text: "전월 대비 1.8%" } },
+      { key: "avg", label: "평균 주문금액", value: 45308, delta: { tone: "up", text: "+1.8%" } },
       { key: "refund", label: "환불·취소", value: 74000, sub: "환불 2건, 취소 1건", valueColor: tokens.color.neg },
     ],
     platform: {
@@ -213,6 +274,7 @@ const MONTHLY_ANALYSIS_DATA: Record<string, AnalysisMockData> = {
       ],
       average: 483167,
     },
+    weekly: WEEKLY_BY_MONTH["2026-04"],
   },
 };
 

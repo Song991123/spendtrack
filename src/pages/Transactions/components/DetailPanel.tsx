@@ -86,12 +86,20 @@ const Section = styled.div`
 `;
 
 const ItemRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
   padding: 6px 0;
   color: ${tokens.color.ink2};
   font-size: 13px;
+
+  .name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .price {
     color: ${tokens.color.ink1};
@@ -99,6 +107,38 @@ const ItemRow = styled.div`
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
+`;
+
+/**
+ * 상품에 link가 걸려있을 때만 노출되는 외부링크 아이콘 버튼입니다.
+ * 새 탭으로 열어 탐색 흐름을 끊지 않고, 호버 시 accent 색으로 전환되어 클릭 가능성을 보여줍니다.
+ */
+const ItemLink = styled.a`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  color: ${tokens.color.ink3};
+  background: ${tokens.color.panel};
+  transition:
+    color ${tokens.motion.fast} ease,
+    border-color ${tokens.motion.fast} ease,
+    background ${tokens.motion.fast} ease;
+
+  &:hover {
+    color: ${tokens.color.accentHover};
+    border-color: ${tokens.color.accentBorder};
+    background: ${tokens.color.accentSubtle};
+  }
+`;
+
+const ItemLinkPlaceholder = styled.span`
+  display: inline-block;
+  width: 24px;
+  height: 24px;
 `;
 
 const Actions = styled.div`
@@ -154,8 +194,35 @@ export const DetailPanel: React.FC<{
           <div className="label">상품 목록</div>
           {row.detail.items.map((item, index) => (
             <ItemRow key={`${item.name}-${index}`}>
-              <span>{item.name}</span>
+              <span className="name">{item.name}</span>
               <span className="price">{formatKRW(item.price)}</span>
+              {item.link ? (
+                <ItemLink
+                  href={item.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="상품 링크 열기"
+                  aria-label={`${item.name} 상품 링크 새 탭으로 열기`}
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M9.5 2.5H13.5V6.5" />
+                    <path d="M13.5 2.5L7 9" />
+                    <path d="M12.5 9.5v3a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3" />
+                  </svg>
+                </ItemLink>
+              ) : (
+                <ItemLinkPlaceholder aria-hidden="true" />
+              )}
             </ItemRow>
           ))}
         </Section>

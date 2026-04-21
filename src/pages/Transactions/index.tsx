@@ -15,7 +15,7 @@ import { SummaryStrip } from "./components/SummaryStrip";
 import { FilterBar } from "./components/FilterBar";
 import { TransactionTable } from "./components/TransactionTable";
 import { DetailPanel } from "./components/DetailPanel";
-import { buildTransactionSummary } from "./data";
+import { buildTransactionSummary, getPrevMonthKey } from "./data";
 import { getMonthOption } from "../../constants/months";
 import {
   transactionsStore,
@@ -92,8 +92,10 @@ export const TransactionsPage: React.FC = () => {
   // 필터 상태는 모두 페이지 상단에서 관리해서 표와 상세 패널이 같은 기준을 보게 합니다.
   const [month, setMonth] = useState("2026-04");
   const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<"all" | "expense" | "income">("all");
   const [platform, setPlatform] = useState<"all" | "coupang" | "naver" | "musinsa">("all");
   const [category, setCategory] = useState<"all" | "living" | "fashion" | "digital" | "food">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "purchase" | "cancel" | "refund" | "sub">("all");
 
   // 거래 원본은 스토어에서 구독해 가져옵니다. CSV 업로드·삭제 등 변경이 자동 반영됩니다.
   const allRows = useTransactionsStore();
@@ -101,6 +103,10 @@ export const TransactionsPage: React.FC = () => {
     () => allRows.filter((row) => toMonthKey(row.date) === month),
     [allRows, month]
   );
+  const prevMonthRows = useMemo(() => {
+    const prevKey = getPrevMonthKey(month);
+    return allRows.filter((row) => toMonthKey(row.date) === prevKey);
+  }, [allRows, month]);
   const monthOption = getMonthOption(month);
 
   const filteredRows = useMemo(() => {
@@ -108,11 +114,19 @@ export const TransactionsPage: React.FC = () => {
     const query = search.trim().toLowerCase();
 
     return monthRows.filter((row) => {
+      if (typeFilter !== "all" && row.type !== typeFilter) {
+        return false;
+      }
+
       if (platform !== "all" && row.platform !== platform) {
         return false;
       }
 
       if (category !== "all" && row.category !== category) {
+        return false;
+      }
+
+      if (statusFilter !== "all" && row.status !== statusFilter) {
         return false;
       }
 
@@ -123,7 +137,7 @@ export const TransactionsPage: React.FC = () => {
       const itemText = row.detail?.items.map((item) => item.name).join(" ").toLowerCase() ?? "";
       return row.title.toLowerCase().includes(query) || itemText.includes(query);
     });
-  }, [category, monthRows, platform, search]);
+  }, [category, monthRows, platform, search, statusFilter, typeFilter]);
 
   const INITIAL_VISIBLE = 20;
   const LOAD_STEP = 20;
@@ -141,7 +155,7 @@ export const TransactionsPage: React.FC = () => {
   useEffect(() => {
     // 필터가 바뀌면 "더 보기" 개수도 처음 상태로 되돌려 다시 탐색하게 합니다.
     setVisibleCount(INITIAL_VISIBLE);
-  }, [search, platform, category]);
+  }, [search, platform, category, typeFilter, statusFilter]);
 
   const visibleRows = useMemo(
     () => filteredRows.slice(0, visibleCount),
@@ -205,18 +219,21 @@ export const TransactionsPage: React.FC = () => {
       headerRight={<MonthPicker value={month} onChange={setMonth} />}
     >
       <Grid>
-        <SummaryStrip summary={buildTransactionSummary(monthRows)} />
+        <SummaryStrip summary={buildTransactionSummary(monthRows, prevMonthRows)} />
         <Body $hasPanel={isOpen}>
           <Left>
             {/* 왼쪽 영역은 필터와 표, 오른쪽 영역은 상세 패널로 역할을 분리합니다. */}
             <FilterBar
-              totalLabel={`현재 결과 ${filteredRows.length}건`}
               search={search}
+              typeFilter={typeFilter}
               platform={platform}
               category={category}
+              statusFilter={statusFilter}
               onSearchChange={setSearch}
+              onTypeChange={setTypeFilter}
               onPlatformChange={setPlatform}
               onCategoryChange={setCategory}
+              onStatusChange={setStatusFilter}
             />
             <TransactionTable
               rows={visibleRows}

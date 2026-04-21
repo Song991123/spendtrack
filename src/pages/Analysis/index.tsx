@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
  * 위치: src\pages\Analysis\index.tsx
  */
@@ -14,6 +14,7 @@ import { CategoryBars } from "./components/CategoryBars";
 import { RepeatTop3 } from "./components/RepeatTop3";
 import { SubscriptionList } from "./components/SubscriptionList";
 import { MonthlyTrend } from "./components/MonthlyTrend";
+import { WeeklyPattern } from "./components/WeeklyPattern";
 import { getAnalysisMockData } from "./data";
 import { getMonthOption, LATEST_MONTH_KEY } from "../../constants/months";
 
@@ -25,6 +26,16 @@ const Grid = styled.div`
 const Row2 = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
+  gap: 16px;
+
+  ${media.tablet} {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const Row3 = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
 
   ${media.tablet} {
@@ -54,7 +65,7 @@ export const AnalysisPage: React.FC = () => {
       headerRight={<MonthPicker value={month} onChange={setMonth} />}
     >
       <Grid>
-        {/* 요약 배너 이후 KPI와 세부 분석 카드들을 차례로 배치합니다. */}
+        {/* 요약 배너 → KPI → 플랫폼/카테고리 → 월간 추이 → 반복구매/정기결제/요일패턴 */}
         <SummaryBanner title={summaryTitle} text={data.summary} />
         <KpiStrip kpis={data.kpis} />
         <Row2>
@@ -66,13 +77,13 @@ export const AnalysisPage: React.FC = () => {
           />
           <CategoryBars items={data.category} />
         </Row2>
-        <Row2>
+        <MonthlyTrend points={data.trend.points} average={data.trend.average} />
+        <Row3>
           <RepeatTop3 items={data.repeat} />
           <SubscriptionList items={data.subscriptions} total={data.subscriptionTotal} />
-        </Row2>
-        <MonthlyTrend points={data.trend.points} average={data.trend.average} />
+          <WeeklyPattern days={data.weekly.days} note={data.weekly.note} />
+        </Row3>
       </Grid>
     </AppShell>
   );
 };
-

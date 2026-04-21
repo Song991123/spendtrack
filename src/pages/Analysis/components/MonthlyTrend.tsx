@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
  * 위치: src\pages\Analysis\components\MonthlyTrend.tsx
  */
@@ -8,6 +8,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -46,14 +47,18 @@ const HeaderWrap = styled.div`
   .meta-value {
     color: ${tokens.color.ink2};
     font-family: ${tokens.font.mono};
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
   }
 `;
 
+/**
+ * 레퍼런스 HTML은 200px 높이의 SVG 라인 그래프를 씁니다.
+ * recharts는 그대로 쓰되 비슷한 높이로 맞춰 카드가 과하게 커 보이지 않게 합니다.
+ */
 const ChartWrap = styled.div`
-  height: 244px;
+  height: 200px;
 `;
 
 export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
@@ -68,22 +73,22 @@ export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
           <CardSub>최근 6개월 결제금액 추이</CardSub>
         </div>
         <div className="meta">
-          <div className="meta-label">최근 6개월 평균</div>
+          <div className="meta-label">6개월 평균</div>
           <div className="meta-value">{formatKRW(average)}/월</div>
         </div>
       </HeaderWrap>
     </CardHd>
-    <CardBd>
+    <CardBd style={{ paddingTop: 4 }}>
       <ChartWrap>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={points} margin={{ top: 12, right: 12, left: -12, bottom: 0 }}>
+          <AreaChart data={points} margin={{ top: 12, right: 12, left: -16, bottom: 0 }}>
             <defs>
               <linearGradient id="analysis-trend-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={tokens.color.accent} stopOpacity={0.3} />
-                <stop offset="100%" stopColor={tokens.color.accent} stopOpacity={0.03} />
+                <stop offset="0%" stopColor={tokens.color.accent} stopOpacity={0.16} />
+                <stop offset="100%" stopColor={tokens.color.accent} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} stroke={tokens.color.line2} />
+            <CartesianGrid vertical={false} stroke={tokens.color.line2} strokeDasharray="2 3" />
             <XAxis
               dataKey="label"
               tickLine={false}
@@ -99,11 +104,24 @@ export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
                 boxShadow: tokens.shadow.card,
               }}
             />
+            {/* 레퍼런스 HTML의 warn 색 점선 평균선과 동일한 역할. */}
+            <ReferenceLine
+              y={average}
+              stroke={tokens.color.warn}
+              strokeDasharray="4 4"
+              label={{
+                value: `평균 ${formatKRW(average)}`,
+                position: "insideTopRight",
+                fill: tokens.color.warn,
+                fontSize: 10,
+                fontWeight: 600,
+              }}
+            />
             <Area
               type="monotone"
               dataKey="value"
               stroke={tokens.color.accent}
-              strokeWidth={2.5}
+              strokeWidth={2}
               fill="url(#analysis-trend-fill)"
               activeDot={{ r: 4, stroke: tokens.color.accent, strokeWidth: 2, fill: "#fff" }}
             />
@@ -113,4 +131,3 @@ export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
     </CardBd>
   </Card>
 );
-

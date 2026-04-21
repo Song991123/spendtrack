@@ -13,6 +13,58 @@ interface SidebarProps {
   user: { name: string; initial: string };
 }
 
+type IconKey = Exclude<NavKey, "settings"> | "settings";
+
+const NavIcon = ({ name }: { name: IconKey }) => {
+  const common = {
+    viewBox: "0 0 16 16",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.6,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+  switch (name) {
+    case "home":
+      return (
+        <svg {...common}>
+          <path d="M2 7l6-5 6 5v7H2z" />
+        </svg>
+      );
+    case "upload":
+      return (
+        <svg {...common}>
+          <path d="M8 2v9" />
+          <path d="M5 5l3-3 3 3" />
+          <path d="M3 13h10" />
+        </svg>
+      );
+    case "transactions":
+      return (
+        <svg {...common}>
+          <rect x="2" y="3" width="12" height="10" rx="1" />
+          <path d="M2 7h12" />
+        </svg>
+      );
+    case "analysis":
+      return (
+        <svg {...common}>
+          <path d="M3 12V6" />
+          <path d="M7 12V3" />
+          <path d="M11 12V8" />
+        </svg>
+      );
+    case "settings":
+      return (
+        <svg {...common}>
+          <circle cx="8" cy="8" r="2" />
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M3 13l1.5-1.5M11.5 4.5L13 3" />
+        </svg>
+      );
+  }
+};
+
 const NAV_ITEMS: Array<{
   key: Exclude<NavKey, "settings">;
   label: string;
@@ -106,9 +158,32 @@ const NavItem = styled.button<{ $active?: boolean }>`
   font-weight: 500;
   position: relative;
   text-align: left;
+  transition:
+    background ${tokens.motion.fast} ease,
+    color ${tokens.motion.fast} ease,
+    transform ${tokens.motion.fast} ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: ${({ $active }) => ($active ? tokens.color.accent : tokens.color.ink4)};
+    transition: color ${tokens.motion.fast} ease, transform ${tokens.motion.fast} ease;
+  }
 
   &:hover {
     background: ${({ $active }) => ($active ? tokens.color.accentSubtle : tokens.color.tint)};
+    color: ${({ $active }) => ($active ? tokens.color.accentHover : tokens.color.ink1)};
+  }
+
+  &:hover svg {
+    color: ${({ $active }) => ($active ? tokens.color.accent : tokens.color.ink2)};
+    transform: translateY(-0.5px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${tokens.color.accent};
+    outline-offset: 2px;
   }
 
   &::before {
@@ -202,7 +277,8 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
             $active={activeNav === item.key}
             onClick={() => navigate(item.path)}
           >
-            {item.label}
+            <NavIcon name={item.key} />
+            <span>{item.label}</span>
           </NavItem>
         ))}
       </Nav>
@@ -214,7 +290,8 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
           $active={activeNav === "settings"}
           onClick={() => navigate("/settings")}
         >
-          계정 설정
+          <NavIcon name="settings" />
+          <span>계정 설정</span>
         </NavItem>
       </Nav>
 
