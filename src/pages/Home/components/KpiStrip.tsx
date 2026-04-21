@@ -97,7 +97,8 @@ const Dot = styled.span<{ $color: string }>`
 const Value = styled.div<{ $primary?: boolean; $color?: string }>`
   margin-top: 6px;
   color: ${({ $color }) => $color ?? tokens.color.ink1};
-  font-size: ${({ $primary }) => ($primary ? tokens.type.metric.size : "20px")};
+  /* 4분할 스트립에서 primary 셀이 너무 혼자만 커 보이지 않도록 비-primary 값을 22px로 올렸습니다. */
+  font-size: ${({ $primary }) => ($primary ? tokens.type.metric.size : "22px")};
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
