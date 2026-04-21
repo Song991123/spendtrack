@@ -96,6 +96,8 @@ export const TransactionsPage: React.FC = () => {
   const [platform, setPlatform] = useState<"all" | "coupang" | "naver" | "musinsa">("all");
   const [category, setCategory] = useState<"all" | "living" | "fashion" | "digital" | "food">("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "purchase" | "cancel" | "refund" | "sub">("all");
+  // 거래 내역은 기본적으로 최신이 위로 오게 두고, 사용자가 원하면 오름차순으로 뒤집을 수 있습니다.
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 
   // 거래 원본은 스토어에서 구독해 가져옵니다. CSV 업로드·삭제 등 변경이 자동 반영됩니다.
   const allRows = useTransactionsStore();
@@ -113,7 +115,7 @@ export const TransactionsPage: React.FC = () => {
     // 검색어, 플랫폼, 카테고리 조건을 한 번에 적용해 실제 표에 보여줄 후보 목록을 만듭니다.
     const query = search.trim().toLowerCase();
 
-    return monthRows.filter((row) => {
+    const matched = monthRows.filter((row) => {
       if (typeFilter !== "all" && row.type !== typeFilter) {
         return false;
       }
@@ -137,7 +139,22 @@ export const TransactionsPage: React.FC = () => {
       const itemText = row.detail?.items.map((item) => item.name).join(" ").toLowerCase() ?? "";
       return row.title.toLowerCase().includes(query) || itemText.includes(query);
     });
-  }, [category, monthRows, platform, search, statusFilter, typeFilter]);
+
+    // "YYYY.MM.DD" / "YYYY-MM-DD"를 수치로 환산해 정렬 기준을 만듭니다.
+    const dayKey = (dateStr: string): number => {
+      const parsed = dateStr.match(/(\d{4})[./-](\d{1,2})[./-](\d{1,2})/);
+      if (!parsed) return 0;
+      const [, y, m, d] = parsed;
+      return Number(y) * 10000 + Number(m) * 100 + Number(d);
+    };
+
+    // 정렬은 filter 이후 한 번만 수행합니다. 기본은 desc(최신이 위).
+    const sorted = [...matched].sort((a, b) => {
+      const diff = dayKey(a.date) - dayKey(b.date);
+      return sortOrder === "desc" ? -diff : diff;
+    });
+    return sorted;
+  }, [category, monthRows, platform, search, sortOrder, statusFilter, typeFilter]);
 
   const INITIAL_VISIBLE = 20;
   const LOAD_STEP = 20;
@@ -241,6 +258,10 @@ export const TransactionsPage: React.FC = () => {
               selectedId={selected?.id ?? ""}
               onSelect={setSelectedId}
               onLoadMore={handleLoadMore}
+              sortOrder={sortOrder}
+              onToggleSort={() =>
+                setSortOrder((current) => (current === "desc" ? "asc" : "desc"))
+              }
             />
           </Left>
           <PanelSlot>

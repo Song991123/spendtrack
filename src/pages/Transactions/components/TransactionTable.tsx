@@ -71,6 +71,49 @@ const HeaderCell = styled.div`
 `;
 
 /**
+ * 정렬이 가능한 헤더 셀. 버튼 형태로 포커스/호버 피드백을 주고
+ * 화살표 아이콘이 붙어 현재 정렬 방향을 시각적으로 표시합니다.
+ */
+const SortableHeader = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: ${tokens.color.foot};
+  border: none;
+  border-bottom: 1px solid ${tokens.color.line2};
+  color: ${tokens.color.ink4};
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+  transition: color ${tokens.motion.fast} ease;
+
+  &:hover,
+  &:focus-visible {
+    color: ${tokens.color.ink1};
+    outline: none;
+  }
+
+  &:focus-visible {
+    box-shadow: ${tokens.shadow.focus};
+  }
+`;
+
+const SortIcon = styled.span<{ $dir: "desc" | "asc" }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: ${tokens.color.accent};
+  /* desc(내림차순): 아래 화살표, asc(오름차순): 위로 뒤집어 보여줍니다. */
+  transform: ${({ $dir }) => ($dir === "desc" ? "rotate(0deg)" : "rotate(180deg)")};
+  transition: transform ${tokens.motion.fast} ease;
+`;
+
+/**
  * 첫 렌더에서 등장하는 행들에 위에서 살짝 내려앉는 효과를 주기 위한 키프레임입니다.
  * 방금 추가된 것처럼 보이도록 6px → 0px로 올라오며 opacity가 차오릅니다.
  */
@@ -169,6 +212,10 @@ interface Props {
   selectedId: string;
   onSelect: (id: string) => void;
   onLoadMore: () => void;
+  /** "desc"면 최신이 위, "asc"면 과거가 위에 옵니다. */
+  sortOrder: "desc" | "asc";
+  /** 정렬 방향을 뒤집습니다. */
+  onToggleSort: () => void;
 }
 
 export const TransactionTable: React.FC<Props> = ({
@@ -177,6 +224,8 @@ export const TransactionTable: React.FC<Props> = ({
   selectedId,
   onSelect,
   onLoadMore,
+  sortOrder,
+  onToggleSort,
 }) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [hoveredId, setHoveredId] = useState<string>("");
@@ -217,7 +266,31 @@ export const TransactionTable: React.FC<Props> = ({
     <Card padding={0}>
       <Table>
         <HeaderCell className="tag">유형</HeaderCell>
-        <HeaderCell>주문일</HeaderCell>
+        <SortableHeader
+          type="button"
+          onClick={onToggleSort}
+          aria-label={
+            sortOrder === "desc"
+              ? "주문일 내림차순, 오름차순으로 바꾸기"
+              : "주문일 오름차순, 내림차순으로 바꾸기"
+          }
+          aria-pressed={sortOrder === "asc"}
+        >
+          주문일
+          <SortIcon $dir={sortOrder} aria-hidden="true">
+            <svg width={12} height={12} viewBox="0 0 12 12">
+              {/* 기본 방향은 아래를 가리키는 셰브런. asc일 때 CSS 회전으로 뒤집습니다. */}
+              <polyline
+                points="3 4.5 6 7.5 9 4.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </SortIcon>
+        </SortableHeader>
         <HeaderCell className="tag">플랫폼</HeaderCell>
         <HeaderCell>거래명</HeaderCell>
         <HeaderCell className="right">금액</HeaderCell>
