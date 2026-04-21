@@ -23,8 +23,20 @@ export const ONBOARDING_SEEN_KEY = "spendtrack:onboarding:seen";
 /**
  * 입력된 이메일/비밀번호 조합이 "신규 계정 취급" 규칙에 해당하는지 판별합니다.
  * - 정확히 NEW_ACCOUNT_EMAIL / NEW_ACCOUNT_PASSWORD 인 경우에만 true
- * - 그 외(빈 값, 다른 문자열, 대소문자가 섞인 유사 값 등)는 false → 기존 시드 유지
+ * - 그 외(빈 값, 다른 문자열, 대소문자가 섞인 유사 값 등)는 false
  */
 export function isNewAccountCredential(email: string, password: string): boolean {
   return email === NEW_ACCOUNT_EMAIL && password === NEW_ACCOUNT_PASSWORD;
+}
+
+/**
+ * 입력이 "데모(데이터 있는) 계정"으로 취급될 자격 증명인지 판별합니다.
+ * - 이메일/비밀번호 모두 비어있지 않아야 함
+ * - 신규 계정 자격 증명(1111@test.com / 1111)은 제외
+ * 이 조건을 만족하면 transactionsStore.resetToSeed()로 시드 데이터를 복원해
+ * "데이터가 이미 쌓여 있는 계정" 화면을 바로 보여줍니다. (데모/테스트 시나리오 전용)
+ */
+export function isSeededDemoCredential(email: string, password: string): boolean {
+  if (!email || !password) return false;
+  return !isNewAccountCredential(email, password);
 }

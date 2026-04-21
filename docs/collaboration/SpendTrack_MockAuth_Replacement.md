@@ -14,12 +14,14 @@
 
 | 입력 | 동작 |
 | --- | --- |
-| 이메일·비밀번호 **빈 값** 또는 **1111/1111 이외 아무 값** | 기존 시드 계정으로 로그인 → 홈 진입, 거래/프로필/온보딩 플래그 **그대로 유지** |
-| 이메일 `1111` + 비밀번호 `1111` | **신규 계정 취급** → `transactionsStore.replaceAll([])`, `profileStore.reset()` 후 이메일만 `1111`로 덮어씀, `localStorage["spendtrack:onboarding:seen"]` 제거. Home 진입 시 `WelcomeTutorial` 오버레이 자동 표시 |
+| 이메일·비밀번호 **둘 다 빈 값** | 현재 세션 상태 **그대로 유지** (거래/프로필/온보딩 플래그 변경 없음). 홈으로 진입만. |
+| 이메일 `1111@test.com` + 비밀번호 `1111` | **신규 계정 취급** → `transactionsStore.replaceAll([])`, `profileStore.reset()` 후 이메일만 입력값으로 덮어씀, `localStorage["spendtrack:onboarding:seen"]` 제거. Home 진입 시 `WelcomeTutorial` 오버레이 자동 표시 |
+| 그 외 이메일·비밀번호 조합 (둘 다 비어있지 않음) | **데이터 있는 데모 계정 취급** → `transactionsStore.resetToSeed()`로 시드 거래 강제 복원, `profileStore.reset()` 후 이메일만 입력값으로 덮어씀, 온보딩 플래그는 `seen`으로 설정. 홈에 즉시 "쌓여 있는 계정" 뷰가 보임 |
 
-- 판별은 `src/mocks/auth.ts` 의 `isNewAccountCredential(email, password)` 하나만 쓰도록 단일화했습니다.
-- 목업 상수 2개(`NEW_ACCOUNT_EMAIL`, `NEW_ACCOUNT_PASSWORD`)와 플래그 키(`ONBOARDING_SEEN_KEY`)도 같은 파일에 모여 있습니다.
+- 판별은 `src/mocks/auth.ts` 의 `isNewAccountCredential(email, password)` / `isSeededDemoCredential(email, password)` 두 헬퍼로 단일화되어 있습니다.
+- 목업 상수 2개(`NEW_ACCOUNT_EMAIL = "1111@test.com"`, `NEW_ACCOUNT_PASSWORD = "1111"`)와 플래그 키(`ONBOARDING_SEEN_KEY`)도 같은 파일에 모여 있습니다.
 - `WelcomeTutorial`은 `localStorage` 플래그로만 자동 표시 여부를 결정하므로, 신규 계정 이벤트만 이 플래그를 정확히 제거하면 실제 인증으로 옮길 때도 동작이 깔끔하게 재사용됩니다.
+- "데이터 있는 데모 계정" 분기는 **데모·스크린샷 용도 전용**입니다. 실제 인증으로 교체할 때는 이 분기 통째로 걷어내야 합니다.
 
 ---
 
@@ -35,9 +37,9 @@
 
 - `src/pages/Login/components/LoginForm.tsx`
   - `// TODO(auth): src/mocks/auth.ts 제거 시 이 분기 통째로 교체` 주석이 달려 있습니다.
-  - `onSubmit` 내 `isNewAccountCredential(...)` 분기 **전체**를 실제 auth SDK 호출로 교체하세요.
+  - `onSubmit` 내 `isNewAccountCredential(...)` / `isSeededDemoCredential(...)` 분기 **모두**를 실제 auth SDK 호출로 교체하세요.
     - 신규 가입 성공 시: `transactionsStore.replaceAll([])` + `profileStore.reset()` + `localStorage.removeItem(ONBOARDING_SEEN_KEY)` 와 동등한 초기화 로직을 가입 성공 콜백 쪽에 옮기는 것이 가장 자연스럽습니다.
-    - 기존 로그인 성공 시: 지금처럼 아무것도 초기화하지 않고 `navigate("/")`만 수행.
+    - 기존 로그인 성공 시: 서버에서 실제 거래 데이터를 로드. `isSeededDemoCredential` 분기의 `transactionsStore.resetToSeed()` 호출은 **반드시 제거**하세요. (데모 전용이라 운영에 섞이면 실데이터를 시드로 덮어씁니다.)
   - `useState`로 들어간 `email` / `password` 로컬 상태는 실제 auth 호출에서도 그대로 쓸 수 있습니다.
 
 - `src/components/onboarding/WelcomeTutorial.tsx`
@@ -75,14 +77,16 @@
 5. `src/mocks/auth.ts` 파일 **삭제**.
 6. 전역 검색으로 남은 흔적 없는지 확인:
    - `rg "mocks/auth"` → 히트 0
-   - `rg "NEW_ACCOUNT_EMAIL\|NEW_ACCOUNT_PASSWORD\|isNewAccountCredential"` → 히트 0
+   - `rg "NEW_ACCOUNT_EMAIL\|NEW_ACCOUNT_PASSWORD\|isNewAccountCredential\|isSeededDemoCredential"` → 히트 0
+   - `rg "resetToSeed"` → LoginForm에서는 호출이 사라져야 함. transactionsStore 내 정의 자체는 남겨도 무방.
    - `rg "TODO(auth)"` → 남아있는 TODO가 있다면 이 단계에서 정리
 7. `npx tsc -b --force` 통과 확인.
 8. 회귀 테스트:
-   - 기존 계정 로그인 시 거래/프로필 유지
+   - 기존 계정 로그인 시 서버에서 불러온 거래 데이터가 그대로 유지되는지
    - 신규 가입 직후 거래 0건 + `WelcomeTutorial` 오버레이 자동 표시
    - 튜토리얼을 닫거나 "건너뛰기" 누르면 다음 진입부터 더 이상 안 뜨는지
    - 로그아웃 → 다시 가입 시 다시 뜨는지
+   - 목업 단계에서만 존재하던 "아무 이메일 = 시드 복원" 동작이 **더 이상 일어나지 않는지** (중요: 실데이터 덮어쓰기 사고 방지)
 
 ---
 

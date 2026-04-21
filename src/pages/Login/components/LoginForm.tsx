@@ -13,6 +13,7 @@ import { tokens } from "../../../styles/tokens";
 import {
   ONBOARDING_SEEN_KEY,
   isNewAccountCredential,
+  isSeededDemoCredential,
 } from "../../../mocks/auth";
 import { transactionsStore } from "../../../stores/transactionsStore";
 import { profileStore } from "../../../stores/profileStore";
@@ -63,8 +64,10 @@ export const LoginForm: React.FC = () => {
         event.preventDefault();
 
         // TODO(auth): src/mocks/auth.ts 제거 시 이 분기 통째로 실제 auth SDK 호출로 교체.
-        // 현재는 프런트엔드만 있는 MVP라서 "1111/1111" 입력을 신규 계정 신호로 쓰고,
-        // 그 외 입력은 기존 시드 데이터를 유지한 채 기존 사용자로 로그인시킵니다.
+        // 현재는 프런트엔드만 있는 MVP라서 아래 두 시나리오를 입력값으로 흉내 냅니다.
+        //   1) 1111@test.com / 1111 → "비어있는 신규 계정" (0건 + 튜토리얼)
+        //   2) 그 외 이메일/비밀번호 모두 입력 → "데이터 있는 데모 계정" (시드 강제 복원)
+        //   3) 둘 다 비어있음 → 현재 세션 상태 그대로 유지
         if (isNewAccountCredential(email, password)) {
           // 신규 계정: 거래/프로필을 전부 초기화하고, 튜토리얼 오버레이가 다시 뜨도록 플래그 제거
           transactionsStore.replaceAll([]);
@@ -73,6 +76,18 @@ export const LoginForm: React.FC = () => {
           profileStore.save({ email });
           try {
             localStorage.removeItem(ONBOARDING_SEEN_KEY);
+          } catch {
+            // localStorage 접근 불가 환경(예: 서버 렌더)은 무시
+          }
+        } else if (isSeededDemoCredential(email, password)) {
+          // 데이터 있는 데모 계정: 시드 거래를 강제로 복원해 "쌓여 있는 계정" 화면을 바로 보여줍니다.
+          // 이전 세션에 1111@test.com으로 거래를 비워둔 적이 있어도 이 경로로 다시 채워집니다.
+          transactionsStore.resetToSeed();
+          profileStore.reset();
+          profileStore.save({ email });
+          try {
+            // 데모 계정은 튜토리얼을 띄우지 않습니다. (신규 계정 전용 가이드라서)
+            localStorage.setItem(ONBOARDING_SEEN_KEY, "1");
           } catch {
             // localStorage 접근 불가 환경(예: 서버 렌더)은 무시
           }
