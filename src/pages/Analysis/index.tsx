@@ -74,7 +74,10 @@ export const AnalysisPage: React.FC = () => {
     >
       <Grid>
         {/* 요약 배너 → KPI → 플랫폼/카테고리 → 월간 추이 → 반복구매/정기결제/요일패턴 */}
-        <SummaryBanner title={summaryTitle} text={data.summary} />
+        {/* data-tour: ProductTour 스포트라이트 타겟. */}
+        <div data-tour="analysis-summary">
+          <SummaryBanner title={summaryTitle} text={data.summary} />
+        </div>
         <KpiStrip kpis={data.kpis} />
         <Row2>
           <PlatformBars

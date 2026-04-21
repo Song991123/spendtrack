@@ -74,7 +74,10 @@ export const HomePage: React.FC = () => {
     >
       <Grid>
         {/* Home은 상단 요약 → 차트 → 최근 거래 → 인사이트 순서로 읽히도록 구성합니다. */}
-        <KpiStrip kpis={data.kpis} />
+        {/* data-tour: ProductTour 스포트라이트 타겟. 실제 인증으로 교체되더라도 유지해도 무해합니다. */}
+        <div data-tour="home-kpi">
+          <KpiStrip kpis={data.kpis} />
+        </div>
         <Row2>
           <PlatformDonut total={data.platformDonut.total} items={data.platformDonut.items} />
           <TrendChart points={data.trend.points} />

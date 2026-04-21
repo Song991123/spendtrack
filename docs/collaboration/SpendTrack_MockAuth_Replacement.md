@@ -95,6 +95,8 @@
 - **튜토리얼 슬라이드 문구/아이콘**은 `WelcomeTutorial.tsx` 상단 `STEPS` 배열 한 곳에서 관리 중입니다. 카피 수정은 이 파일만 건드리면 됩니다.
 - 현재 오버레이는 `localStorage` 플래그 기반이라 **기기/브라우저별로 다시 뜰 수 있음**에 유의. 사용자 단위로 묶고 싶다면 실제 인증 전환 시 유저 문서에 `hasSeenOnboarding` 필드를 두는 식으로 확장하세요.
 - `WelcomeTutorial` 은 `forceOpen` prop을 지원하므로, Settings 화면 등에서 "튜토리얼 다시 보기" 버튼을 만들고 싶다면 이 prop만 연결하면 됩니다.
+- **스포트라이트 투어(`ProductTour`)** 는 `src/components/onboarding/tourStore.ts`의 `tourStore.start()` 를 호출하면 어디서든 기동됩니다. 현재는 `WelcomeTutorial` 마지막 슬라이드 "투어 시작" 버튼에서만 트리거됩니다. 투어 스텝(라우트·셀렉터·문구)은 `ProductTour.tsx` 상단 `STEPS` 배열에서 관리합니다.
+- 투어가 조명하는 대상은 각 페이지의 `data-tour="..."` 속성으로 식별합니다 (`home-kpi`, `manual-savebar`, `ocr-zone`, `csv-zone`, `analysis-summary`). 페이지 리팩터링 시 이 속성이 사라지지 않도록 주의하세요.
 
 ---
 

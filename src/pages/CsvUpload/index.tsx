@@ -189,6 +189,7 @@ export const CsvUploadPage: React.FC = () => {
           </CardHd>
           <CardBd>
             <Dropzone
+              data-tour="csv-zone"
               $active={dragActive}
               onDragEnter={(e) => {
                 e.preventDefault();

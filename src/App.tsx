@@ -3,6 +3,9 @@
  * 위치: src\App.tsx
  */
 import { HashRouter, Navigate, Route, Routes } from "react-router-dom";
+// ProductTour는 Routes와 형제로 라우터 안쪽에 마운트되어야
+// useNavigate/useLocation 훅이 동작하고, 라우트 전환 중에도 상태가 유지됩니다.
+import { ProductTour } from "./components/onboarding/ProductTour";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { HomePage } from "./pages/HomePage";
@@ -36,6 +39,8 @@ function App() {
         {/* 정의되지 않은 경로는 홈으로 되돌려서 데모 흐름이 끊기지 않게 합니다. */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      {/* tourStore.start()가 호출되면 이 컴포넌트가 열려서 스포트라이트 투어를 진행합니다. */}
+      <ProductTour />
     </HashRouter>
   );
 }

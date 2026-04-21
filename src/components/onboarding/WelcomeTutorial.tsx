@@ -15,6 +15,7 @@ import { Button } from "../primitives/Button";
 import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 import { ONBOARDING_SEEN_KEY } from "../../mocks/auth";
+import { tourStore } from "./tourStore";
 
 interface Step {
   title: string;
@@ -246,6 +247,17 @@ export const WelcomeTutorial: React.FC<WelcomeTutorialProps> = ({
     onClose?.();
   }, [onClose]);
 
+  /**
+   * 마지막 슬라이드 "투어 시작" 버튼: 이 환영 모달을 닫고, 전역 ProductTour 오버레이를 띄워
+   * 각 페이지로 자동 이동하며 핵심 요소를 스포트라이트로 조명합니다.
+   */
+  const handleStartTour = useCallback(() => {
+    markSeen();
+    setIsOpen(false);
+    onClose?.();
+    tourStore.start();
+  }, [onClose]);
+
   if (!isOpen) return null;
 
   const step = STEPS[index];
@@ -300,9 +312,9 @@ export const WelcomeTutorial: React.FC<WelcomeTutorialProps> = ({
                 type="button"
                 variant="primary"
                 size="sm"
-                onClick={handleClose}
+                onClick={handleStartTour}
               >
-                시작하기
+                투어 시작
               </Button>
             ) : (
               <Button

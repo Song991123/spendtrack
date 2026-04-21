@@ -246,7 +246,7 @@ export const ManualEntryPage: React.FC = () => {
 
           {error && <ErrorLine role="alert">{error}</ErrorLine>}
 
-          <SaveBar>
+          <SaveBar data-tour="manual-savebar">
             <Button variant="primary" size="lg" block onClick={handleSave}>
               거래 저장하기
             </Button>
