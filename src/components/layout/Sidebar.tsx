@@ -10,7 +10,13 @@ import { media } from "../../tokens/breakpoints";
 
 interface SidebarProps {
   activeNav: NavKey;
-  user: { name: string; initial: string };
+  user: {
+    name: string;
+    initial: string;
+    email?: string;
+    /** 프로필 사진을 설정한 경우의 base64 data URL. 없으면 이니셜을 표시합니다. */
+    avatarDataUrl?: string | null;
+  };
 }
 
 type IconKey = Exclude<NavKey, "settings"> | "settings";
@@ -209,17 +215,20 @@ const Footer = styled.div`
   border-radius: 10px;
 `;
 
-const Avatar = styled.div`
+const Avatar = styled.div<{ $bg?: string }>`
   display: grid;
   width: 30px;
   height: 30px;
   place-items: center;
   border-radius: 50%;
-  background: ${tokens.color.accent};
+  background: ${({ $bg }) => $bg ?? tokens.color.accent};
+  background-size: cover;
+  background-position: center;
   color: #fff;
   flex-shrink: 0;
   font-size: 12px;
   font-weight: 600;
+  overflow: hidden;
 `;
 
 const UserMeta = styled.div`
@@ -296,10 +305,12 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
       </Nav>
 
       <Footer>
-        <Avatar>{user.initial}</Avatar>
+        <Avatar $bg={user.avatarDataUrl ? `url(${user.avatarDataUrl})` : undefined}>
+          {!user.avatarDataUrl && user.initial}
+        </Avatar>
         <UserMeta>
           <div className="name">{user.name}</div>
-          <div className="sub">hong@example.com</div>
+          <div className="sub">{user.email ?? ""}</div>
           <div className="sub">
             <ActionButton type="button" onClick={() => navigate("/login")}>
               로그아웃

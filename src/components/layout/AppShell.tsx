@@ -9,6 +9,7 @@ import { Sidebar } from "./Sidebar";
 import { TopHeader } from "./TopHeader";
 import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
+import { useProfile } from "../../stores/profileStore";
 
 export type NavKey = "home" | "upload" | "transactions" | "analysis" | "settings";
 
@@ -98,11 +99,21 @@ const Content = styled.div`
 
 export const AppShell = ({ activeNav, crumb, title, headerRight, children }: AppShellProps) => {
   const navigate = useNavigate();
+  const profile = useProfile();
+  const initial = profile.name.trim().charAt(0) || "?";
 
   return (
     <Shell>
       <SidebarWrapper>
-        <Sidebar activeNav={activeNav} user={{ name: "홍길동", initial: "홍" }} />
+        <Sidebar
+          activeNav={activeNav}
+          user={{
+            name: profile.name,
+            initial,
+            email: profile.email,
+            avatarDataUrl: profile.avatarDataUrl,
+          }}
+        />
       </SidebarWrapper>
       <Main>
         <Content>
