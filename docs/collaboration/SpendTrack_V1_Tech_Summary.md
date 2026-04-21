@@ -45,8 +45,10 @@ SpendTrack v1은 쇼핑 주문내역 기반 소비관리 서비스를 가정하�
 - `src/utils/`
   포맷팅, 거래 계산, 다중 플랫폼 CSV 파싱(`csvParse`, `csvImport`, `xlsxImport`, `fileImport`), 상인명 정규화(`merchantNormalize`), 매칭(`matchTransaction`), import 헤더 스키마(`importHeaders`) 같은 공통 로직을 관리합니다.
 - `src/stores/`
-  거래 데이터를 localStorage 기반으로 보관하는 전역 스토어(`transactionsStore`)를 관리합니다.
-  추후 Firestore 등 원격 저장소로 교체할 때 이 레이어의 공개 API만 유지하면 됩니다.
+  여러 화면이 공유하는 데이터를 localStorage 기반으로 보관하는 전역 스토어를 관리합니다.
+  - `transactionsStore` — 거래 레코드 CRUD (`spendtrack:transactions:v1`)
+  - `profileStore` — 프로필/계정 정보 (`spendtrack:profile:v1`, 이름·닉네임·이메일·비밀번호 변경일·아바타 DataURL)
+  추후 Firestore/Auth 등 원격 저장소로 교체할 때 이 레이어의 공개 API만 유지하면 됩니다.
 - `src/data/`
   초기 mock 거래 시드를 관리합니다.
 - `src/constants/`
@@ -110,3 +112,40 @@ SpendTrack v1은 쇼핑 주문내역 기반 소비관리 서비스를 가정하�
 - 실제 배포 파이프라인 구성
 
 현재 v1은 위 기술을 바로 연결하기 위한 사전 구조 정리 단계로 보면 됩니다.
+
+## 10. `design-update` 브랜치 현재 상태 (2026-04-21 기준)
+
+이 섹션은 `main`에 머지되기 직전 시점의 `design-update` 브랜치 스냅샷입니다.
+새로 합류하는 사람이나 다른 AI 세션이 혼동 없이 이어받을 수 있도록,
+UI 정리 이후 **데이터·상호작용을 실제로 연결한 변경**을 기록해 둡니다.
+
+### 10-1. 데이터 파이프라인 — 하드코딩 제거
+- `Home`과 `Analysis`의 월별 목업 딕셔너리(`MONTHLY_HOME_DATA`, `MONTHLY_ANALYSIS_DATA`, `WEEKLY_BY_MONTH`)를 삭제했습니다.
+- 두 화면 모두 `useTransactionsStore()`로 현재 `rows[]`를 구독하고, `buildHomeData(rows, monthKey)` / `buildAnalysisData(rows, monthKey)`로 파생 데이터를 만듭니다.
+- KPI, 도넛, 월별 추이, 최근 거래, 인사이트, 플랫폼/카테고리 막대, 반복구매 Top3, 정기결제, 요일 패턴, 6개월 트렌드까지 전부 스토어 집계로 교체됐습니다.
+- 사용자가 수동 입력 / CSV / OCR로 거래를 추가하거나 삭제하면 홈·분석이 실시간 반영됩니다.
+
+### 10-2. 수동 입력(ManualEntry) 저장 동작
+- 상품/메타 입력 폼을 controlled 컴포넌트로 전환했습니다.
+- `거래 저장하기` 버튼이 `transactionsStore.addOne(...)`을 호출하도록 연결됐고, 최소 검증 실패 시 폼 상단에 `ErrorLine`으로 메시지를 띄웁니다.
+
+### 10-3. 설정(Settings) 실동작 연결
+- `profileStore`를 신설해 이름·닉네임·이메일·비밀번호 변경일·아바타(DataURL)를 localStorage에 영속화합니다.
+- `ProfileSection`: 아바타 업로드는 `FileReader.readAsDataURL`로 1MB 제한 내에서 저장합니다. 이름/닉네임 편집은 로컬 드래프트를 유지하다 저장 시 `profileStore.save(...)`로 반영됩니다.
+- `AccountSection`: 이메일 정규식 검증 + 비밀번호 8자 이상/확인 일치 검증. 비밀번호 원문은 저장하지 않고 `passwordChangedAt`만 갱신합니다.
+- `DangerSection`: `계정 삭제` 2단계 확인 후 `profileStore.reset()` + `transactionsStore.replaceAll([])`로 세션 데이터를 전부 비웁니다.
+- `AppShell`/`Sidebar`는 `useProfile()`로 현재 프로필을 구독해 아바타·이름·이메일 표시를 동기화합니다.
+
+### 10-4. OCR 결과 확인 화면(OcrEdit) 레이아웃
+- 사용 맥락상 미리보기보다 **데이터 확인·수정**이 주이므로 3단 그리드를 `240px / minmax(280px, 0.9fr) / minmax(440px, 1.6fr)`로 재배분해 오른쪽 편집 폼에 가장 큰 지분을 주었습니다.
+- `ImageList` 썸네일을 60→44px로 축소하고 `Meta`에 `min-width: 0 + ellipsis`를 적용해 "이미지 N / 분석 완료" 라벨이 세로로 잘리지 않습니다.
+- `ProductTable`의 컬럼은 `minmax(0, 1.1fr) / 120px / minmax(0, 1fr) / 28px`에 `column-gap: 8px`를 추가해 상품명과 URL 입력이 충분한 폭을 얻습니다.
+
+### 10-5. 거래 내역(Transactions) 정렬
+- 기본 정렬은 **날짜 내림차순(최신이 위)**입니다.
+- `주문일` 헤더가 `<button>` 형태의 `SortableHeader`로 바뀌었고, 브랜드 액센트 컬러의 셰브런 SVG가 붙어 `desc`→아래, `asc`→위로 180° 회전합니다. 접근성: `aria-pressed`, 한국어 `aria-label` 포함.
+- 정렬은 `filter` 이후 순수한 `sort(copy)`로 수행되며, `"YYYY.MM.DD"` / `"YYYY-MM-DD"` 포맷을 공통 키(`Y*10000 + M*100 + D`)로 환산해 비교합니다.
+
+### 10-6. 타입체크 기준선
+- 위 변경은 모두 `npx tsc -b --force` 통과 상태입니다.
+- Vite 빌드는 현 샌드박스에서 rolldown 바이너리 누락으로 실패할 수 있으나 **코드 문제 아님**. 로컬/CI에서는 정상 빌드됩니다.
