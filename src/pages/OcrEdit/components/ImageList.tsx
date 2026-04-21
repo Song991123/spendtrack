@@ -18,7 +18,9 @@ const List = styled.ul`
 
 const Row = styled.li<{ $active?: boolean }>`
   display: grid;
-  grid-template-columns: 60px 1fr;
+  /* 썸네일과 텍스트가 한 줄에 깔끔히 들어가도록 썸네일을 조금 줄이고
+   * Meta 쪽에 최소 폭을 보장합니다. */
+  grid-template-columns: 44px minmax(0, 1fr);
   gap: 10px;
   align-items: center;
   padding: 8px;
@@ -35,15 +37,15 @@ const Row = styled.li<{ $active?: boolean }>`
 
 const Thumb = styled.div`
   display: grid;
-  width: 60px;
-  height: 60px;
+  width: 44px;
+  height: 44px;
   place-items: center;
   overflow: hidden;
   border: 1px solid ${tokens.color.line};
   border-radius: 6px;
   background: ${tokens.color.tint};
   color: ${tokens.color.ink5};
-  font-size: 18px;
+  font-size: 16px;
 
   img {
     width: 100%;
@@ -53,11 +55,17 @@ const Thumb = styled.div`
 `;
 
 const Meta = styled.div`
+  /* 좁은 컨테이너에서도 한 줄로 들어가게끔 넘치면 말줄임표로 처리합니다. */
+  min-width: 0;
+
   .name {
     margin-bottom: 4px;
     color: ${tokens.color.ink1};
     font-size: ${tokens.type.caption.size};
     font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .status {
@@ -66,6 +74,7 @@ const Meta = styled.div`
     gap: 4px;
     color: ${tokens.color.ink4};
     font-size: 11px;
+    white-space: nowrap;
   }
 
   .dot {

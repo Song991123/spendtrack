@@ -9,7 +9,10 @@ import type { OcrProduct } from "../data";
 
 const Table = styled.div`
   display: grid;
-  grid-template-columns: 1fr 110px 90px 24px;
+  /* 상품명과 상품 링크 둘 다 가로로 숨을 쉴 수 있도록 fr로 나누고,
+   * 상품 금액은 숫자만 보이면 되니 고정 폭으로 잡습니다. */
+  grid-template-columns: minmax(0, 1.1fr) 120px minmax(0, 1fr) 28px;
+  column-gap: 8px;
   font-size: ${tokens.type.caption.size};
 `;
 

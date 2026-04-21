@@ -27,7 +27,10 @@ import type {
 
 const Body = styled.div`
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr) 380px;
+  /* 이 화면의 주 목적은 데이터 확인/수정이므로 오른쪽 편집 폼에 가장 큰 지분을 줍니다.
+   * 중앙 미리보기는 보조 역할이라 더 좁게 잡고, 왼쪽 목록은 썸네일 + 텍스트가
+   * 잘리지 않을 만큼만 고정 폭을 확보합니다. */
+  grid-template-columns: 240px minmax(280px, 0.9fr) minmax(440px, 1.6fr);
   gap: 16px;
   align-items: start;
 
