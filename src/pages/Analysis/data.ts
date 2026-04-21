@@ -145,7 +145,12 @@ function buildCategory(
   };
   for (const row of rows) {
     if (row.type !== "expense" || row.status === "cancel") continue;
-    totals[row.category] += Math.abs(row.amount);
+    // 다중 카테고리 거래는 "중복 카운트" 정책: 카테고리 N개에 속하면 N개 모두에 전액을 더합니다.
+    // 비율 합이 100%를 초과할 수 있지만, 화면에서는 각 카테고리의 절대 금액과 단일 카테고리 비율을 보여주므로
+    // 사용자가 "이 카테고리에 얼마나 썼는지"를 직관적으로 파악하기에 더 적합합니다.
+    for (const cat of row.categories) {
+      totals[cat] += Math.abs(row.amount);
+    }
   }
   const total = Object.values(totals).reduce((sum, value) => sum + value, 0);
   const entries = (Object.entries(totals) as Array<[TxCategory, number]>)
@@ -161,6 +166,7 @@ function buildCategory(
 
 function buildRepeat(rows: TxRow[]): RepeatItem[] {
   // 같은 상품을 여러 번 구매한 경향을 잡기 위해 제목을 키로 집계합니다.
+  // 반복구매 카드는 카테고리 라벨을 한 개만 표시하므로 대표 카테고리(categories[0])를 사용합니다.
   const byTitle = new Map<
     string,
     { title: string; platform: TxPlatform; category: TxCategory; count: number; amount: number }
@@ -175,7 +181,7 @@ function buildRepeat(rows: TxRow[]): RepeatItem[] {
       byTitle.set(row.title, {
         title: row.title,
         platform: row.platform,
-        category: row.category,
+        category: row.categories[0] ?? "etc",
         count: 1,
         amount: Math.abs(row.amount),
       });

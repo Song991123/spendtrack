@@ -10,6 +10,7 @@ import type {
   TxStatus,
   TxType,
 } from "./components/TransactionTable";
+import { MAX_CATEGORIES_PER_TX } from "../../constants/labels";
 
 export interface TransactionsMockData {
   summary: SummaryData;
@@ -78,18 +79,20 @@ const TITLE_POOLS: Record<TxCategory, string[]> = {
   ],
 };
 
+// 정기결제는 대부분 단일 카테고리지만, 쿠팡 와우처럼 디지털+생활 양쪽 성격을 가진 케이스가 있어
+// categories 배열로 보관합니다. 첫 번째 항목이 화면에 노출되는 기본 카테고리(primary)입니다.
 const SUBSCRIPTIONS: Array<{
   title: string;
   price: number;
   platform: TxPlatform;
-  category: TxCategory;
+  categories: TxCategory[];
 }> = [
-  { title: "넷플릭스 스탠다드", price: 13500, platform: "coupang", category: "digital" },
-  { title: "쿠팡 와우 멤버십", price: 7890, platform: "coupang", category: "living" },
-  { title: "네이버플러스 멤버십", price: 4900, platform: "naver", category: "digital" },
-  { title: "유튜브 프리미엄", price: 14900, platform: "coupang", category: "digital" },
-  { title: "스포티파이 개인", price: 13900, platform: "naver", category: "digital" },
-  { title: "밀리의 서재", price: 9900, platform: "naver", category: "digital" },
+  { title: "넷플릭스 스탠다드", price: 13500, platform: "coupang", categories: ["digital"] },
+  { title: "쿠팡 와우 멤버십", price: 7890, platform: "coupang", categories: ["living", "digital"] },
+  { title: "네이버플러스 멤버십", price: 4900, platform: "naver", categories: ["digital"] },
+  { title: "유튜브 프리미엄", price: 14900, platform: "coupang", categories: ["digital"] },
+  { title: "스포티파이 개인", price: 13900, platform: "naver", categories: ["digital"] },
+  { title: "밀리의 서재", price: 9900, platform: "naver", categories: ["digital"] },
 ];
 
 const REFUND_TITLES = ["부분 환불", "주문 환불", "상품 환불", "배송 오류 환불"];
@@ -181,6 +184,48 @@ function formatDate(monthKey: string, day: number): string {
 
 const TOTAL_ROWS_PER_MONTH = 62;
 
+/**
+ * 주 카테고리에 어울릴 만한 보조 카테고리 후보를 정의합니다.
+ * 예) 패션 영수증에 디지털 액세서리가 끼는 식의 자연스러운 묶음을 표현하기 위함입니다.
+ * 분포가 의미 없는 조합(예: 식품+전자기기)은 의도적으로 비워둡니다.
+ */
+const SECONDARY_CATEGORY_CANDIDATES: Record<TxCategory, TxCategory[]> = {
+  living: ["digital", "food"],
+  fashion: ["living", "digital"],
+  digital: ["living", "fashion"],
+  food: ["living"],
+  etc: ["living"],
+};
+
+/**
+ * 단일 카테고리를 받아 1~3개 카테고리 배열을 만듭니다.
+ * - 약 65%는 단일 카테고리 (대부분의 영수증은 한 가지 성격)
+ * - 약 25%는 두 개
+ * - 약 10%는 세 개 (대형몰 종합 영수증 가정)
+ * 절대 MAX_CATEGORIES_PER_TX를 초과하지 않습니다.
+ */
+function buildCategoryList(rand: () => number, primary: TxCategory): TxCategory[] {
+  const roll = rand();
+  let count = 1;
+  if (roll > 0.9) count = 3;
+  else if (roll > 0.65) count = 2;
+
+  const result: TxCategory[] = [primary];
+  if (count === 1) return result;
+
+  const candidates = SECONDARY_CATEGORY_CANDIDATES[primary].filter(
+    (candidate) => !result.includes(candidate)
+  );
+  while (result.length < count && candidates.length > 0) {
+    const idx = Math.floor(rand() * candidates.length);
+    const next = candidates.splice(idx, 1)[0];
+    result.push(next);
+  }
+
+  // 안전장치: 어떤 경로로도 상한을 넘지 않도록 잘라냅니다.
+  return result.slice(0, MAX_CATEGORIES_PER_TX);
+}
+
 function generateRows(monthKey: string): TxRow[] {
   const rand = mulberry32(hashString(monthKey));
   const totalDays = daysInMonth(monthKey);
@@ -201,32 +246,33 @@ function generateRows(monthKey: string): TxRow[] {
         type: "expense",
         date,
         platform: sub.platform,
-        category: sub.category,
+        // 정기결제는 SUBSCRIPTIONS에서 직접 정의한 카테고리 묶음을 사용합니다.
+        categories: sub.categories.slice(0, MAX_CATEGORIES_PER_TX),
         title: sub.title,
         amount: -sub.price,
         status: "sub",
       };
     } else if (status === "refund") {
-      const category = pickWeighted(rand, CATEGORY_WEIGHT);
+      const primary = pickWeighted(rand, CATEGORY_WEIGHT);
       const platform = pickWeighted(rand, PLATFORM_WEIGHT);
-      const [lo, hi] = AMOUNT_RANGE[category];
+      const [lo, hi] = AMOUNT_RANGE[primary];
       const price = roundTo(lo + rand() * (hi - lo) * 0.7, 1000);
       row = {
         id,
         type: "income",
         date,
         platform,
-        category,
+        categories: buildCategoryList(rand, primary),
         title: pickFrom(rand, REFUND_TITLES),
         amount: price,
         status: "refund",
       };
     } else {
-      const category = pickWeighted(rand, CATEGORY_WEIGHT);
+      const primary = pickWeighted(rand, CATEGORY_WEIGHT);
       const platform = pickWeighted(rand, PLATFORM_WEIGHT);
-      const [lo, hi] = AMOUNT_RANGE[category];
+      const [lo, hi] = AMOUNT_RANGE[primary];
       const price = roundTo(lo + rand() * (hi - lo), 1000);
-      const title = pickFrom(rand, TITLE_POOLS[category]);
+      const title = pickFrom(rand, TITLE_POOLS[primary]);
       const type: TxType = "expense";
       const useDetail = rand() < 0.55;
       const source: "OCR" | "MANUAL" = rand() < 0.5 ? "OCR" : "MANUAL";
@@ -238,7 +284,7 @@ function generateRows(monthKey: string): TxRow[] {
         type,
         date,
         platform,
-        category,
+        categories: buildCategoryList(rand, primary),
         title,
         amount: -price,
         status,

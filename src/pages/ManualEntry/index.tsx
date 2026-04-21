@@ -19,6 +19,7 @@ import { StatusTags, type StatusKey } from "./components/StatusTags";
 import { ProductRows, type ManualProduct } from "./components/ProductRows";
 import { transactionsStore } from "../../stores/transactionsStore";
 import type { TxRow, TxPlatform, TxCategory, TxStatus } from "./../Transactions/components/TransactionTable";
+import { MAX_CATEGORIES_PER_TX } from "../../constants/labels";
 
 /**
  * 입력한 플랫폼 텍스트를 TxRow 타입에 맞는 키로 매핑합니다.
@@ -33,18 +34,24 @@ function mapPlatform(input: string): TxPlatform {
 }
 
 /**
- * 수동 입력 카테고리 키를 TransactionTable의 TxCategory와 매핑합니다.
- * 사용자가 카테고리를 아무것도 선택하지 않았거나 표준 4개(living/fashion/digital/food)에
- * 해당하지 않는 커스텀 카테고리만 선택했다면 "기타"로 수렴시킵니다.
+ * 수동 입력 카테고리 체크박스 선택값을 TxRow.categories 배열로 매핑합니다.
+ * - 표준 4개(living/fashion/digital/food) + etc만 저장 대상. 커스텀 카테고리는 현재 데모 범위를 벗어납니다.
+ * - 아무 것도 표준에 해당하지 않으면 ["etc"]로 수렴시킵니다(비어 있는 배열은 허용하지 않음).
+ * - 상한은 MAX_CATEGORIES_PER_TX로 강제합니다. 초과분은 UI에서 체크박스를 막아두지만,
+ *   안전장치로 여기서도 잘라냅니다.
  */
-function mapCategory(keys: string[]): TxCategory {
-  const standard: TxCategory[] = ["living", "fashion", "digital", "food"];
-  const hit = keys.find((key) => (standard as string[]).includes(key));
-  if (hit === "fashion") return "fashion";
-  if (hit === "digital") return "digital";
-  if (hit === "food") return "food";
-  if (hit === "living") return "living";
-  return "etc";
+function mapCategories(keys: string[]): TxCategory[] {
+  const STANDARD: TxCategory[] = ["living", "fashion", "digital", "food", "etc"];
+  const standardSet = new Set<string>(STANDARD);
+  const picked: TxCategory[] = [];
+  for (const key of keys) {
+    if (!standardSet.has(key)) continue;
+    if (picked.includes(key as TxCategory)) continue;
+    picked.push(key as TxCategory);
+    if (picked.length >= MAX_CATEGORIES_PER_TX) break;
+  }
+  if (picked.length === 0) return ["etc"];
+  return picked;
 }
 
 function mapStatus(key: StatusKey | null): TxStatus {
@@ -187,7 +194,7 @@ export const ManualEntryPage: React.FC = () => {
       amount: signedAmount,
       date: meta.date.trim() || fallbackDate,
       platform: mapPlatform(meta.platform),
-      category: mapCategory(meta.categories),
+      categories: mapCategories(meta.categories),
       status: mapStatus(status),
       source: "manual",
       memo: meta.memo.trim() || undefined,

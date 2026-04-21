@@ -51,16 +51,16 @@ const Footer = styled.div`
 `;
 
 function buildCandidate(image: OcrImageItem): TxRow {
-  // OCR 결과만으로는 카테고리를 단정할 수 없으므로 지정 전까지는 "기타"로 저장합니다.
-  // EditForm의 카테고리 체크박스가 상위로 승격되면 여기서 선택값을 주입하게 됩니다.
-  const category: TxCategory = "etc";
+  // OCR 결과만으로는 카테고리를 단정할 수 없으므로 지정 전까지는 ["etc"] 한 칸으로 시작합니다.
+  // EditForm의 카테고리 체크박스가 상위로 승격되면 여기서 선택값(최대 MAX_CATEGORIES_PER_TX개)을 주입하게 됩니다.
+  const categories: TxCategory[] = ["etc"];
   const title = image.products[0]?.name ?? "OCR 거래";
   return {
     id: `ocr-${Date.now()}`,
     type: "expense",
     date: image.orderDate,
     platform: image.platform,
-    category,
+    categories,
     title,
     amount: -Math.abs(image.totalAmount),
     status: image.statusTag,

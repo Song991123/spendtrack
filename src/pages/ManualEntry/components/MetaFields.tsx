@@ -6,7 +6,7 @@ import React from "react";
 import styled from "styled-components";
 import { FormField } from "../../../components/form/FormField";
 import { TextInput } from "../../../components/form/TextInput";
-import { CATEGORY_LABELS } from "../../../constants/labels";
+import { CATEGORY_LABELS, MAX_CATEGORIES_PER_TX } from "../../../constants/labels";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 
@@ -57,8 +57,9 @@ const CheckGroup = styled.div`
 /**
  * 하나의 거래가 여러 카테고리에 걸칠 수 있어서 셀렉트 대신 체크박스 칩으로 다중 선택을 받습니다.
  * 네이티브 체크박스를 숨기고 label 자체에 선택 상태 스타일을 입혀 '토글 가능한 칩' 느낌을 냅니다.
+ * $disabled인 경우(상한 도달)는 투명도/커서만 바꿔 "지금은 더 못 고른다"는 상태를 부드럽게 전달합니다.
  */
-const CheckChip = styled.label<{ $checked: boolean }>`
+const CheckChip = styled.label<{ $checked: boolean; $disabled?: boolean }>`
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -73,15 +74,22 @@ const CheckChip = styled.label<{ $checked: boolean }>`
     $checked ? tokens.color.accentHover : tokens.color.ink2};
   font-size: ${tokens.type.caption.size};
   font-weight: 600;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+  opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)};
   user-select: none;
   transition:
     background ${tokens.motion.fast} ease,
     border-color ${tokens.motion.fast} ease,
-    color ${tokens.motion.fast} ease;
+    color ${tokens.motion.fast} ease,
+    opacity ${tokens.motion.fast} ease;
 
   &:hover {
-    border-color: ${tokens.color.accent};
+    border-color: ${({ $disabled, $checked }) =>
+      $disabled
+        ? $checked
+          ? tokens.color.accent
+          : tokens.color.line
+        : tokens.color.accent};
   }
 
   input {
@@ -107,6 +115,17 @@ const CheckChip = styled.label<{ $checked: boolean }>`
       background ${tokens.motion.fast} ease,
       border-color ${tokens.motion.fast} ease;
   }
+`;
+
+/**
+ * 카테고리 체크박스 상단에 현재 선택 개수/상한을 안내하는 캡션.
+ * 사용자가 더 못 고르는 이유를 UI에서 명확히 밝혀 의도적인 제약임을 드러냅니다.
+ */
+const CategoryCounter = styled.span<{ $atLimit: boolean }>`
+  margin-left: 6px;
+  color: ${({ $atLimit }) => ($atLimit ? tokens.color.neg : tokens.color.ink4)};
+  font-size: 11px;
+  font-weight: 600;
 `;
 
 const Textarea = styled.textarea`
@@ -140,9 +159,14 @@ export const MetaFields: React.FC<{
   const patch = (partial: Partial<MetaFieldValues>) =>
     onChange({ ...value, ...partial });
 
+  // 카테고리 상한(MAX_CATEGORIES_PER_TX)에 도달했으면 새로 추가하는 토글은 무시합니다.
+  // 이미 체크된 항목을 끄는 동작은 항상 허용되어야 하므로 가드는 "체크 시도"에만 걸립니다.
+  const atLimit = value.categories.length >= MAX_CATEGORIES_PER_TX;
   const toggle = (key: CategoryKey) => {
+    const isChecked = value.categories.includes(key);
+    if (!isChecked && atLimit) return;
     patch({
-      categories: value.categories.includes(key)
+      categories: isChecked
         ? value.categories.filter((k) => k !== key)
         : [...value.categories, key],
     });
@@ -188,17 +212,36 @@ export const MetaFields: React.FC<{
       </Field>
       <Field $span={2}>
         <FormField
-          label="카테고리"
-          helpText="하나의 거래가 여러 카테고리에 걸칠 수 있어서 여러 개 선택할 수 있어요."
+          label={
+            <>
+              카테고리
+              <CategoryCounter $atLimit={atLimit}>
+                {value.categories.length}/{MAX_CATEGORIES_PER_TX}
+              </CategoryCounter>
+            </>
+          }
+          helpText={`하나의 거래가 여러 카테고리에 걸칠 수 있어요. 최대 ${MAX_CATEGORIES_PER_TX}개까지 선택할 수 있어요.`}
         >
           <CheckGroup>
             {CATEGORY_OPTIONS.map((key) => {
               const checked = value.categories.includes(key);
+              // 상한 도달 + 아직 체크되지 않은 칩만 비활성화. 이미 켠 칩은 항상 끌 수 있어야 합니다.
+              const disabled = !checked && atLimit;
               return (
-                <CheckChip key={key} $checked={checked}>
+                <CheckChip
+                  key={key}
+                  $checked={checked}
+                  $disabled={disabled}
+                  title={
+                    disabled
+                      ? `카테고리는 최대 ${MAX_CATEGORIES_PER_TX}개까지만 선택할 수 있어요`
+                      : undefined
+                  }
+                >
                   <input
                     type="checkbox"
                     checked={checked}
+                    disabled={disabled}
                     onChange={() => toggle(key)}
                   />
                   <span className="mark" aria-hidden="true">

@@ -41,3 +41,11 @@ export const CATEGORY_LABELS = {
  */
 export const DEFAULT_CATEGORY_KEY = "etc" as const;
 
+/**
+ * 한 거래(영수증)가 가질 수 있는 카테고리 최대 개수.
+ * - 대부분의 거래는 1개로 충분하지만 대형몰(이마트·쿠팡 종합)처럼 2~3개가 자연스러운 케이스가 있어 3으로 열어둡니다.
+ * - 4개 이상은 실질적으로 "여러 상품의 묶음 영수증"이라 UI/분석을 위해서는 상품(items) 단위로 쪼개는 편이 맞고,
+ *   그래서 이 값을 넘기지 못하도록 수동 입력/OCR 편집 UI에서 체크박스를 비활성화합니다.
+ */
+export const MAX_CATEGORIES_PER_TX = 3;
+

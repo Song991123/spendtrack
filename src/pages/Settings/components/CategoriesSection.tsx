@@ -41,11 +41,12 @@ const List = styled.div`
 /**
  * 한 줄짜리 카테고리 행. 잠긴(isLocked) 행은 배경과 텍스트를 한 톤 내려서
  * "이 줄은 고정 항목"이라는 점을 한눈에 알 수 있게 합니다.
+ * 그리드 마지막 두 칼럼은 "수정"과 "삭제" 버튼 자리입니다(잠긴 행에서는 삭제 칼럼이 빈 공간으로 남음).
  */
 const Row = styled.div<{ $locked?: boolean }>`
   display: grid;
-  grid-template-columns: 16px 1fr auto auto;
-  gap: 14px;
+  grid-template-columns: 16px 1fr auto auto auto;
+  gap: 10px;
   align-items: center;
   padding: 12px 12px;
   border-bottom: 1px solid ${tokens.color.line2};
@@ -100,10 +101,10 @@ const Count = styled.span`
 `;
 
 /**
- * 각 행의 "삭제" 버튼. 잠긴(isLocked) 항목에서는 이 버튼을 아예 렌더하지 않고
- * 행 전체를 한 톤 흐린 배경으로 깔아 편집 불가 상태를 시각화합니다.
+ * 행 액션 버튼의 공통 베이스. "수정"은 뉴트럴 hover, "삭제"는 위험 hover로 분기해 쓰도록
+ * variant를 받아 색만 바꿔줍니다.
  */
-const DeleteButton = styled.button`
+const RowActionButton = styled.button<{ $variant: "edit" | "delete" }>`
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -123,9 +124,12 @@ const DeleteButton = styled.button`
     color ${tokens.motion.fast} ease;
 
   &:hover:not(:disabled) {
-    background: ${tokens.color.negBg};
-    border-color: ${tokens.color.negBorder};
-    color: ${tokens.color.neg};
+    background: ${({ $variant }) =>
+      $variant === "delete" ? tokens.color.negBg : tokens.color.tint};
+    border-color: ${({ $variant }) =>
+      $variant === "delete" ? tokens.color.negBorder : tokens.color.accent};
+    color: ${({ $variant }) =>
+      $variant === "delete" ? tokens.color.neg : tokens.color.accentHover};
   }
 
   &:disabled {
@@ -141,10 +145,19 @@ function isTxCategoryKey(id: string): id is TxCategory {
   return id === "living" || id === "fashion" || id === "digital" || id === "food" || id === "etc";
 }
 
+/**
+ * 모달의 두 가지 동작 모드. addOpen=true 또는 editTarget이 채워지면 모달이 열립니다.
+ * 동시에 둘 다 열리는 경우는 없습니다.
+ */
+type ModalState =
+  | { kind: "closed" }
+  | { kind: "add" }
+  | { kind: "edit"; id: string; name: string; color: string; locked: boolean };
+
 export const CategoriesSection: React.FC = () => {
   const rows = useTransactionsStore();
   const categories = useCategoriesStore();
-  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [modal, setModal] = useState<ModalState>({ kind: "closed" });
 
   /**
    * 표준 카테고리별 거래 건수 집계. 사용자 정의 카테고리는 아직 TxCategory union에 들어가지 않으므로
@@ -159,20 +172,32 @@ export const CategoriesSection: React.FC = () => {
       etc: 0,
     };
     for (const row of rows) {
-      counter[row.category] += 1;
+      // 다중 카테고리 정책과 동일하게, 거래 하나가 카테고리 N개에 속하면 N개 모두에 1건씩 집계합니다.
+      for (const cat of row.categories) {
+        counter[cat] += 1;
+      }
     }
     return counter;
   }, [rows]);
 
-  const handleAdd = (payload: CategoryAddPayload) => {
-    categoriesStore.addCustom(payload);
+  const handleSubmit = (payload: CategoryAddPayload) => {
+    if (modal.kind === "edit") {
+      categoriesStore.update(modal.id, { name: payload.name, color: payload.color });
+    } else if (modal.kind === "add") {
+      categoriesStore.addCustom(payload);
+    }
   };
 
   const handleDelete = (id: string) => {
     categoriesStore.remove(id);
   };
 
-  const existingNames = categories.map((category) => category.name);
+  // 편집 모드일 때는 자기 자신 이름을 중복 검사 대상에서 제외해야 "이름 그대로 색만 바꾸기"가 막히지 않습니다.
+  const existingNames = categories
+    .filter((category) =>
+      modal.kind === "edit" ? category.id !== modal.id : true
+    )
+    .map((category) => category.name);
 
   return (
     <>
@@ -182,7 +207,7 @@ export const CategoriesSection: React.FC = () => {
       >
         <HeaderBar>
           <HeaderNote>총 {categories.length}개 · 기타 제외 삭제 가능</HeaderNote>
-          <Button variant="secondary" size="sm" onClick={() => setIsAddOpen(true)}>
+          <Button variant="secondary" size="sm" onClick={() => setModal({ kind: "add" })}>
             + 카테고리 추가
           </Button>
         </HeaderBar>
@@ -204,18 +229,38 @@ export const CategoriesSection: React.FC = () => {
                   {category.isLocked && <LockBadge>기본</LockBadge>}
                 </NameCell>
                 <Count>{count}건</Count>
+                {/* "수정" 버튼은 모든 카테고리에 노출. 잠긴(기타) 항목은 이름 필드만 비활성화한 채
+                    색상 편집은 허용해서 사용자의 색 커스터마이즈 욕구를 막지 않습니다. */}
+                <RowActionButton
+                  type="button"
+                  $variant="edit"
+                  aria-label={`${category.name} 카테고리 수정`}
+                  title="수정"
+                  onClick={() =>
+                    setModal({
+                      kind: "edit",
+                      id: category.id,
+                      name: category.name,
+                      color: category.color,
+                      locked: category.isLocked,
+                    })
+                  }
+                >
+                  수정
+                </RowActionButton>
                 {/* 잠긴 행은 삭제 버튼을 렌더하지 않고 자리만 빈 칸으로 남겨 그리드를 정렬합니다. */}
                 {category.isLocked ? (
                   <span aria-hidden="true" />
                 ) : (
-                  <DeleteButton
+                  <RowActionButton
                     type="button"
+                    $variant="delete"
                     aria-label={`${category.name} 카테고리 삭제`}
                     title="삭제"
                     onClick={() => handleDelete(category.id)}
                   >
                     삭제
-                  </DeleteButton>
+                  </RowActionButton>
                 )}
               </Row>
             );
@@ -223,10 +268,20 @@ export const CategoriesSection: React.FC = () => {
         </List>
       </SettingsBlock>
       <CategoryAddModal
-        isOpen={isAddOpen}
+        isOpen={modal.kind !== "closed"}
         existingNames={existingNames}
-        onClose={() => setIsAddOpen(false)}
-        onSubmit={handleAdd}
+        mode={
+          modal.kind === "edit"
+            ? {
+                kind: "edit",
+                initialName: modal.name,
+                initialColor: modal.color,
+                nameLocked: modal.locked,
+              }
+            : { kind: "add" }
+        }
+        onClose={() => setModal({ kind: "closed" })}
+        onSubmit={handleSubmit}
       />
     </>
   );

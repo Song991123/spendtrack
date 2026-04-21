@@ -124,7 +124,8 @@ export const TransactionsPage: React.FC = () => {
         return false;
       }
 
-      if (category !== "all" && row.category !== category) {
+      // 다중 카테고리 거래는 카테고리 중 하나라도 필터 키와 일치하면 표에 노출합니다.
+      if (category !== "all" && !row.categories.includes(category)) {
         return false;
       }
 

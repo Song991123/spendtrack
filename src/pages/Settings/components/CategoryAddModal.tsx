@@ -17,10 +17,23 @@ export interface CategoryAddPayload {
   color: string;
 }
 
+/**
+ * 모달의 두 가지 동작 모드.
+ * - "add": 새 카테고리를 만든다. 기본값은 빈 이름 + 첫 프리셋 색.
+ * - "edit": 기존 카테고리의 이름/색을 수정한다. initialName/initialColor가 채워져야 한다.
+ *   nameLocked=true면 이름 필드를 읽기 전용으로 잠가 시스템 라벨(예: 기타)을 보호한다.
+ */
+type CategoryModalMode =
+  | { kind: "add" }
+  | { kind: "edit"; initialName: string; initialColor: string; nameLocked?: boolean };
+
 interface CategoryAddModalProps {
   isOpen: boolean;
-  /** 같은 이름이 이미 있으면 경고를 보여주기 위해 상위에서 기존 이름 목록을 내려받습니다. */
+  /** 같은 이름이 이미 있으면 경고를 보여주기 위해 상위에서 기존 이름 목록을 내려받습니다.
+   *  편집 모드에서는 자기 자신 이름을 미리 제외해서 넘겨주면 됩니다. */
   existingNames: string[];
+  /** 생략하면 기존처럼 "추가" 모드로 동작해 호출부 호환성을 유지합니다. */
+  mode?: CategoryModalMode;
   onClose: () => void;
   onSubmit: (payload: CategoryAddPayload) => void;
 }
@@ -139,22 +152,33 @@ function normalizeHex(input: string): string | null {
 export const CategoryAddModal = ({
   isOpen,
   existingNames,
+  mode = { kind: "add" },
   onClose,
   onSubmit,
 }: CategoryAddModalProps) => {
+  const isEdit = mode.kind === "edit";
+  const nameLocked = mode.kind === "edit" && mode.nameLocked === true;
+
   const [name, setName] = useState("");
   const [color, setColor] = useState<string>(PRESET_COLORS[0]);
   const [hexDraft, setHexDraft] = useState<string>(PRESET_COLORS[0]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 모달이 닫혔다가 다시 열릴 때마다 기본 상태로 리셋합니다.
+    // 모달이 닫혔다가 다시 열릴 때마다 모드에 맞춰 초기 상태를 다시 잡아줍니다.
     if (!isOpen) return;
-    setName("");
-    setColor(PRESET_COLORS[0]);
-    setHexDraft(PRESET_COLORS[0]);
+    if (mode.kind === "edit") {
+      setName(mode.initialName);
+      setColor(mode.initialColor.toUpperCase());
+      setHexDraft(mode.initialColor.toUpperCase());
+    } else {
+      setName("");
+      setColor(PRESET_COLORS[0]);
+      setHexDraft(PRESET_COLORS[0]);
+    }
     setError(null);
-  }, [isOpen]);
+    // mode 객체 자체가 매번 새로 만들어질 수 있어 비교 키만 의존성에 둡니다.
+  }, [isOpen, mode]);
 
   const handleSwatchClick = (preset: string) => {
     setColor(preset);
@@ -184,12 +208,24 @@ export const CategoryAddModal = ({
     onClose();
   };
 
+  const modalTitle = isEdit ? "카테고리 수정" : "카테고리 추가";
+  const submitLabel = isEdit ? "변경 사항 저장" : "카테고리 추가하기";
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="카테고리 추가">
+    <Modal isOpen={isOpen} onClose={onClose} title={modalTitle}>
       <BodyStack>
-        <FormField label="카테고리 이름" required>
+        <FormField
+          label="카테고리 이름"
+          required={!nameLocked}
+          helpText={
+            nameLocked
+              ? "‘기타’는 미지정 거래의 기본 분류라 이름은 바꿀 수 없어요. 색상만 조정할 수 있어요."
+              : undefined
+          }
+        >
           <TextInput
             value={name}
+            disabled={nameLocked}
             onChange={(event) => {
               setName(event.target.value);
               if (error) setError(null);
@@ -201,7 +237,7 @@ export const CategoryAddModal = ({
               }
             }}
             placeholder="예: 취미, 반려동물, 뷰티"
-            autoFocus
+            autoFocus={!nameLocked}
           />
         </FormField>
 
@@ -262,7 +298,7 @@ export const CategoryAddModal = ({
         {error && <ErrorLine role="alert">{error}</ErrorLine>}
 
         <Button variant="primary" size="lg" fullWidth onClick={handleSubmit}>
-          카테고리 추가하기
+          {submitLabel}
         </Button>
       </BodyStack>
     </Modal>

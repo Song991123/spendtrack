@@ -7,7 +7,8 @@ import styled from "styled-components";
 import { tokens } from "../../styles/tokens";
 
 interface FormFieldProps {
-  label: string;
+  /** 단순 문자열뿐 아니라 카운터/뱃지 등을 함께 보여주기 위해 ReactNode를 허용합니다. */
+  label: ReactNode;
   required?: boolean;
   helpText?: string;
   children: ReactNode;

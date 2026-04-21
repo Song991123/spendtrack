@@ -159,11 +159,14 @@ function buildInsights(rows: TxRow[], monthKey: string): InsightItem[] {
   );
   const changePct = prevSpend > 0 ? Math.round(((totalSpend - prevSpend) / prevSpend) * 100) : 0;
 
-  // 최빈 카테고리 찾기
+  // 최빈 카테고리 찾기 — 다중 카테고리 거래는 Analysis와 같은 중복 카운트 정책을 적용해
+  // 거래 1건이 N개 카테고리에 속하면 N개 모두에 +1씩 더합니다.
   const categoryCount: Record<string, number> = {};
   for (const row of thisMonth) {
     if (row.type !== "expense" || row.status === "cancel") continue;
-    categoryCount[row.category] = (categoryCount[row.category] ?? 0) + 1;
+    for (const cat of row.categories) {
+      categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
+    }
   }
   const topCategory = Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0]?.[0];
   const CATEGORY_LABEL: Record<string, string> = {

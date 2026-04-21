@@ -131,6 +131,24 @@ export const categoriesStore = {
     writeRaw(current.filter((entry) => entry.id !== id));
   },
   /**
+   * 카테고리의 이름과 색상을 업데이트합니다.
+   * - 잠긴(기타) 항목은 색상만 바꾸고 이름은 유지해 시스템 라벨을 보호합니다.
+   * - 표준 카테고리(living/fashion/...)는 이름과 색 모두 자유롭게 바꿀 수 있습니다.
+   *   이름이 바뀌어도 거래는 키(id)로 묶여 있어 데이터 무결성에 영향이 없습니다.
+   */
+  update(id: string, patch: { name?: string; color?: string }): void {
+    const current = ensureSeeded();
+    const target = current.find((entry) => entry.id === id);
+    if (!target) return;
+    const next: CategoryEntry = {
+      ...target,
+      // 잠긴 항목은 시스템 라벨이라 이름 변경을 막습니다.
+      name: target.isLocked ? target.name : (patch.name ?? target.name),
+      color: patch.color ?? target.color,
+    };
+    writeRaw(current.map((entry) => (entry.id === id ? next : entry)));
+  },
+  /**
    * 표준 카테고리 키로부터 현재 색상을 조회합니다. 표준 키가 없으면 기타 색을 폴백으로 반환합니다.
    */
   getColor(key: TxCategory): string {

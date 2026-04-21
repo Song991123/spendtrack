@@ -33,7 +33,13 @@ export interface TxRow {
   type: TxType;
   date: string;
   platform: TxPlatform;
-  category: TxCategory;
+  /**
+   * 한 거래가 속하는 카테고리 목록. 최대 MAX_CATEGORIES_PER_TX개까지 허용합니다.
+   * - 첫 번째 원소를 "대표 카테고리"로 취급해서 반복구매/요약처럼 단일 라벨이 필요한 곳에서 사용합니다.
+   * - 분석(카테고리별 지출) 집계는 중복 카운트 방식 — 한 거래가 2개 카테고리에 속하면 두 쪽 모두 전액을 더합니다.
+   * - 빈 배열은 허용하지 않으며, 카테고리가 없는 거래는 ["etc"]로 저장합니다.
+   */
+  categories: TxCategory[];
   title: string;
   amount: number;
   status: TxStatus;
@@ -182,25 +188,37 @@ const DataCell = styled.div<{
 `;
 
 /**
- * 카테고리 색상 셀의 hover 범위. 색상 정사각형 위에 마우스가 오면 카테고리 이름 툴팁을
- * 위쪽에 띄워 보여줍니다. 포지셔닝을 위해 relative를 걸어두고, 툴팁의 기준점이 됩니다.
+ * 카테고리 색상 셀의 hover 범위. 한 거래가 여러 카테고리에 속할 수 있어
+ * 정사각형들을 수평으로 나란히 배치합니다(최대 MAX_CATEGORIES_PER_TX개).
+ * 부모 DataCell 폭을 가득 채워 정사각형 묶음이 컬럼 정중앙에 오게 합니다.
  */
 const CategoryCell = styled.div`
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 부모 DataCell 폭을 가득 채워 색상 정사각형이 컬럼 정중앙에 오게 합니다. */
+  gap: 4px;
   width: 100%;
+`;
+
+/**
+ * 정사각형 + 툴팁을 묶는 wrapper. 각 정사각형마다 자기 카테고리 툴팁이 떠야 해서
+ * 툴팁 기준점이 정사각형 단위로 잡혀야 합니다.
+ */
+const SquareWrap = styled.span`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 `;
 
 /**
  * 카테고리 색을 보여주는 정사각형. 각 행에서 "이 거래가 어느 카테고리인지"를
  * 최소 시각 노이즈로 전달하는 역할이라 테두리 없이 배경색만 씁니다.
+ * 다중 카테고리일 때 좁은 폭에 여러 개를 욱여넣어야 해서 11px로 약간 줄였습니다.
  */
 const ColorSquare = styled.span<{ $color: string }>`
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 3px;
   background: ${({ $color }) => $color};
   /* 배경과 섞이지 않도록 아주 연한 윤곽선을 깔아 둡니다. 흰 배경에도, hover 배경에도 안정적입니다. */
@@ -209,7 +227,7 @@ const ColorSquare = styled.span<{ $color: string }>`
 
 /**
  * 카테고리 이름을 카테고리 색으로 보여주는 툴팁.
- * 평소엔 hidden, 부모(CategoryCell) hover 시에만 opacity/translate로 부드럽게 등장합니다.
+ * 평소엔 hidden, 부모(SquareWrap) hover 시에만 opacity/translate로 부드럽게 등장합니다.
  * 색상 가독성을 위해 흰 배경/그림자를 깔고 글씨만 해당 카테고리 색으로 강조합니다.
  */
 const CategoryTooltip = styled.span<{ $color: string }>`
@@ -234,7 +252,7 @@ const CategoryTooltip = styled.span<{ $color: string }>`
     transform ${tokens.motion.fast} ease;
   z-index: 2;
 
-  ${CategoryCell}:hover & {
+  ${SquareWrap}:hover & {
     opacity: 1;
     transform: translate(-50%, 0);
   }
@@ -402,18 +420,19 @@ export const TransactionTable: React.FC<Props> = ({
               </DataCell>
               <DataCell {...common}>{row.title}</DataCell>
               <DataCell {...common} style={{ ...common.style, padding: "12px 0" }}>
-                {/* 색상 정사각형 + hover 툴팁. 툴팁 글씨는 해당 카테고리 색으로 나와 시각 연관을 만듭니다. */}
+                {/* 색상 정사각형 + hover 툴팁. 거래에 연결된 카테고리만큼 정사각형이 늘어납니다. */}
                 <CategoryCell>
-                  <ColorSquare
-                    $color={categoryColorMap[row.category]}
-                    aria-label={CATEGORY_LABELS[row.category]}
-                  />
-                  <CategoryTooltip
-                    role="tooltip"
-                    $color={categoryColorMap[row.category]}
-                  >
-                    {CATEGORY_LABELS[row.category]}
-                  </CategoryTooltip>
+                  {row.categories.map((cat) => (
+                    <SquareWrap key={cat}>
+                      <ColorSquare
+                        $color={categoryColorMap[cat]}
+                        aria-label={CATEGORY_LABELS[cat]}
+                      />
+                      <CategoryTooltip role="tooltip" $color={categoryColorMap[cat]}>
+                        {CATEGORY_LABELS[cat]}
+                      </CategoryTooltip>
+                    </SquareWrap>
+                  ))}
                 </CategoryCell>
               </DataCell>
               <DataCell {...common} $right>

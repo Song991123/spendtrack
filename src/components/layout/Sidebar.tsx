@@ -292,7 +292,9 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
         ))}
       </Nav>
 
-      <Section>계정</Section>
+      {/* "환경설정" 섹션은 카테고리·테마처럼 계정 정보 외 항목까지 포함하므로
+          기존 "계정" 라벨에서 옮겨 왔습니다. NavItem도 단순히 "설정"으로 줄여 일관성을 맞춥니다. */}
+      <Section>환경설정</Section>
       <Nav>
         <NavItem
           type="button"
@@ -300,7 +302,7 @@ export const Sidebar = ({ activeNav, user }: SidebarProps) => {
           onClick={() => navigate("/settings")}
         >
           <NavIcon name="settings" />
-          <span>계정 설정</span>
+          <span>설정</span>
         </NavItem>
       </Nav>
 

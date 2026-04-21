@@ -138,6 +138,7 @@ export function importRows(parsed: CsvRow[]): CsvImportResult {
     }
 
     // 사용자가 카테고리를 지정하지 않았거나 알 수 없는 값이면 "기타"로 자동 분류합니다.
+    // CSV 한 줄은 카테고리 한 개만 제공하므로 항상 길이 1짜리 배열로 저장합니다.
     const category = (CATEGORY_MAP[categoryRaw.trim()] ?? "etc") as TxCategory;
     const status = inferStatus(statusRaw, amount);
     const txShape = toTxShape(amount, status);
@@ -147,7 +148,7 @@ export function importRows(parsed: CsvRow[]): CsvImportResult {
       type: txShape.type,
       date,
       platform,
-      category,
+      categories: [category],
       title: cleaned || merchantRaw,
       amount: txShape.amount,
       status: txShape.status,
