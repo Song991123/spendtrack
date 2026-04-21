@@ -16,6 +16,8 @@ import { InsightCards } from "./components/InsightCards";
 import { buildHomeData } from "./data";
 import { getMonthOption } from "../../constants/months";
 import { useTransactionsStore } from "../../stores/transactionsStore";
+// TODO(auth): 목업 로그인 분기를 걷어낼 때, 이 오버레이의 표시 조건도 실제 신규 가입 이벤트로 옮겨야 합니다.
+import { WelcomeTutorial } from "../../components/onboarding/WelcomeTutorial";
 
 const HeaderRight = styled.div`
   display: flex;
@@ -80,6 +82,12 @@ export const HomePage: React.FC = () => {
         <RecentTransactions items={data.recent} />
         <InsightCards items={data.insights} />
       </Grid>
+      {/*
+        WelcomeTutorial은 최초 진입 시 localStorage 플래그(ONBOARDING_SEEN_KEY)가 없을 때만 자동으로 뜹니다.
+        LoginForm의 목업 "1111/1111" 분기에서 이 플래그를 제거하기 때문에, 신규 계정으로 로그인한 직후
+        Home에 들어오면 튜토리얼이 다시 보입니다.
+      */}
+      <WelcomeTutorial />
     </AppShell>
   );
 };
