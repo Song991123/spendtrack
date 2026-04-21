@@ -65,21 +65,32 @@ export const LoginForm: React.FC = () => {
 
         // TODO(auth): src/mocks/auth.ts 제거 시 이 분기 통째로 실제 auth SDK 호출로 교체.
         // 현재는 프런트엔드만 있는 MVP라서 아래 두 시나리오를 입력값으로 흉내 냅니다.
-        //   1) 1111@test.com / 1111 → "비어있는 신규 계정" (0건 + 튜토리얼)
+        //   1) 1111@test.com / 1111 → "비어있는 신규 계정" (0건 + 튜토리얼 무조건 표시)
         //   2) 그 외 이메일/비밀번호 모두 입력 → "데이터 있는 데모 계정" (시드 강제 복원)
         //   3) 둘 다 비어있음 → 현재 세션 상태 그대로 유지
+        //
+        // 테스트 결정성(determinism)을 위해 "튜토리얼을 무조건 띄운다"는 신호는
+        // localStorage 플래그가 아니라 React Router navigation state로 Home에 직접 전달합니다.
+        // 이렇게 해야 여러 번 1111로 재로그인해도 항상 "0건 + 튜토리얼"이 뜨고,
+        // 다른 계정 로그인은 항상 "시드 로드"로 떨어집니다.
         if (isNewAccountCredential(email, password)) {
-          // 신규 계정: 거래/프로필을 전부 초기화하고, 튜토리얼 오버레이가 다시 뜨도록 플래그 제거
+          // 신규 계정: 거래/프로필을 전부 초기화
           transactionsStore.replaceAll([]);
           profileStore.reset();
           // 이메일만 입력값으로 덮어써서 헤더/설정에서 "1111" 계정인 게 자연스럽게 보이게 함
           profileStore.save({ email });
+          // localStorage 플래그도 함께 제거해 두어, 혹시 forceOpen 전달이 유실되더라도
+          // WelcomeTutorial의 기본 자동 표시 로직이 백업으로 동작하게 합니다.
           try {
             localStorage.removeItem(ONBOARDING_SEEN_KEY);
           } catch {
             // localStorage 접근 불가 환경(예: 서버 렌더)은 무시
           }
-        } else if (isSeededDemoCredential(email, password)) {
+          // 핵심: Home에 "이번 진입에서 튜토리얼 무조건 띄워"를 명시적으로 전달
+          navigate("/", { state: { showTutorial: true } });
+          return;
+        }
+        if (isSeededDemoCredential(email, password)) {
           // 데이터 있는 데모 계정: 시드 거래를 강제로 복원해 "쌓여 있는 계정" 화면을 바로 보여줍니다.
           // 이전 세션에 1111@test.com으로 거래를 비워둔 적이 있어도 이 경로로 다시 채워집니다.
           transactionsStore.resetToSeed();
