@@ -82,7 +82,7 @@ const Avatar = styled.div`
 const Title = styled.div`
   overflow: hidden;
   color: ${tokens.color.ink1};
-  font-size: 13.5px;
+  font-size: ${tokens.type.bodySm.size};
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -90,13 +90,13 @@ const Title = styled.div`
 
 const Meta = styled.div`
   color: ${tokens.color.ink4};
-  font-size: 11px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 const Amount = styled.div<{ $negative?: boolean }>`
   color: ${({ $negative }) => ($negative ? tokens.color.neg : tokens.color.pos)};
   font-family: ${tokens.font.mono};
-  font-size: 13.5px;
+  font-size: ${tokens.type.bodySm.size};
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 `;

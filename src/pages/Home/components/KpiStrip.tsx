@@ -25,13 +25,13 @@ export interface KpiItem {
 }
 
 /**
- * 레퍼런스 HTML의 `.hero` 스트립을 따라 하나의 패널 안에서 세로 구분선으로 셀을 나누고,
- * primary 셀(총 지출)은 폰트와 sparkline으로 강조합니다. 비-primary 셀은 flex 배분으로
+ * 레퍼런스 스크린샷의 4분할 스트립을 따라 하나의 패널 안에서 세로 구분선으로 4개 셀을 나누고,
+ * primary 셀(총 지출)은 큰 폰트 + sparkline으로 강조합니다. 비-primary 셀은 flex 배분으로
  * 라벨/값은 상단에, 서브텍스트는 하단에 붙여 여백이 가운데로 모이게 했습니다.
  */
 const Strip = styled.div`
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   background: ${tokens.color.panel};
   border: 1px solid ${tokens.color.line};
   border-radius: ${tokens.radius.card};
@@ -51,19 +51,20 @@ const Cell = styled.div<{ $primary?: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
-  padding: ${({ $primary }) => ($primary ? "16px 20px" : "14px 18px")};
+  padding: 16px 20px;
   border-right: 1px solid ${tokens.color.line2};
 
   &:last-child {
     border-right: none;
   }
 
+  /* 태블릿에선 2x2 격자: 2번째와 4번째 셀의 오른쪽 경계선을 제거하고
+     3·4번째 셀에 상단 라인을 추가해 시각적으로 행을 구분합니다. */
   ${media.tablet} {
-    &:nth-child(2) {
+    &:nth-child(2n) {
       border-right: none;
     }
-    &:nth-child(3) {
-      grid-column: 1 / -1;
+    &:nth-child(n + 3) {
       border-top: 1px solid ${tokens.color.line2};
     }
   }
@@ -73,10 +74,6 @@ const Cell = styled.div<{ $primary?: boolean }>`
 
     & + & {
       border-top: 1px solid ${tokens.color.line2};
-    }
-
-    &:nth-child(3) {
-      grid-column: auto;
     }
   }
 `;
@@ -100,7 +97,7 @@ const Dot = styled.span<{ $color: string }>`
 const Value = styled.div<{ $primary?: boolean; $color?: string }>`
   margin-top: 6px;
   color: ${({ $color }) => $color ?? tokens.color.ink1};
-  font-size: ${({ $primary }) => ($primary ? "30px" : "22px")};
+  font-size: ${({ $primary }) => ($primary ? tokens.type.metric.size : "20px")};
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -125,7 +122,7 @@ const MetaTail = styled.div<{ $pushDown?: boolean }>`
 const Sub = styled.div`
   margin-top: 4px;
   color: ${tokens.color.ink4};
-  font-size: 11.5px;
+  font-size: ${tokens.type.caption.size};
 `;
 
 const Spark: React.FC<{ data: number[] }> = ({ data }) => {

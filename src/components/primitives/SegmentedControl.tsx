@@ -25,7 +25,7 @@ const Wrap = styled.div`
 `;
 
 const Item = styled.button<{ $active: boolean }>`
-  padding: 7px 16px;
+  padding: 5px 12px;
   border: none;
   border-radius: 6px;
   background: ${({ $active }) => ($active ? tokens.color.panel : "transparent")};
@@ -33,7 +33,7 @@ const Item = styled.button<{ $active: boolean }>`
   box-shadow: ${({ $active }) => ($active ? "0 1px 2px rgba(16,24,40,.08)" : "none")};
   cursor: pointer;
   font-family: inherit;
-  font-size: 12.5px;
+  font-size: ${tokens.type.caption.size};
   font-weight: 600;
 `;
 

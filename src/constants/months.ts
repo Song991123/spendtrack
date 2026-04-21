@@ -20,3 +20,14 @@ export const LATEST_MONTH_KEY = MONTH_OPTIONS[MONTH_OPTIONS.length - 1].key;
 export const getMonthOption = (key: string) =>
   MONTH_OPTIONS.find((option) => option.key === key) ?? MONTH_OPTIONS[MONTH_OPTIONS.length - 1];
 
+/** "2026-04" → "2026-03"처럼 한 달 앞 키를 반환합니다. 연초(1월)는 전년도 12월로 넘어갑니다. */
+export const getPrevMonthKey = (monthKey: string): string => {
+  const [yearStr, monthStr] = monthKey.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  if (!year || !month) return monthKey;
+  const prevMonthIdx = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  return `${prevYear}-${String(prevMonthIdx).padStart(2, "0")}`;
+};
+

@@ -17,7 +17,6 @@ const Header = styled.header`
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 18px;
 
   ${media.mobile} {
     flex-direction: column;

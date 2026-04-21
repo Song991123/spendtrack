@@ -19,7 +19,8 @@ const Wrap = styled.div`
 
 const Inner = styled.div`
   width: 100%;
-  max-width: 720px;
+  /* 3개 카드가 한 줄로 들어갈 때 제목/CTA 한 줄에 깔끔히 들어가도록 살짝 넓혔습니다. */
+  max-width: 880px;
   text-align: center;
 `;
 
@@ -52,6 +53,7 @@ export const UploadPage: React.FC = () => (
         {/* v1에서는 OCR 흐름과 수동 입력 흐름을 여기서 명확히 갈라 줍니다. */}
         <Prompt>어떤 방식으로 내역을 입력하시겠어요?</Prompt>
         <Options>
+          {/* 첫 진입 시 왼쪽 → 오른쪽 순으로 140ms 간격씩 아래에서 올라오며 등장합니다. */}
           <MethodCard
             icon={<CameraIcon />}
             title="OCR로 입력"
@@ -60,6 +62,7 @@ export const UploadPage: React.FC = () => (
             ctaVariant="primary"
             footnote="취소, 반품, 환불, 정기결제까지 함께 감지"
             href="/ocr-upload"
+            enterDelayMs={0}
           />
           <MethodCard
             icon={<PenIcon />}
@@ -69,6 +72,7 @@ export const UploadPage: React.FC = () => (
             ctaVariant="ghost"
             footnote="상품도 팝업으로 간편하게 추가"
             href="/manual-entry"
+            enterDelayMs={140}
           />
           <MethodCard
             icon={<SpreadsheetIcon />}
@@ -78,6 +82,7 @@ export const UploadPage: React.FC = () => (
             ctaVariant="ghost"
             footnote="OCR로 상품 상세를 나중에 덧붙일 수 있어요"
             href="/csv-upload"
+            enterDelayMs={280}
           />
         </Options>
       </Inner>

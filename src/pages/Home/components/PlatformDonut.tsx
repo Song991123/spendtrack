@@ -118,7 +118,7 @@ const CenterLabel = styled.div`
 
   .amount {
     color: ${tokens.color.ink1};
-    font-size: 17px;
+    font-size: ${tokens.type.titleLg.size};
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
@@ -126,7 +126,7 @@ const CenterLabel = styled.div`
   .caption {
     margin-top: 4px;
     color: ${tokens.color.ink4};
-    font-size: 10.5px;
+    font-size: ${tokens.type.caption.size};
   }
 `;
 

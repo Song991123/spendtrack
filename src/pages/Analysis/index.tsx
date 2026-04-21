@@ -16,7 +16,7 @@ import { SubscriptionList } from "./components/SubscriptionList";
 import { MonthlyTrend } from "./components/MonthlyTrend";
 import { WeeklyPattern } from "./components/WeeklyPattern";
 import { getAnalysisMockData } from "./data";
-import { getMonthOption, LATEST_MONTH_KEY } from "../../constants/months";
+import { getMonthOption, getPrevMonthKey, LATEST_MONTH_KEY } from "../../constants/months";
 
 const Grid = styled.div`
   display: grid;
@@ -47,6 +47,8 @@ export const AnalysisPage: React.FC = () => {
   // Analysis도 월 선택만 바꾸면 같은 분석 레이아웃 안에서 데이터가 교체됩니다.
   const [month, setMonth] = useState("2026-04");
   const data = getAnalysisMockData(month);
+  // CategoryBars의 "지난 달" 탭에서 쓸 전달 참조 데이터.
+  const prevData = useMemo(() => getAnalysisMockData(getPrevMonthKey(month)), [month]);
   const monthOption = getMonthOption(month);
 
   const summaryTitle = useMemo(() => {
@@ -75,7 +77,7 @@ export const AnalysisPage: React.FC = () => {
             totalIncome={data.platform.totalIncome}
             netSpend={data.platform.netSpend}
           />
-          <CategoryBars items={data.category} />
+          <CategoryBars items={data.category} prevItems={prevData.category} />
         </Row2>
         <MonthlyTrend points={data.trend.points} average={data.trend.average} />
         <Row3>

@@ -70,7 +70,28 @@ const HeaderCell = styled.div`
   }
 `;
 
-const DataCell = styled.div<{ $right?: boolean; $active?: boolean; $hovered?: boolean }>`
+/**
+ * 첫 렌더에서 등장하는 행들에 위에서 살짝 내려앉는 효과를 주기 위한 키프레임입니다.
+ * 방금 추가된 것처럼 보이도록 6px → 0px로 올라오며 opacity가 차오릅니다.
+ */
+const rowEnter = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+`;
+
+const DataCell = styled.div<{
+  $right?: boolean;
+  $active?: boolean;
+  $hovered?: boolean;
+  /** 행의 인덱스. undefined이거나 BATCH_SIZE 이상이면 애니메이션을 적용하지 않습니다. */
+  $enterIndex?: number;
+}>`
   display: flex;
   align-items: center;
   padding: 12px 14px;
@@ -92,6 +113,18 @@ const DataCell = styled.div<{ $right?: boolean; $active?: boolean; $hovered?: bo
             background: ${tokens.color.foot};
           `
         : ""}
+  /* $enterIndex가 들어온 행(첫 배치)만 지연 시간을 누적해 순차 등장하게 합니다. */
+  ${({ $enterIndex }) =>
+    typeof $enterIndex === "number" &&
+    $enterIndex >= 0 &&
+    css`
+      animation: ${rowEnter} 360ms ease-out both;
+      animation-delay: ${$enterIndex * 22}ms;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+    `}
 `;
 
 const Amount = styled.span<{ $positive?: boolean }>`
@@ -151,6 +184,17 @@ export const TransactionTable: React.FC<Props> = ({
   const loadMoreRef = useRef(onLoadMore);
   loadMoreRef.current = onLoadMore;
 
+  /**
+   * 첫 마운트 시 노출된 행 ID들만 기록해 둡니다.
+   * 이후 인피니트 스크롤로 추가되는 행은 이 집합에 들어있지 않으므로 애니메이션을 받지 않고,
+   * 필터/월 변경으로 리셋된 경우에도 이전에 본 행은 다시 애니메이션하지 않습니다.
+   */
+  const initialIdsRef = useRef<Set<string> | null>(null);
+  if (initialIdsRef.current === null) {
+    initialIdsRef.current = new Set(rows.map((row) => row.id));
+  }
+  const initialIds = initialIdsRef.current;
+
   useEffect(() => {
     if (!hasMore) return;
     const el = sentinelRef.current;
@@ -178,12 +222,19 @@ export const TransactionTable: React.FC<Props> = ({
         <HeaderCell>거래명</HeaderCell>
         <HeaderCell className="right">금액</HeaderCell>
         <HeaderCell className="tag">상태</HeaderCell>
-        {rows.map((row) => {
+        {rows.map((row, rowIndex) => {
           const active = row.id === selectedId;
           const hovered = row.id === hoveredId && !active;
+          /**
+           * 첫 렌더에서 잡힌 행 중 현재 위치에 있는 경우에만 stagger 인덱스를 내려보냅니다.
+           * 인피니트 스크롤로 추가된 행이나 필터 변경 후 새로 등장한 행은 undefined가 되어
+           * 애니메이션이 발동하지 않습니다.
+           */
+          const enterIndex = initialIds.has(row.id) ? rowIndex : undefined;
           const common = {
             $active: active,
             $hovered: hovered,
+            $enterIndex: enterIndex,
             onClick: () => onSelect(row.id),
             onMouseEnter: () => setHoveredId(row.id),
             onMouseLeave: () =>

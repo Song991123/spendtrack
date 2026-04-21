@@ -8,7 +8,6 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -102,19 +101,6 @@ export const MonthlyTrend: React.FC<{ points: Point[]; average: number }> = ({
                 borderRadius: 12,
                 border: `1px solid ${tokens.color.line}`,
                 boxShadow: tokens.shadow.card,
-              }}
-            />
-            {/* 레퍼런스 HTML의 warn 색 점선 평균선과 동일한 역할. */}
-            <ReferenceLine
-              y={average}
-              stroke={tokens.color.warn}
-              strokeDasharray="4 4"
-              label={{
-                value: `평균 ${formatKRW(average)}`,
-                position: "insideTopRight",
-                fill: tokens.color.warn,
-                fontSize: 10,
-                fontWeight: 600,
               }}
             />
             <Area

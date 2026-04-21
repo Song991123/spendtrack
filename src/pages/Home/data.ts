@@ -30,6 +30,13 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         spark: [720, 710, 702, 698, 691, 684],
       },
       {
+        key: "avg",
+        label: "평균 주문금액",
+        value: 34200,
+        delta: { tone: "down", text: "전월 대비 2%" },
+        sub: "쇼핑 20건 기준",
+      },
+      {
         key: "income",
         label: "총 수입 · 환불",
         value: 46000,
@@ -39,11 +46,11 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         sub: "환불 1건, 기타 정산 1건",
       },
       {
-        key: "refund",
-        label: "환불·취소 금액",
-        value: 46000,
+        key: "cancel",
+        label: "취소 금액",
+        value: 14000,
         dotColor: tokens.color.neg,
-        sub: "환불 32,000원, 취소 14,000원",
+        sub: "취소 1건 · 멀티탭 충전 스탠드",
       },
     ],
     platformDonut: {
@@ -94,6 +101,13 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         spark: [684, 692, 701, 720, 734, 742],
       },
       {
+        key: "avg",
+        label: "평균 주문금액",
+        value: 33700,
+        delta: { tone: "down", text: "전월 대비 1%" },
+        sub: "쇼핑 22건 기준",
+      },
+      {
         key: "income",
         label: "총 수입 · 환불",
         value: 51000,
@@ -103,11 +117,11 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         sub: "환불 1건, 취소 1건",
       },
       {
-        key: "refund",
-        label: "환불·취소 금액",
-        value: 51000,
+        key: "cancel",
+        label: "취소 금액",
+        value: 12000,
         dotColor: tokens.color.neg,
-        sub: "환불 39,000원, 취소 12,000원",
+        sub: "취소 1건 · 와이드 파우치",
       },
     ],
     platformDonut: {
@@ -158,6 +172,13 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         spark: [742, 754, 771, 788, 804, 823],
       },
       {
+        key: "avg",
+        label: "평균 주문금액",
+        value: 32900,
+        delta: { tone: "down", text: "전월 대비 2%" },
+        sub: "쇼핑 25건 기준",
+      },
+      {
         key: "income",
         label: "총 수입 · 환불",
         value: 63000,
@@ -167,11 +188,11 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         sub: "환불 2건, 취소 0건",
       },
       {
-        key: "refund",
-        label: "환불·취소 금액",
-        value: 63000,
+        key: "cancel",
+        label: "취소 금액",
+        value: 0,
         dotColor: tokens.color.neg,
-        sub: "환불 63,000원",
+        sub: "이번 달 취소 내역 없음",
       },
     ],
     platformDonut: {
@@ -222,6 +243,13 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         spark: [790, 812, 830, 861, 892, 918],
       },
       {
+        key: "avg",
+        label: "평균 주문금액",
+        value: 36720,
+        delta: { tone: "up", text: "전월 대비 12%" },
+        sub: "쇼핑 25건 기준",
+      },
+      {
         key: "income",
         label: "총 수입 · 환불",
         value: 74000,
@@ -231,11 +259,11 @@ const MONTHLY_HOME_DATA: Record<string, HomeMockData> = {
         sub: "환불 2건, 기타 반환 1건",
       },
       {
-        key: "refund",
-        label: "환불·취소 금액",
-        value: 74000,
+        key: "cancel",
+        label: "취소 금액",
+        value: 16000,
         dotColor: tokens.color.neg,
-        sub: "환불 58,000원, 취소 16,000원",
+        sub: "취소 1건 · 에어조던 1 로우 07",
       },
     ],
     platformDonut: {

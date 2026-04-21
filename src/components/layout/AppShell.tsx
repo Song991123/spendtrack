@@ -81,18 +81,18 @@ const MobileNavDivider = styled.div`
 const Content = styled.div`
   width: 100%;
   min-width: 0;
-  padding: 20px 28px 40px;
+  padding: 24px 28px 32px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
 
   ${media.tablet} {
-    padding: 20px 24px 40px;
+    padding: 20px 24px 28px;
   }
 
   ${media.mobile} {
-    padding: 16px 16px 32px;
+    padding: 16px 16px 24px;
   }
 `;
 

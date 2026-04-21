@@ -37,7 +37,7 @@ const TONE_STYLES: Record<IconTone, { bg: string; fg: string }> = {
 const Wrapper = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: ${tokens.space[2]};
 `;
 
 const SectionLabel = styled.h3`
@@ -58,11 +58,17 @@ const Grid = styled.div`
   }
 `;
 
+/**
+ * 카드들은 Grid의 행 stretch로 가장 긴 카드 높이에 맞춰 늘어납니다.
+ * 짧은 본문이 상단에 붙어 보이는 문제를 피하려고 align-items: center로 아이콘과 텍스트 블록을
+ * 카드의 세로 중앙에 두어 시선이 행마다 고르게 정렬되도록 했습니다.
+ */
 const Card = styled.article`
   display: grid;
   grid-template-columns: 28px 1fr;
   gap: 12px;
-  padding: 14px 16px;
+  align-items: center;
+  padding: 16px;
   background: ${tokens.color.panel};
   border: 1px solid ${tokens.color.line};
   border-radius: ${tokens.radius.card};
@@ -82,14 +88,14 @@ const Icon = styled.div<{ $tone: IconTone }>`
 const Title = styled.h4`
   margin: 0 0 4px;
   color: ${tokens.color.ink1};
-  font-size: 13px;
+  font-size: ${tokens.type.cardTitle.size};
   font-weight: 600;
 `;
 
 const Body = styled.p`
   margin: 0;
   color: ${tokens.color.ink3};
-  font-size: 12px;
+  font-size: ${tokens.type.caption.size};
   line-height: 1.55;
 `;
 
