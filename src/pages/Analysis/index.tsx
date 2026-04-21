@@ -15,8 +15,9 @@ import { RepeatTop3 } from "./components/RepeatTop3";
 import { SubscriptionList } from "./components/SubscriptionList";
 import { MonthlyTrend } from "./components/MonthlyTrend";
 import { WeeklyPattern } from "./components/WeeklyPattern";
-import { getAnalysisMockData } from "./data";
+import { buildAnalysisData } from "./data";
 import { getMonthOption, getPrevMonthKey, LATEST_MONTH_KEY } from "../../constants/months";
+import { useTransactionsStore } from "../../stores/transactionsStore";
 
 const Grid = styled.div`
   display: grid;
@@ -45,10 +46,15 @@ const Row3 = styled.div`
 
 export const AnalysisPage: React.FC = () => {
   // Analysis도 월 선택만 바꾸면 같은 분석 레이아웃 안에서 데이터가 교체됩니다.
+  // 거래 데이터는 transactionsStore를 구독해 쓰므로, 수동 입력이나 삭제가 즉시 반영됩니다.
   const [month, setMonth] = useState("2026-04");
-  const data = getAnalysisMockData(month);
+  const rows = useTransactionsStore();
+  const data = useMemo(() => buildAnalysisData(rows, month), [rows, month]);
   // CategoryBars의 "지난 달" 탭에서 쓸 전달 참조 데이터.
-  const prevData = useMemo(() => getAnalysisMockData(getPrevMonthKey(month)), [month]);
+  const prevData = useMemo(
+    () => buildAnalysisData(rows, getPrevMonthKey(month)),
+    [rows, month]
+  );
   const monthOption = getMonthOption(month);
 
   const summaryTitle = useMemo(() => {

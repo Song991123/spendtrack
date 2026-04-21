@@ -2,7 +2,7 @@
  * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
  * 위치: src\pages\Home\index.tsx
  */
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { MonthPicker } from "../../components/primitives/MonthPicker";
@@ -13,8 +13,9 @@ import { PlatformDonut } from "./components/PlatformDonut";
 import { TrendChart } from "./components/TrendChart";
 import { RecentTransactions } from "./components/RecentTransactions";
 import { InsightCards } from "./components/InsightCards";
-import { getHomeMockData } from "./data";
+import { buildHomeData } from "./data";
 import { getMonthOption } from "../../constants/months";
+import { useTransactionsStore } from "../../stores/transactionsStore";
 
 const HeaderRight = styled.div`
   display: flex;
@@ -50,9 +51,11 @@ const Row2 = styled.div`
 `;
 
 export const HomePage: React.FC = () => {
-  // 월을 바꾸면 같은 화면 구조 안에서 해당 월의 목업 데이터만 교체됩니다.
+  // 월을 바꾸면 같은 화면 구조 안에서 해당 월의 집계만 교체됩니다.
+  // 거래 데이터는 transactionsStore에서 구독해 가져오고, 추가/삭제가 즉시 반영됩니다.
   const [month, setMonth] = useState("2026-04");
-  const data = getHomeMockData(month);
+  const rows = useTransactionsStore();
+  const data = useMemo(() => buildHomeData(rows, month), [rows, month]);
   const monthOption = getMonthOption(month);
 
   return (
