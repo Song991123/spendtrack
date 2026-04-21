@@ -98,7 +98,18 @@ export const ProductRows: React.FC<{
         <Row key={product.id}>
           <Name>{product.name}</Name>
           <Price>₩{product.price.toLocaleString("ko-KR")}</Price>
-          <LinkButton type="button">링크</LinkButton>
+          {/* 링크가 있으면 새 탭으로 열고, 없으면 상품명으로 네이버쇼핑 검색 링크를 열어 가이드를 줍니다. */}
+          <LinkButton
+            type="button"
+            onClick={() => {
+              const href = product.link
+                ? product.link
+                : `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(product.name)}`;
+              window.open(href, "_blank", "noopener,noreferrer");
+            }}
+          >
+            링크
+          </LinkButton>
           <EditButton type="button" onClick={() => onEdit(product.id)}>
             수정
           </EditButton>

@@ -2,7 +2,7 @@
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
  * 위치: src\pages\ManualEntry\components\MetaFields.tsx
  */
-import React, { useState } from "react";
+import React from "react";
 import styled from "styled-components";
 import { FormField } from "../../../components/form/FormField";
 import { TextInput } from "../../../components/form/TextInput";
@@ -10,9 +10,23 @@ import { CATEGORY_LABELS } from "../../../constants/labels";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 
-type CategoryKey = keyof typeof CATEGORY_LABELS;
+export type CategoryKey = keyof typeof CATEGORY_LABELS;
 
 const CATEGORY_OPTIONS: CategoryKey[] = ["living", "fashion", "digital", "food"];
+
+/**
+ * 수동 입력 폼의 메타 필드들. 상위 ManualEntry 페이지가 저장 버튼을 눌렀을 때
+ * 이 필드 값을 모두 collect 해서 transactionsStore에 addOne() 할 수 있도록
+ * 컨트롤드 입력으로 만들었습니다. props가 없으면 undefined 기본값으로 동작합니다.
+ */
+export interface MetaFieldValues {
+  title: string;
+  amount: string;
+  platform: string;
+  date: string;
+  categories: CategoryKey[];
+  memo: string;
+}
 
 const Grid = styled.div`
   display: grid;
@@ -118,37 +132,57 @@ const Textarea = styled.textarea`
   }
 `;
 
-export const MetaFields: React.FC = () => {
-  const [categories, setCategories] = useState<CategoryKey[]>(["living"]);
+export const MetaFields: React.FC<{
+  value: MetaFieldValues;
+  onChange: (next: MetaFieldValues) => void;
+}> = ({ value, onChange }) => {
+  const patch = (partial: Partial<MetaFieldValues>) =>
+    onChange({ ...value, ...partial });
 
   const toggle = (key: CategoryKey) => {
-    setCategories((current) =>
-      current.includes(key)
-        ? current.filter((k) => k !== key)
-        : [...current, key]
-    );
+    patch({
+      categories: value.categories.includes(key)
+        ? value.categories.filter((k) => k !== key)
+        : [...value.categories, key],
+    });
   };
 
   return (
     <Grid>
       <Field>
         <FormField label="거래명">
-          <TextInput placeholder="예: 쿠팡 주문, 네이버 환불" />
+          <TextInput
+            placeholder="예: 쿠팡 주문, 네이버 환불"
+            value={value.title}
+            onChange={(event) => patch({ title: event.target.value })}
+          />
         </FormField>
       </Field>
       <Field>
         <FormField label="금액">
-          <TextInput placeholder="예: 129000" />
+          <TextInput
+            placeholder="예: 129000"
+            value={value.amount}
+            onChange={(event) => patch({ amount: event.target.value })}
+          />
         </FormField>
       </Field>
       <Field>
         <FormField label="플랫폼">
-          <TextInput placeholder="쿠팡, 네이버쇼핑, 무신사" />
+          <TextInput
+            placeholder="쿠팡, 네이버쇼핑, 무신사"
+            value={value.platform}
+            onChange={(event) => patch({ platform: event.target.value })}
+          />
         </FormField>
       </Field>
       <Field>
         <FormField label="거래일자">
-          <TextInput placeholder="YYYY.MM.DD" />
+          <TextInput
+            placeholder="YYYY.MM.DD"
+            value={value.date}
+            onChange={(event) => patch({ date: event.target.value })}
+          />
         </FormField>
       </Field>
       <Field $span={2}>
@@ -158,7 +192,7 @@ export const MetaFields: React.FC = () => {
         >
           <CheckGroup>
             {CATEGORY_OPTIONS.map((key) => {
-              const checked = categories.includes(key);
+              const checked = value.categories.includes(key);
               return (
                 <CheckChip key={key} $checked={checked}>
                   <input
@@ -191,7 +225,11 @@ export const MetaFields: React.FC = () => {
       </Field>
       <Field $span={2}>
         <FormField label="메모" helpText="선택 항목">
-          <Textarea placeholder="거래에 대한 메모를 남겨보세요." />
+          <Textarea
+            placeholder="거래에 대한 메모를 남겨보세요."
+            value={value.memo}
+            onChange={(event) => patch({ memo: event.target.value })}
+          />
         </FormField>
       </Field>
     </Grid>

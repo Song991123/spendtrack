@@ -3,6 +3,7 @@
  * 위치: src\pages\ManualEntry\index.tsx
  */
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { Card, CardBd } from "../../components/primitives/Card";
@@ -13,9 +14,39 @@ import {
 } from "../../components/modal/ProductAddModal";
 import { tokens } from "../../styles/tokens";
 import { TypeSegment, type TxType } from "./components/TypeSegment";
-import { MetaFields } from "./components/MetaFields";
+import { MetaFields, type MetaFieldValues } from "./components/MetaFields";
 import { StatusTags, type StatusKey } from "./components/StatusTags";
 import { ProductRows, type ManualProduct } from "./components/ProductRows";
+import { transactionsStore } from "../../stores/transactionsStore";
+import type { TxRow, TxPlatform, TxCategory, TxStatus } from "./../Transactions/components/TransactionTable";
+
+/**
+ * 입력한 플랫폼 텍스트를 TxRow 타입에 맞는 키로 매핑합니다.
+ * 사용자가 "쿠팡 위클리"처럼 변형을 쓸 수도 있어서 contains 기반으로 매칭합니다.
+ */
+function mapPlatform(input: string): TxPlatform {
+  const normalized = input.replace(/\s/g, "");
+  if (normalized.includes("쿠팡") || normalized.toLowerCase().includes("coupang")) return "coupang";
+  if (normalized.includes("네이버") || normalized.toLowerCase().includes("naver")) return "naver";
+  if (normalized.includes("무신사") || normalized.toLowerCase().includes("musinsa")) return "musinsa";
+  return "coupang"; // fallback: 대시보드 집계가 망가지지 않도록 알려진 플랫폼으로 수렴시킵니다.
+}
+
+/** 수동 입력 카테고리 키를 TransactionTable의 TxCategory와 매핑합니다. */
+function mapCategory(keys: string[]): TxCategory {
+  const first = keys[0];
+  if (first === "fashion") return "fashion";
+  if (first === "digital") return "digital";
+  if (first === "food") return "food";
+  return "living";
+}
+
+function mapStatus(key: StatusKey | null): TxStatus {
+  if (key === "refund") return "refund";
+  if (key === "cancel") return "cancel";
+  if (key === "sub") return "sub";
+  return "purchase";
+}
 
 const Lead = styled.p`
   margin: 0 0 16px;
@@ -46,6 +77,17 @@ const SaveBar = styled.div`
   margin-top: 16px;
 `;
 
+const ErrorLine = styled.div`
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid ${tokens.color.neg};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.negBg};
+  color: ${tokens.color.neg};
+  font-size: 12px;
+  font-weight: 500;
+`;
+
 const SectionHeader = styled.div`
   display: flex;
   align-items: center;
@@ -69,15 +111,24 @@ const AddButton = styled.button`
  */
 type ModalMode = { type: "add" } | { type: "edit"; id: string };
 
+const EMPTY_META: MetaFieldValues = {
+  title: "",
+  amount: "",
+  platform: "",
+  date: "",
+  categories: ["living"],
+  memo: "",
+};
+
 export const ManualEntryPage: React.FC = () => {
-  // 수동 입력 화면은 거래 유형, 상태, 상품 목록을 한 페이지에서 바로 조정합니다.
+  // 수동 입력 화면은 거래 유형, 상태, 메타 필드, 상품 목록을 한 페이지에서 조정합니다.
+  const navigate = useNavigate();
   const [type, setType] = useState<TxType>("expense");
   const [status, setStatus] = useState<StatusKey | null>("purchase");
-  const [products, setProducts] = useState<ManualProduct[]>([
-    { id: "p1", name: "에어포스 1 로우", price: 129000 },
-    { id: "p2", name: "에어맥스 90 블랙", price: 129000 },
-  ]);
+  const [meta, setMeta] = useState<MetaFieldValues>(EMPTY_META);
+  const [products, setProducts] = useState<ManualProduct[]>([]);
   const [modal, setModal] = useState<ModalMode | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const editingProduct =
     modal?.type === "edit"
@@ -102,6 +153,52 @@ export const ManualEntryPage: React.FC = () => {
     setModal(null);
   };
 
+  /**
+   * '거래 저장하기'를 누르면 필수 값만 검사한 뒤 transactionsStore.addOne에 담아
+   * /transactions 로 이동합니다. 상품 목록이 있으면 detail.items로 함께 넣어서
+   * DetailPanel에서 즉시 보이도록 합니다. 모든 상태는 localStorage에 영속됩니다.
+   */
+  const handleSave = () => {
+    // 최소한 거래명 + 금액은 있어야 집계가 가능합니다. 없으면 인라인 에러만 표시.
+    const amountNumber = Number(meta.amount.replace(/[^0-9]/g, ""));
+    if (!meta.title.trim()) {
+      setError("거래명을 입력해 주세요.");
+      return;
+    }
+    if (!amountNumber || Number.isNaN(amountNumber)) {
+      setError("금액을 숫자로 입력해 주세요.");
+      return;
+    }
+    const signedAmount = type === "expense" ? -Math.abs(amountNumber) : Math.abs(amountNumber);
+    const today = new Date();
+    const fallbackDate = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
+    const row: TxRow = {
+      id: `m_${Date.now()}`,
+      type,
+      title: meta.title.trim(),
+      amount: signedAmount,
+      date: meta.date.trim() || fallbackDate,
+      platform: mapPlatform(meta.platform),
+      category: mapCategory(meta.categories),
+      status: mapStatus(status),
+      source: "manual",
+      memo: meta.memo.trim() || undefined,
+      detail:
+        products.length > 0
+          ? {
+              items: products.map((product) => ({
+                name: product.name,
+                price: product.price,
+                link: product.link,
+              })),
+              source: "MANUAL",
+            }
+          : undefined,
+    };
+    transactionsStore.addOne(row);
+    navigate("/transactions");
+  };
+
   return (
     <AppShell activeNav="upload" crumb="입력 · 수동" title="수동 입력">
       <Card>
@@ -113,7 +210,13 @@ export const ManualEntryPage: React.FC = () => {
             <TypeSegment value={type} onChange={setType} />
           </div>
 
-          <MetaFields />
+          <MetaFields
+            value={meta}
+            onChange={(next) => {
+              setMeta(next);
+              if (error) setError(null);
+            }}
+          />
 
           <SectionLabel>상태 태그</SectionLabel>
           <div style={{ marginBottom: 20 }}>
@@ -141,8 +244,10 @@ export const ManualEntryPage: React.FC = () => {
             }
           />
 
+          {error && <ErrorLine role="alert">{error}</ErrorLine>}
+
           <SaveBar>
-            <Button variant="primary" size="lg" block>
+            <Button variant="primary" size="lg" block onClick={handleSave}>
               거래 저장하기
             </Button>
           </SaveBar>
