@@ -266,13 +266,19 @@ function buildWeekly(rows: TxRow[]): { days: WeeklyDay[]; note: string } {
     amount,
     ...(amount > 0 && emphasizeSet.has(index) ? { emphasize: true } : {}),
   }));
-  const weekendSum = buckets[4] + buckets[5] + buckets[6];
+  const WEEKEND_INDICES = [4, 5, 6]; // 금, 토, 일
+  const weekendSum = WEEKEND_INDICES.reduce((sum, i) => sum + buckets[i], 0);
   const weekendShare = total > 0 ? Math.round((weekendSum / total) * 100) : 0;
+  // 실제 지출이 있는 주말 요일만 골라 레이블을 동적으로 조합합니다.
+  const activeWeekendLabel = WEEKEND_INDICES
+    .filter((i) => buckets[i] > 0)
+    .map((i) => DAY_LABELS[i])
+    .join("·");
   const note =
     total === 0
       ? "요일별 지출을 확인할 거래가 아직 없어요."
       : weekendShare >= 50
-        ? `금·토·일에 전체의 **${weekendShare}%**가 집중돼요. 주말 쇼핑 한도를 정하면 지출 조절에 도움이 돼요.`
+        ? `${activeWeekendLabel}에 전체의 **${weekendShare}%**가 집중돼요. 주말 쇼핑 한도를 정하면 지출 조절에 도움이 돼요.`
         : `평일 쪽 지출이 **${100 - weekendShare}%**로 더 많아요. 주말 쇼핑을 의식적으로 덜 하는 흐름이에요.`;
   return { days, note };
 }
