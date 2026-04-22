@@ -6,10 +6,10 @@ import React from "react";
 import styled from "styled-components";
 import { FormField } from "../../../components/form/FormField";
 import { TextInput } from "../../../components/form/TextInput";
+import { DatePicker } from "../../../components/primitives/DatePicker";
 import { CATEGORY_LABELS, MAX_CATEGORIES_PER_TX } from "../../../constants/labels";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
-import { fromIsoDate, toIsoDate } from "../../../utils/date";
 
 export type CategoryKey = keyof typeof CATEGORY_LABELS;
 
@@ -204,12 +204,13 @@ export const MetaFields: React.FC<{
       </Field>
       <Field>
         <FormField label="거래일자">
-          {/* 네이티브 date input은 ISO(YYYY-MM-DD)를 쓰지만 저장 포맷은 "YYYY.MM.DD"로 유지하므로
-              경계에서 toIsoDate/fromIsoDate로 변환해 저장값이 일관되도록 합니다. */}
-          <TextInput
-            type="date"
-            value={toIsoDate(value.date)}
-            onChange={(event) => patch({ date: fromIsoDate(event.target.value) })}
+          {/* 저장 포맷("YYYY.MM.DD")을 그대로 주고받을 수 있는 커스텀 DatePicker.
+              네이티브 <input type="date">는 브라우저마다 팝업 UI가 달라 디자인 통일이 어려워
+              앱 토큰과 같은 결을 쓰는 자체 캘린더로 교체했습니다. */}
+          <DatePicker
+            value={value.date}
+            onChange={(next) => patch({ date: next })}
+            aria-label="거래일자"
           />
         </FormField>
       </Field>
