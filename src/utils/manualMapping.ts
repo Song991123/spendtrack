@@ -26,7 +26,7 @@ export function mapPlatform(input: string): TxPlatform {
   if (normalized.includes("무신사") || normalized.toLowerCase().includes("musinsa")) {
     return "musinsa";
   }
-  return "coupang";
+  return "etc";
 }
 
 /**

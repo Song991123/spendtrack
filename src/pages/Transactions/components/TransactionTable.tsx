@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
  * 위치: src\pages\Transactions\components\TransactionTable.tsx
  */
@@ -18,7 +18,7 @@ import {
 import { useCategoryColorMap } from "../../../stores/categoriesStore";
 
 export type TxType = "expense" | "income";
-export type TxPlatform = "coupang" | "naver" | "musinsa";
+export type TxPlatform = "coupang" | "naver" | "musinsa" | "etc";
 /**
  * 거래 상태. 유형별로 쓰이는 맥락이 다릅니다:
  * - purchase/sub/etc: 지출(expense) 쪽에서 선택 가능.

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 여러 화면이 함께 참조하는 상수 데이터를 정의합니다.
  * 위치: src\constants\labels.ts
  */
@@ -6,6 +6,7 @@ export const PLATFORM_LABELS = {
   coupang: "쿠팡",
   naver: "네이버쇼핑",
   musinsa: "무신사",
+  etc: "기타",
 } as const;
 
 export const STATUS_LABELS = {

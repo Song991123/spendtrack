@@ -97,6 +97,7 @@ function buildPlatform(rows: TxRow[]): {
     coupang: { value: 0, count: 0 },
     naver: { value: 0, count: 0 },
     musinsa: { value: 0, count: 0 },
+    etc: { value: 0, count: 0 },
   };
   for (const row of rows) {
     if (row.type !== "expense" || row.status === "cancel") continue;
@@ -108,6 +109,7 @@ function buildPlatform(rows: TxRow[]): {
     { key: "coupang", label: PLATFORM_LABELS.coupang, color: tokens.color.cat3 },
     { key: "naver", label: PLATFORM_LABELS.naver, color: tokens.color.cat2 },
     { key: "musinsa", label: PLATFORM_LABELS.musinsa, color: tokens.color.cat1 },
+    { key: "etc", label: PLATFORM_LABELS.etc, color: tokens.color.ink4 },
   ];
   const items: PlatformBarItem[] = entries.map((entry) => {
     const stats = totals[entry.key];

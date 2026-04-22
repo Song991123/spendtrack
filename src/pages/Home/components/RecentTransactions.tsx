@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
  * 위치: src\pages\Home\components\RecentTransactions.tsx
  */
@@ -11,7 +11,7 @@ import { tokens } from "../../../styles/tokens";
 import { formatKRW } from "../../../utils/format";
 import { PLATFORM_LABELS } from "../../../constants/labels";
 
-type Platform = "coupang" | "naver" | "musinsa";
+type Platform = "coupang" | "naver" | "musinsa" | "etc";
 
 export interface RecentItem {
   id: string;

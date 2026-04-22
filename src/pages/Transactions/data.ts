@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 역할: 해당 페이지에서 사용하는 목업 데이터와 화면 표시용 가공 함수를 모아둔 파일입니다.
  * 위치: src\pages\Transactions\data.ts
  */
@@ -171,6 +171,7 @@ const PLATFORM_SEARCH_URL: Record<TxPlatform, (q: string) => string> = {
     `https://www.coupang.com/np/search?q=${encodeURIComponent(q)}`,
   naver: (q) => `https://search.shopping.naver.com/search/all?query=${encodeURIComponent(q)}`,
   musinsa: (q) => `https://www.musinsa.com/search/musinsa/goods?q=${encodeURIComponent(q)}`,
+  etc: (q) => `https://search.naver.com/search.naver?query=${encodeURIComponent(q)}`,
 };
 
 function daysInMonth(monthKey: string): number {

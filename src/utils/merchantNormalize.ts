@@ -27,5 +27,5 @@ export function normalizeMerchant(raw: string): MerchantNormalizeResult {
       return { platform: rule.platform, cleaned };
     }
   }
-  return { platform: null, cleaned };
+  return { platform: "etc", cleaned };
 }
