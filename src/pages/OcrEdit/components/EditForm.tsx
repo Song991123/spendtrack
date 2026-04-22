@@ -1,8 +1,10 @@
 /**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
- *       OCR 추출 결과를 보여주고 주문일자를 수정할 수 있도록 인풋으로 제공합니다.
- *       또한 카테고리 체크박스를 통해 분류를 지정하고, 필요하면 사용자가 직접
- *       카테고리 목록을 추가/삭제할 수 있도록 인터페이스를 제공합니다.
+ *       OCR 추출 결과를 보여주고 주문일자/상태 태그를 수정할 수 있도록 인풋으로 제공합니다.
+ *       한 캡쳐(OcrImageItem)에 여러 주문(OcrOrder)이 들어 있을 수 있으므로
+ *       "상단 플랫폼 태그 → 주문 블록 N개 → 하단 카테고리" 순으로 스택을 쌓습니다.
+ *       각 주문 블록은 자신의 주문일자/전체금액/상품 목록/상태 태그를 독립적으로
+ *       표시/편집해서, 저장 시 한 주문 = 한 TxRow가 되도록 시각적으로도 분리된 느낌을 줍니다.
  * 위치: src\pages\OcrEdit\components\EditForm.tsx
  */
 import React, { useEffect, useRef, useState } from "react";
@@ -11,9 +13,33 @@ import { Card, CardBd } from "../../../components/primitives/Card";
 import { DatePicker } from "../../../components/primitives/DatePicker";
 import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
-import type { OcrImageItem, Status } from "../data";
+import type { OcrImageItem, OcrOrder, Status } from "../data";
 import { ProductTable } from "./ProductTable";
 import { CATEGORY_LABELS, PLATFORM_LABELS, STATUS_LABELS } from "../../../constants/labels";
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+`;
+
+/**
+ * 한 캡쳐 안의 주문 블록 하나를 감싸는 래퍼.
+ * 카드 내부에 살짝 들여 쓴 패널을 두어 "여기서부터 여기까지가 하나의 주문"이
+ * 명확히 구분되게 합니다. 여러 주문이 있을 때는 블록 사이 세로 간격으로
+ * 시각적으로 떨어지게 보여 줍니다.
+ */
+const OrderBlock = styled.section`
+  padding: 14px 14px 16px;
+  border: 1px solid ${tokens.color.line2};
+  border-radius: ${tokens.radius.card};
+  background: ${tokens.color.panel};
+
+  & + & {
+    margin-top: 12px;
+  }
+`;
 
 const MetaRow = styled.div`
   display: flex;
@@ -43,10 +69,9 @@ const MetaCell = styled.div`
 `;
 
 /**
- * 메타 행은 플랫폼 태그·주문일자·상품수·상태 태그를 좁은 가로 바에 병렬로 배치하므로
- * DatePicker 트리거 기본 너비(100%)로 두면 행이 밀립니다. 수동 입력 폼(MetaFields)의
- * 한 칸을 차지하는 케이스와 달리 여기서는 140px로 고정해 원래의 DateInput과 같은
- * 슬롯 크기를 유지합니다.
+ * 메타 행은 주문일자·상품수·상태 태그를 좁은 가로 바에 병렬로 배치하므로
+ * DatePicker 트리거 기본 너비(100%)로 두면 행이 밀립니다. 여기서는 140px로
+ * 고정해 원래의 DateInput과 같은 슬롯 크기를 유지합니다.
  */
 const DatePickerSlot = styled.div`
   margin-top: 2px;
@@ -143,7 +168,7 @@ const StatusOptionButton = styled.button<{ $active: boolean }>`
 /**
  * OCR 편집 화면에서 사용자에게 노출할 상태 선택지.
  * - 쇼핑 플랫폼 OCR 맥락에서 구매/정기결제/취소/환불이면 대부분의 케이스가 커버됩니다.
- * - 같은 캡쳐에 여러 상태가 섞여 있더라도, 항목 단위 편집이 가능하도록 이 값은 이미지별로 관리됩니다.
+ * - 같은 캡쳐에 여러 상태가 섞여 있더라도, 주문 단위 편집이 가능하도록 이 값은 주문별로 관리됩니다.
  */
 const STATUS_EDIT_OPTIONS: Status[] = ["purchase", "sub", "cancel", "refund"];
 
@@ -247,7 +272,7 @@ const Total = styled.div`
   .value {
     color: ${tokens.color.ink1};
     font-family: ${tokens.font.mono};
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
   }
@@ -461,19 +486,22 @@ const DEFAULT_CATEGORIES: CategoryOption[] = Object.entries(CATEGORY_LABELS).map
 
 interface EditFormProps {
   image?: OcrImageItem;
-  onOrderDateChange?: (value: string) => void;
-  onStatusTagChange?: (value: Status) => void;
+  /**
+   * 주문 블록 내부 필드를 수정했을 때 상위(OcrEditPage)로 patch를 올립니다.
+   * onOrderDateChange/onStatusTagChange를 분리하지 않고 patch로 합친 이유는
+   * 주문이 N개로 늘어나면 핸들러도 N배로 늘어나 관리 비용이 커지기 때문입니다.
+   */
+  onOrderPatch?: (orderId: string, patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag">>) => void;
 }
 
-export const EditForm: React.FC<EditFormProps> = ({
-  image,
-  onOrderDateChange,
-  onStatusTagChange,
-}) => {
+export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch }) => {
   /**
    * 카테고리 목록은 이미지 간에 공유되도록 상단에서 관리합니다. 사용자가 한 번
    * 추가한 카테고리는 다른 OCR 이미지 편집 시에도 그대로 선택할 수 있어야 자연스럽기 때문입니다.
    * 반면 체크 상태(어떤 카테고리로 분류했는지)는 이미지별로 다르므로 image.id를 키로 분리합니다.
+   * 한 이미지에 주문이 여러 개여도, 카테고리는 이미지 단위로 공유해서 "이 쇼핑몰 결제의 묶음"
+   * 단위로 성격 태그를 달 수 있게 합니다. (주문 단위 카테고리가 필요한 경우는 저장 후
+   * 거래내역 페이지에서 개별 편집으로 커버)
    */
   const [categories, setCategories] = useState<CategoryOption[]>(DEFAULT_CATEGORIES);
   const [selectedByImage, setSelectedByImage] = useState<Record<string, string[]>>({});
@@ -535,51 +563,79 @@ export const EditForm: React.FC<EditFormProps> = ({
   return (
     <Card>
       <CardBd>
-        <MetaRow>
+        {/* 이미지 전체 메타는 상단 한 줄에만 표시합니다. 플랫폼 태그는 이미지 단위이며
+         * 같은 캡쳐 안의 주문이 여러 개여도 공통이라 여기서 한 번만 보여 줍니다. */}
+        <HeaderRow>
           <Tag kind={image.platform}>{PLATFORM_LABELS[image.platform]}</Tag>
-          <MetaSeparator />
-          <MetaCell>
-            <div className="label">주문일자</div>
-            {onOrderDateChange ? (
-              /* 수동 입력과 동일한 공용 DatePicker를 써서 앱 전체의 달력 UX를 통일합니다.
-                 내부에서 YYYY.MM.DD ↔ YYYY-MM-DD 변환을 처리하므로 호출부는 저장 포맷을 그대로 주고받습니다. */
-              <DatePickerSlot>
-                <DatePicker
-                  value={image.orderDate}
-                  onChange={onOrderDateChange}
-                  size="sm"
-                  aria-label="주문일자"
+          <div style={{ color: tokens.color.ink4, fontSize: 11.5 }}>
+            주문 {image.orders.length}건
+          </div>
+        </HeaderRow>
+
+        {image.orders.map((order) => (
+          <OrderBlock key={order.id}>
+            <MetaRow>
+              <MetaCell>
+                <div className="label">주문일자</div>
+                {onOrderPatch ? (
+                  /* 수동 입력과 동일한 공용 DatePicker를 써서 앱 전체의 달력 UX를 통일합니다.
+                     내부에서 YYYY.MM.DD ↔ YYYY-MM-DD 변환을 처리하므로 호출부는 저장 포맷을 그대로 주고받습니다. */
+                  <DatePickerSlot>
+                    <DatePicker
+                      value={order.orderDate}
+                      onChange={(value) => onOrderPatch(order.id, { orderDate: value })}
+                      size="sm"
+                      aria-label="주문일자"
+                    />
+                  </DatePickerSlot>
+                ) : (
+                  <div className="value">{order.orderDate}</div>
+                )}
+              </MetaCell>
+              <MetaSeparator />
+              <MetaCell>
+                <div className="label">상품 수</div>
+                <div className="value">{order.products.length}개</div>
+              </MetaCell>
+              <MetaSeparator />
+              {/* statusTag은 OCR이 자동 추정한 값이라 오인식될 수 있어, Tag를 그대로 두되
+               * 클릭하면 팝오버에서 바로 바꿀 수 있게 합니다. 디자인은 변경하지 않고
+               * 호버 시 옅은 링만 띄워 "편집 가능"을 알립니다. */}
+              {onOrderPatch ? (
+                <EditableStatusTag
+                  value={order.statusTag}
+                  onChange={(next) => onOrderPatch(order.id, { statusTag: next })}
                 />
-              </DatePickerSlot>
-            ) : (
-              <div className="value">{image.orderDate}</div>
-            )}
-          </MetaCell>
-          <MetaSeparator />
-          <MetaCell>
-            <div className="label">상품 수</div>
-            <div className="value">{image.productCount}개</div>
-          </MetaCell>
-          <MetaSeparator />
-          {/* statusTag은 OCR이 자동 추정한 값이라 오인식될 수 있어, Tag를 그대로 두되
-           * 클릭하면 팝오버에서 바로 바꿀 수 있게 합니다. 디자인은 변경하지 않고
-           * 호버 시 옅은 링만 띄워 "편집 가능"을 알립니다. */}
-          {onStatusTagChange ? (
-            <EditableStatusTag value={image.statusTag} onChange={onStatusTagChange} />
-          ) : (
-            <Tag kind={image.statusTag}>{STATUS_LABELS[image.statusTag]}</Tag>
-          )}
-        </MetaRow>
+              ) : (
+                <Tag kind={order.statusTag}>{STATUS_LABELS[order.statusTag]}</Tag>
+              )}
+              {/* 쇼핑몰이 실제로 찍어 준 원문 라벨(예: "배송완료 · 4/9(목) 도착")은
+               * statusTag 옆에 작게 노출해서 "우리 내부 분류"와 "쇼핑몰 원문"이
+               * 어떻게 대응되는지 사용자가 확인할 수 있게 합니다. */}
+              {order.statusLabel && (
+                <MetaCell>
+                  <div className="label">원문 라벨</div>
+                  <div className="value" style={{ color: tokens.color.ink4, fontSize: 11.5 }}>
+                    {order.statusLabel}
+                  </div>
+                </MetaCell>
+              )}
+            </MetaRow>
 
-        <Total>
-          <div className="label">전체 거래금액</div>
-          <div className="value">₩{image.totalAmount.toLocaleString("ko-KR")}</div>
-        </Total>
+            <Total>
+              <div className="label">주문 금액</div>
+              <div className="value">₩{order.totalAmount.toLocaleString("ko-KR")}</div>
+            </Total>
 
-        <SectionLabel>상품 목록</SectionLabel>
-        <ProductTable products={image.products} />
+            <SectionLabel>상품 목록</SectionLabel>
+            <ProductTable products={order.products} />
+          </OrderBlock>
+        ))}
 
-        <Hint>OCR 결과는 초안 상태예요. 주문일자가 오인식됐다면 위 입력에서 바로 수정할 수 있습니다.</Hint>
+        <Hint>
+          OCR 결과는 초안 상태예요. 같은 캡쳐에 구매/환불이 섞여 있어도 주문 단위로
+          분리해 저장하니, 각 블록의 주문일자·상태 태그를 필요한 만큼 조정해 주세요.
+        </Hint>
 
         <CategorySection>
           <CategoryHeader>
@@ -591,8 +647,9 @@ export const EditForm: React.FC<EditFormProps> = ({
             )}
           </CategoryHeader>
           <CategoryHelp>
-            하나의 거래가 여러 카테고리에 걸칠 수 있어서 여러 개 선택할 수 있어요.
-            카테고리 오른쪽 × 버튼으로 목록에서 제거할 수도 있습니다.
+            이 캡쳐에서 만들어질 거래 전체에 공통으로 붙일 카테고리예요. 하나의 거래가
+            여러 카테고리에 걸칠 수 있어서 여러 개 선택할 수 있고, 오른쪽 × 버튼으로
+            목록에서 제거할 수도 있습니다.
           </CategoryHelp>
           <CheckGroup>
             {categories.map((category) => {

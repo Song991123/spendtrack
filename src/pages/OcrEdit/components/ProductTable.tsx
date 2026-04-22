@@ -1,5 +1,8 @@
-﻿/**
+/**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ *       한 주문(OcrOrder)의 상품 목록을 수정 가능한 표 형태로 보여줍니다.
+ *       상태 태그는 주문 레벨에서 관리되기 때문에 이 테이블은 순수하게
+ *       상품명 · 금액 · 링크만 다루고, 상태 배지는 상단 주문 블록의 몫입니다.
  * 위치: src\pages\OcrEdit\components\ProductTable.tsx
  */
 import React, { useEffect, useState } from "react";
@@ -99,7 +102,9 @@ const AddRow = styled.button`
   }
 `;
 
-export const ProductTable: React.FC<{ products: OcrProduct[] }> = ({ products }) => {
+export const ProductTable: React.FC<{
+  products: OcrProduct[];
+}> = ({ products }) => {
   const [rows, setRows] = useState(products);
 
   useEffect(() => {
@@ -152,4 +157,3 @@ export const ProductTable: React.FC<{ products: OcrProduct[] }> = ({ products })
     </Table>
   );
 };
-

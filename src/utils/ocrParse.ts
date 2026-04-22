@@ -60,3 +60,45 @@ export function detectStatusFromOcrText(text: string): Status | undefined {
 export function detectStatusPerLine(lines: string[]): Array<Status | undefined> {
   return lines.map((line) => detectStatusFromOcrText(line));
 }
+
+/**
+ * 캡쳐 한 장의 "대표 상태"를 결정합니다.
+ *
+ * 혼합 캡쳐(예: 네이버페이 주문내역에 구매와 환불이 같이 찍힘) 처리가 핵심이라,
+ * 단순히 rawText 전체에 detect를 거는 방식은 순서 우선순위(환불 > 취소 > ...)에
+ * 걸려 실제 주요 거래유형과 다른 값을 뱉을 수 있습니다. 그래서 상품 단위로
+ * 추정해 둔 상태를 모아 다수결로 결정하고, 동률이거나 상품 상태가 비어 있으면
+ * rawText 전체에 대한 detectStatusFromOcrText로 폴백합니다.
+ *
+ * - productStatuses: 상품 단위로 미리 추정해 둔 상태 배열
+ * - rawText: 상품 정보가 비어 있을 때 폴백용 전체 원문
+ *
+ * 다수결이 동률이면 배열 순서상 먼저 본 값이 유지되므로 "캡쳐에 먼저 등장한"
+ * 상품의 상태가 자연스럽게 대표값이 됩니다.
+ */
+export function deriveImageStatus(
+  productStatuses: Array<Status | undefined>,
+  rawText?: string
+): Status | undefined {
+  const valid = productStatuses.filter((status): status is Status => status !== undefined);
+
+  if (valid.length > 0) {
+    const counts = new Map<Status, number>();
+    for (const status of valid) {
+      counts.set(status, (counts.get(status) ?? 0) + 1);
+    }
+
+    let best: Status | undefined = undefined;
+    let maxCount = 0;
+    for (const [status, count] of counts) {
+      if (count > maxCount) {
+        maxCount = count;
+        best = status;
+      }
+    }
+    if (best) return best;
+  }
+
+  if (rawText) return detectStatusFromOcrText(rawText);
+  return undefined;
+}
