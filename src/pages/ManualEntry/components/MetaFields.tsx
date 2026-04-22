@@ -6,6 +6,8 @@ import React from "react";
 import styled from "styled-components";
 import { FormField } from "../../../components/form/FormField";
 import { TextInput } from "../../../components/form/TextInput";
+import { AmountInput } from "../../../components/form/AmountInput";
+import { AutoResizeTextarea } from "../../../components/form/AutoResizeTextarea";
 import { DatePicker } from "../../../components/primitives/DatePicker";
 import { CATEGORY_LABELS, MAX_CATEGORIES_PER_TX } from "../../../constants/labels";
 import { tokens } from "../../../styles/tokens";
@@ -129,30 +131,6 @@ const CategoryCounter = styled.span<{ $atLimit: boolean }>`
   font-weight: 600;
 `;
 
-const Textarea = styled.textarea`
-  width: 100%;
-  min-height: 64px;
-  padding: 9px 12px;
-  border: 1px solid ${tokens.color.line};
-  border-radius: ${tokens.radius.control};
-  background: ${tokens.color.panel};
-  color: ${tokens.color.ink1};
-  font-family: inherit;
-  font-size: ${tokens.type.bodySm.size};
-  outline: none;
-  resize: vertical;
-  transition: border-color ${tokens.motion.fast}, box-shadow ${tokens.motion.fast};
-
-  &:focus {
-    border-color: ${tokens.color.accent};
-    box-shadow: ${tokens.shadow.focus};
-  }
-
-  &::placeholder {
-    color: ${tokens.color.ink5};
-  }
-`;
-
 export const MetaFields: React.FC<{
   value: MetaFieldValues;
   onChange: (next: MetaFieldValues) => void;
@@ -186,10 +164,12 @@ export const MetaFields: React.FC<{
       </Field>
       <Field>
         <FormField label="금액">
-          <TextInput
-            placeholder="예: 129000"
+          {/* 저장 형태는 기존과 동일한 raw digit 문자열("129000"). 표시만 콤마가 붙습니다.
+              parsePrice()와 자연스럽게 호환되므로 상위 로직 변경이 불필요합니다. */}
+          <AmountInput
+            placeholder="예: 129,000"
             value={value.amount}
-            onChange={(event) => patch({ amount: event.target.value })}
+            onChange={(rawDigits) => patch({ amount: rawDigits })}
           />
         </FormField>
       </Field>
@@ -273,7 +253,9 @@ export const MetaFields: React.FC<{
       </Field>
       <Field $span={2}>
         <FormField label="메모" helpText="선택 항목">
-          <Textarea
+          {/* 사용자가 수동 리사이즈 핸들을 드래그하지 않고도 내용에 맞춰 높이가 늘어납니다.
+              상한(maxHeight) 에 닿으면 내부 스크롤로 전환되어 폼 전체 레이아웃은 안정적으로 유지. */}
+          <AutoResizeTextarea
             placeholder="거래에 대한 메모를 남겨보세요."
             value={value.memo}
             onChange={(event) => patch({ memo: event.target.value })}

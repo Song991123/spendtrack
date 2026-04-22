@@ -7,6 +7,7 @@ import styled from "styled-components";
 import { Button } from "../primitives/Button";
 import { FormField } from "../form/FormField";
 import { TextInput } from "../form/TextInput";
+import { AmountInput } from "../form/AmountInput";
 import { Modal } from "./Modal";
 import { parsePrice } from "../../utils/format";
 
@@ -101,11 +102,11 @@ export const ProductAddModal = ({
         </FormField>
 
         <FormField label="상품금액" required>
-          <TextInput
+          {/* 내부 state price 는 기존과 동일한 raw digit 문자열. 표시만 콤마가 들어갑니다. */}
+          <AmountInput
             value={price}
-            onChange={(event) => setPrice(event.target.value)}
-            placeholder="예: 129000"
-            inputMode="numeric"
+            onChange={(rawDigits) => setPrice(rawDigits)}
+            placeholder="예: 129,000"
           />
         </FormField>
 
