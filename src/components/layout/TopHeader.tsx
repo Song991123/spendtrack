@@ -17,6 +17,7 @@ const Header = styled.header`
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
 
   ${media.mobile} {
     flex-direction: column;
@@ -26,6 +27,7 @@ const Header = styled.header`
 
 const Heading = styled.div`
   min-width: 0;
+  width: 100%;
 `;
 
 const Crumb = styled.div`
@@ -40,9 +42,13 @@ const Title = styled.h1`
   font-size: ${tokens.type.h1.size};
   font-weight: ${tokens.type.h1.weight};
   letter-spacing: ${tokens.type.h1.tracking};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
+  ${media.mobile} {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.25;
+  }
 `;
 
 const RightSlot = styled.div`
@@ -58,7 +64,7 @@ const RightSlot = styled.div`
   ${media.mobile} {
     width: 100%;
     margin-left: 0;
-    justify-content: stretch;
+    justify-content: flex-start;
   }
 `;
 
@@ -71,4 +77,3 @@ export const TopHeader = ({ crumb, title, right }: TopHeaderProps) => (
     {right && <RightSlot>{right}</RightSlot>}
   </Header>
 );
-

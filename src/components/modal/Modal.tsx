@@ -31,6 +31,9 @@ const ModalCard = styled.div`
   transform: translate(-50%, -50%);
   width: 480px;
   max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
   background: ${tokens.color.panel};
   border-radius: ${tokens.radius.modal};
   z-index: 1001;
@@ -38,8 +41,11 @@ const ModalCard = styled.div`
   overflow: hidden;
 
   ${media.mobile} {
-    width: calc(100% - 32px);
+    /* 가장 좁은 모바일(320px)에서도 화면 좌우 16px 여유가 남도록 calc 로 폭을 잡고,
+       세로 스크롤이 필요한 폼 모달도 뷰포트를 넘기지 않도록 max-height 를 지정합니다. */
+    width: calc(100% - 24px);
     max-width: 480px;
+    max-height: calc(100vh - 24px);
   }
 `;
 
@@ -49,6 +55,12 @@ const Header = styled.div`
   justify-content: space-between;
   gap: 12px;
   padding: 24px 28px 20px;
+  flex: 0 0 auto;
+
+  ${media.mobile} {
+    /* 좁은 모바일에서 28px 좌우 패딩은 타이틀이 튀어 보이므로 18px 로 줄입니다. */
+    padding: 18px 18px 14px;
+  }
 `;
 
 const Title = styled.h2`
@@ -76,6 +88,19 @@ const Divider = styled.div`
 
 const Body = styled.div`
   padding: 24px 28px 28px;
+  /*
+   * 폼 필드가 많아 모달이 세로로 길어지면 뷰포트를 넘는 경우가 있습니다.
+   * ModalCard 자체에 max-height/flex 를 걸어 두었으므로, 본문에서 overflow-y 를 허용해
+   * 내부 스크롤만 생기도록 합니다. overflow-x 는 숨겨서 수평 스크롤바가 뜨는 것을 차단.
+   */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  ${media.mobile} {
+    padding: 18px 18px 20px;
+  }
 `;
 
 export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {

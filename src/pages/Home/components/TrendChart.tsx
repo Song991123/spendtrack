@@ -23,6 +23,7 @@ import {
 } from "../../../components/primitives/Card";
 import { SegmentedControl } from "../../../components/primitives/SegmentedControl";
 import { tokens } from "../../../styles/tokens";
+import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
 
 interface Point {
@@ -44,6 +45,17 @@ const HeaderRow = styled.div`
   align-items: flex-start;
   gap: 12px;
   width: 100%;
+
+  /*
+   * 모바일에서는 제목과 기간 선택 세그먼트가 한 줄을 공유하면
+   * 세그먼트가 눌려 "3/6/12" 라벨이 잘립니다. 세로 스택으로 전환하고
+   * 세그먼트는 풀-폭으로 펴서 터치 영역을 확보합니다.
+   */
+  ${media.mobile} {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 `;
 
 const ChartWrap = styled.div`

@@ -9,6 +9,7 @@ import { tokens } from "../../../styles/tokens";
 import { SettingsBlock } from "./SettingsSection";
 import { profileStore, useProfile } from "../../../stores/profileStore";
 import { todayAsDotDate } from "../../../utils/date";
+import { media } from "../../../tokens/breakpoints";
 
 const Item = styled.div`
   display: flex;
@@ -31,6 +32,11 @@ const Item = styled.div`
     margin-top: 2px;
     color: ${tokens.color.ink4};
     font-size: 12px;
+  }
+
+  ${media.mobile} {
+    flex-direction: column;
+    gap: 12px;
   }
 `;
 
@@ -63,6 +69,11 @@ const Input = styled.input`
     border-color: ${tokens.color.accent};
     box-shadow: ${tokens.shadow.focus};
   }
+
+  ${media.mobile} {
+    min-width: 0;
+    width: 100%;
+  }
 `;
 
 const Msg = styled.div<{ $tone: "success" | "error" }>`
@@ -74,6 +85,11 @@ const Msg = styled.div<{ $tone: "success" | "error" }>`
 const SideButtons = styled.div`
   display: flex;
   gap: 8px;
+
+  ${media.mobile} {
+    width: 100%;
+    justify-content: stretch;
+  }
 `;
 
 /**

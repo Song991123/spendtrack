@@ -5,6 +5,7 @@
 import styled from "styled-components";
 import { tokens } from "../../styles/tokens";
 import { MONTH_OPTIONS } from "../../constants/months";
+import { media } from "../../tokens/breakpoints";
 
 interface MonthPickerProps {
   value: string;
@@ -15,6 +16,10 @@ const Wrap = styled.div`
   display: inline-flex;
   align-items: center;
   gap: ${tokens.space[2]};
+
+  ${media.mobile} {
+    width: 100%;
+  }
 `;
 
 const StepButton = styled.button`
@@ -58,6 +63,11 @@ const SelectWrap = styled.div`
   position: relative;
   display: inline-flex;
   align-items: center;
+
+  ${media.mobile} {
+    flex: 1;
+    min-width: 0;
+  }
 `;
 
 const SelectDot = styled.span`
@@ -91,6 +101,11 @@ const Select = styled.select`
   &:focus-visible {
     border-color: ${tokens.color.accent};
     box-shadow: ${tokens.shadow.focus};
+  }
+
+  ${media.mobile} {
+    width: 100%;
+    min-width: 0;
   }
 `;
 
@@ -128,4 +143,3 @@ export const MonthPicker = ({ value, onChange }: MonthPickerProps) => {
     </Wrap>
   );
 };
-

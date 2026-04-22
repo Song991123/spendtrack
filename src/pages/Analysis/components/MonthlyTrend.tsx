@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from "../../../components/primitives/Card";
 import { tokens } from "../../../styles/tokens";
+import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
 
 interface Point {
@@ -33,6 +34,7 @@ const HeaderWrap = styled.div`
   align-items: baseline;
   justify-content: space-between;
   width: 100%;
+  gap: 12px;
 
   .meta {
     text-align: right;
@@ -49,6 +51,22 @@ const HeaderWrap = styled.div`
     font-size: 12px;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * 모바일에서는 '월간 소비 추이' 제목과 '6개월 평균' 금액이 한 줄을 다투면
+   * 제목 쪽이 줄바꿈되면서 오른쪽 금액과 세로 정렬이 어긋납니다.
+   * 앱처럼 섹션 헤더를 세로로 쌓고, 평균값은 왼쪽 정렬로 아래에 배치해
+   * '제목 → 부가 정보' 순서로 자연스럽게 읽히도록 합니다.
+   */
+  ${media.mobile} {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+
+    .meta {
+      text-align: left;
+    }
   }
 `;
 

@@ -89,10 +89,103 @@ const Table = styled.div`
   /* 7번째 컬럼(카테고리 색)은 거래명과 금액 사이에 좁게 끼워 넣어서, 색 박스 + hover 툴팁만 담당합니다. */
   grid-template-columns: 76px 110px 108px 1fr 52px 140px 96px;
   font-size: 13px;
+  min-width: 730px;
 
   ${media.tablet} {
     grid-template-columns: 76px 96px 100px 1fr 44px 132px 96px;
+    min-width: 680px;
   }
+`;
+
+const TableScroll = styled.div`
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  ${media.mobile} {
+    display: none;
+  }
+`;
+
+const MobileList = styled.div`
+  display: none;
+
+  ${media.mobile} {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+  }
+`;
+
+const MobileRow = styled.button<{ $active?: boolean }>`
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid ${({ $active }) => ($active ? tokens.color.accentBorder : tokens.color.line2)};
+  border-radius: ${tokens.radius.card};
+  background: ${({ $active }) => ($active ? tokens.color.accentSubtle : tokens.color.panel)};
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color ${tokens.motion.fast} ease,
+    background ${tokens.motion.fast} ease,
+    transform ${tokens.motion.fast} ease;
+
+  &:active {
+    transform: scale(0.996);
+  }
+`;
+
+const MobileTop = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const MobileTitle = styled.div`
+  min-width: 0;
+
+  .title {
+    color: ${tokens.color.ink1};
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .meta {
+    margin-top: 4px;
+    color: ${tokens.color.ink4};
+    font-size: 12px;
+  }
+`;
+
+const MobileAmount = styled.div<{ $positive?: boolean }>`
+  color: ${({ $positive }) => ($positive ? tokens.color.pos : tokens.color.neg)};
+  font-family: ${tokens.font.mono};
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+`;
+
+const MobileTags = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+`;
+
+const MobileFooter = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+`;
+
+const MobileCategories = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `;
 
 const HeaderCell = styled.div`
@@ -382,100 +475,153 @@ export const TransactionTable: React.FC<Props> = ({
 
   return (
     <Card padding={0}>
-      <Table>
-        <HeaderCell className="tag">유형</HeaderCell>
-        <SortableHeader
-          type="button"
-          onClick={onToggleSort}
-          aria-label={
-            sortOrder === "desc"
-              ? "주문일 내림차순, 오름차순으로 바꾸기"
-              : "주문일 오름차순, 내림차순으로 바꾸기"
-          }
-          aria-pressed={sortOrder === "asc"}
-        >
-          주문일
-          <SortIcon $dir={sortOrder} aria-hidden="true">
-            <svg width={12} height={12} viewBox="0 0 12 12">
-              {/* 기본 방향은 아래를 가리키는 셰브런. asc일 때 CSS 회전으로 뒤집습니다. */}
-              <polyline
-                points="3 4.5 6 7.5 9 4.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </SortIcon>
-        </SortableHeader>
-        <HeaderCell className="tag">플랫폼</HeaderCell>
-        <HeaderCell>거래명</HeaderCell>
-        {/* 카테고리 컬럼은 색상 정사각형만 표시하고 제목도 짧게 표기합니다. */}
-        <HeaderCell style={{ textAlign: "center", padding: "10px 0" }}>분류</HeaderCell>
-        <HeaderCell className="right">금액</HeaderCell>
-        <HeaderCell className="tag">상태</HeaderCell>
-        {rows.map((row, rowIndex) => {
-          const active = row.id === selectedId;
-          const hovered = row.id === hoveredId && !active;
-          /**
-           * 첫 렌더에서 잡힌 행 중 현재 위치에 있는 경우에만 stagger 인덱스를 내려보냅니다.
-           * 인피니트 스크롤로 추가된 행이나 필터 변경 후 새로 등장한 행은 undefined가 되어
-           * 애니메이션이 발동하지 않습니다.
-           */
-          const enterIndex = initialIds.has(row.id) ? rowIndex : undefined;
-          const common = {
-            $active: active,
-            $hovered: hovered,
-            $enterIndex: enterIndex,
-            onClick: () => onSelect(row.id),
-            onMouseEnter: () => setHoveredId(row.id),
-            onMouseLeave: () =>
-              setHoveredId((current) => (current === row.id ? "" : current)),
-            style: { cursor: "pointer" },
-          };
+      <TableScroll>
+        <Table>
+          <HeaderCell className="tag">유형</HeaderCell>
+          <SortableHeader
+            type="button"
+            onClick={onToggleSort}
+            aria-label={
+              sortOrder === "desc"
+                ? "주문일 내림차순, 오름차순으로 바꾸기"
+                : "주문일 오름차순, 내림차순으로 바꾸기"
+            }
+            aria-pressed={sortOrder === "asc"}
+          >
+            주문일
+            <SortIcon $dir={sortOrder} aria-hidden="true">
+              <svg width={12} height={12} viewBox="0 0 12 12">
+                {/* 기본 방향은 아래를 가리키는 셰브런. asc일 때 CSS 회전으로 뒤집습니다. */}
+                <polyline
+                  points="3 4.5 6 7.5 9 4.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </SortIcon>
+          </SortableHeader>
+          <HeaderCell className="tag">플랫폼</HeaderCell>
+          <HeaderCell>거래명</HeaderCell>
+          {/* 카테고리 컬럼은 색상 정사각형만 표시하고 제목도 짧게 표기합니다. */}
+          <HeaderCell style={{ textAlign: "center", padding: "10px 0" }}>분류</HeaderCell>
+          <HeaderCell className="right">금액</HeaderCell>
+          <HeaderCell className="tag">상태</HeaderCell>
+          {rows.map((row, rowIndex) => {
+            const active = row.id === selectedId;
+            const hovered = row.id === hoveredId && !active;
+            /**
+             * 첫 렌더에서 잡힌 행 중 현재 위치에 있는 경우에만 stagger 인덱스를 내려보냅니다.
+             * 인피니트 스크롤로 추가된 행이나 필터 변경 후 새로 등장한 행은 undefined가 되어
+             * 애니메이션이 발동하지 않습니다.
+             */
+            const enterIndex = initialIds.has(row.id) ? rowIndex : undefined;
+            const common = {
+              $active: active,
+              $hovered: hovered,
+              $enterIndex: enterIndex,
+              onClick: () => onSelect(row.id),
+              onMouseEnter: () => setHoveredId(row.id),
+              onMouseLeave: () =>
+                setHoveredId((current) => (current === row.id ? "" : current)),
+              style: { cursor: "pointer" },
+            };
 
-          return (
-            <React.Fragment key={row.id}>
-              <DataCell {...common}>
-                <Tag kind={row.type === "expense" ? "expense" : "income"}>
-                  {TYPE_LABELS[row.type]}
-                </Tag>
-              </DataCell>
-              <DataCell {...common}>{row.date}</DataCell>
-              <DataCell {...common}>
-                <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
-              </DataCell>
-              <DataCell {...common}>{row.title}</DataCell>
-              <DataCell {...common} style={{ ...common.style, padding: "12px 0" }}>
-                {/* 색상 정사각형 + hover 툴팁. 거래에 연결된 카테고리만큼 정사각형이 늘어납니다. */}
-                <CategoryCell>
-                  {row.categories.map((cat) => (
-                    <SquareWrap key={cat}>
-                      <ColorSquare
-                        $color={categoryColorMap[cat]}
-                        aria-label={CATEGORY_LABELS[cat]}
-                      />
-                      <CategoryTooltip role="tooltip" $color={categoryColorMap[cat]}>
-                        {CATEGORY_LABELS[cat]}
-                      </CategoryTooltip>
-                    </SquareWrap>
-                  ))}
-                </CategoryCell>
-              </DataCell>
-              <DataCell {...common} $right>
-                <Amount $positive={row.amount > 0}>
-                  {row.amount > 0 ? "+" : "-"}
-                  {formatKRW(Math.abs(row.amount))}
-                </Amount>
-              </DataCell>
-              <DataCell {...common}>
-                <Tag kind={row.status}>{STATUS_LABELS[row.status]}</Tag>
-              </DataCell>
-            </React.Fragment>
-          );
-        })}
-      </Table>
+            return (
+              <React.Fragment key={row.id}>
+                <DataCell {...common}>
+                  <Tag kind={row.type === "expense" ? "expense" : "income"}>
+                    {TYPE_LABELS[row.type]}
+                  </Tag>
+                </DataCell>
+                <DataCell {...common}>{row.date}</DataCell>
+                <DataCell {...common}>
+                  <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
+                </DataCell>
+                <DataCell {...common}>{row.title}</DataCell>
+                <DataCell {...common} style={{ ...common.style, padding: "12px 0" }}>
+                  {/* 색상 정사각형 + hover 툴팁. 거래에 연결된 카테고리만큼 정사각형이 늘어납니다. */}
+                  <CategoryCell>
+                    {row.categories.map((cat) => (
+                      <SquareWrap key={cat}>
+                        <ColorSquare
+                          $color={categoryColorMap[cat]}
+                          aria-label={CATEGORY_LABELS[cat]}
+                        />
+                        <CategoryTooltip role="tooltip" $color={categoryColorMap[cat]}>
+                          {CATEGORY_LABELS[cat]}
+                        </CategoryTooltip>
+                      </SquareWrap>
+                    ))}
+                  </CategoryCell>
+                </DataCell>
+                <DataCell {...common} $right>
+                  <Amount $positive={row.amount > 0}>
+                    {row.amount > 0 ? "+" : "-"}
+                    {formatKRW(Math.abs(row.amount))}
+                  </Amount>
+                </DataCell>
+                <DataCell {...common}>
+                  <Tag kind={row.status}>{STATUS_LABELS[row.status]}</Tag>
+                </DataCell>
+              </React.Fragment>
+            );
+          })}
+        </Table>
+      </TableScroll>
+      <MobileList>
+        {rows.map((row) => (
+          <MobileRow
+            key={row.id}
+            type="button"
+            $active={row.id === selectedId}
+            onClick={() => onSelect(row.id)}
+          >
+            <MobileTop>
+              <MobileTitle>
+                <div className="title">{row.title}</div>
+                <div className="meta">{row.date}</div>
+              </MobileTitle>
+              <MobileAmount $positive={row.amount > 0}>
+                {row.amount > 0 ? "+" : "-"}
+                {formatKRW(Math.abs(row.amount))}
+              </MobileAmount>
+            </MobileTop>
+            <MobileTags>
+              <Tag kind={row.type === "expense" ? "expense" : "income"}>
+                {TYPE_LABELS[row.type]}
+              </Tag>
+              <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
+              <Tag kind={row.status}>{STATUS_LABELS[row.status]}</Tag>
+            </MobileTags>
+            <MobileFooter>
+              <MobileCategories aria-label="카테고리">
+                {row.categories.map((cat) => (
+                  <ColorSquare
+                    key={cat}
+                    $color={categoryColorMap[cat]}
+                    aria-label={CATEGORY_LABELS[cat]}
+                  />
+                ))}
+              </MobileCategories>
+              <SortIcon $dir={row.id === selectedId ? "asc" : "desc"} aria-hidden="true">
+                <svg width={14} height={14} viewBox="0 0 12 12">
+                  <polyline
+                    points="3 4.5 6 7.5 9 4.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </SortIcon>
+            </MobileFooter>
+          </MobileRow>
+        ))}
+      </MobileList>
       {rows.length === 0 ? (
         <Footer>조건에 맞는 거래가 없어요</Footer>
       ) : hasMore ? (
@@ -489,4 +635,3 @@ export const TransactionTable: React.FC<Props> = ({
     </Card>
   );
 };
-

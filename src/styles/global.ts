@@ -24,6 +24,10 @@ export const GlobalStyle = createGlobalStyle`
     font-family: ${tokens.font.sans};
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
+    /* 모바일 환경에서 가로 스크롤이 생기면 레이아웃이 통째로 밀려 보이는 문제가 생깁니다.
+       어떤 셸 자식이 실수로 뷰포트 폭을 넘겨도 본 body에서는 가로 스크롤이 나지 않도록
+       안전망으로 overflow-x를 잠가 둡니다. 세로 스크롤은 필요 시 기본적으로 허용합니다. */
+    overflow-x: hidden;
   }
 
   button,
@@ -95,6 +99,25 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /*
+   * 가로 스크롤이 필요하긴 하지만 스크롤바 자체는 숨기고 싶은 영역에서 사용합니다.
+   * 예: 모바일 상단 네비 레일, 탭형 설정 네비. 수평 휠/스와이프는 그대로 동작하고
+   * 스크롤바 트랙만 투명 처리해 시각적으로 깔끔하게 보입니다.
+   */
+  .hide-scrollbar {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar-thumb {
     background: transparent;
   }
 `;

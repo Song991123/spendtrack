@@ -8,6 +8,7 @@ import styled from "styled-components";
 import { Card, CardBd, CardHd, CardTitle } from "../../../components/primitives/Card";
 import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
+import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
 import { PLATFORM_LABELS } from "../../../constants/labels";
 
@@ -65,6 +66,47 @@ const Row = styled.li`
   &:hover + & {
     border-top-color: transparent;
   }
+
+  /*
+   * 좁은 모바일에서 아바타 + 제목/날짜 + 태그 + 금액 네 칸이 한 줄에 들어가면
+   * 제목이 "..."만 남도록 극단적으로 줄고 금액이 잘려 보이기 쉽습니다.
+   * 2행 그리드(좌측 아바타 고정, 우측은 제목 상단 · 태그+금액 하단)로 정리해
+   * 정보를 자연스럽게 두 줄로 분리합니다.
+   */
+  ${media.mobile} {
+    grid-template-columns: 32px minmax(0, 1fr);
+    grid-template-areas:
+      "avatar title"
+      "avatar meta";
+    row-gap: 6px;
+    column-gap: 10px;
+    padding: 10px;
+    margin: 0 -10px;
+  }
+`;
+
+/*
+ * 모바일에서 제목/날짜 블록과 "태그 + 금액" 블록을 각각 grid-area 로 배치합니다.
+ * 데스크톱에서는 기존 grid 셀이 그대로 동작하므로 styled-component 레벨에서 별도 처리 필요 없음.
+ */
+const TitleBlock = styled.div`
+  min-width: 0;
+
+  ${media.mobile} {
+    grid-area: title;
+  }
+`;
+
+const MetaBlock = styled.div`
+  display: contents;
+
+  ${media.mobile} {
+    grid-area: meta;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
 `;
 
 const Avatar = styled.div`
@@ -77,6 +119,10 @@ const Avatar = styled.div`
   color: ${tokens.color.ink2};
   font-size: 12px;
   font-weight: 600;
+
+  ${media.mobile} {
+    grid-area: avatar;
+  }
 `;
 
 const Title = styled.div`
@@ -88,7 +134,7 @@ const Title = styled.div`
   white-space: nowrap;
 `;
 
-const Meta = styled.div`
+const Sub = styled.div`
   color: ${tokens.color.ink4};
   font-size: ${tokens.type.caption.size};
 `;
@@ -117,15 +163,17 @@ export const RecentTransactions: React.FC<{ items: RecentItem[] }> = ({ items })
           {items.map((item) => (
             <Row key={item.id}>
               <Avatar>{item.initial}</Avatar>
-              <div>
+              <TitleBlock>
                 <Title>{item.title}</Title>
-                <Meta>{item.date}</Meta>
-              </div>
-              <Tag kind={item.platform}>{PLATFORM_LABELS[item.platform]}</Tag>
-              <Amount $negative={item.amount < 0}>
-                {item.amount < 0 ? "-" : "+"}
-                {formatKRW(Math.abs(item.amount))}
-              </Amount>
+                <Sub>{item.date}</Sub>
+              </TitleBlock>
+              <MetaBlock>
+                <Tag kind={item.platform}>{PLATFORM_LABELS[item.platform]}</Tag>
+                <Amount $negative={item.amount < 0}>
+                  {item.amount < 0 ? "-" : "+"}
+                  {formatKRW(Math.abs(item.amount))}
+                </Amount>
+              </MetaBlock>
             </Row>
           ))}
         </List>

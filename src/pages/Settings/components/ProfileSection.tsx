@@ -10,6 +10,7 @@ import { TextInput } from "../../../components/form/TextInput";
 import { tokens } from "../../../styles/tokens";
 import { SettingsBlock } from "./SettingsSection";
 import { profileStore, useProfile } from "../../../stores/profileStore";
+import { media } from "../../../tokens/breakpoints";
 
 const Row = styled.div`
   display: grid;
@@ -19,6 +20,11 @@ const Row = styled.div`
   margin-bottom: 16px;
   padding-bottom: 16px;
   border-bottom: 1px solid ${tokens.color.line2};
+
+  ${media.mobile} {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
 `;
 
 const Avatar = styled.div<{ $bg?: string }>`
@@ -53,6 +59,7 @@ const Meta = styled.div`
     display: flex;
     gap: 8px;
     margin-top: 10px;
+    flex-wrap: wrap;
   }
 `;
 
@@ -67,6 +74,11 @@ const Actions = styled.div`
   align-items: center;
   gap: 12px;
   padding-top: 4px;
+
+  ${media.mobile} {
+    flex-direction: column;
+    align-items: stretch;
+  }
 `;
 
 const StatusText = styled.span<{ $tone: "success" | "error" }>`

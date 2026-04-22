@@ -23,12 +23,17 @@ import { WelcomeTutorial } from "../../components/onboarding/WelcomeTutorial";
 const HeaderRight = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  min-width: 0;
 
-  ${media.mobile} {
+  ${media.tablet} {
+    /*
+     * 태블릿부터는 오른쪽 영역이 좁아져서 날짜 스탬프 문구가 제멋대로 3~4줄로
+     * 줄바꿈되는 문제가 있었습니다. MonthPicker 는 그대로 자연 폭으로 두고,
+     * 스탬프는 그 옆에 한 줄로만 보이도록 min-width:0 과 nowrap 을 걸어 정리합니다.
+     */
     width: 100%;
-    flex-direction: column;
-    align-items: stretch;
+    justify-content: flex-start;
   }
 `;
 
@@ -36,6 +41,8 @@ const DateStamp = styled.div`
   color: ${tokens.color.ink4};
   font-size: ${tokens.type.caption.size};
   font-weight: 500;
+  /* 짧게 정리된 stamp("2026.04.20")가 한 줄로 보여야 '오늘과 같다'는 걸 한눈에 읽힙니다. */
+  white-space: nowrap;
 `;
 
 const Grid = styled.div`

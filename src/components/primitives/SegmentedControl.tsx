@@ -4,6 +4,7 @@
  */
 import styled from "styled-components";
 import { tokens } from "../../styles/tokens";
+import { media } from "../../tokens/breakpoints";
 
 interface SegmentedOption<T extends string> {
   value: T;
@@ -22,9 +23,14 @@ const Wrap = styled.div`
   padding: 3px;
   background: ${tokens.color.tint};
   border-radius: ${tokens.radius.control};
+
+  ${media.mobile} {
+    width: 100%;
+  }
 `;
 
 const Item = styled.button<{ $active: boolean }>`
+  flex: 1;
   padding: 5px 12px;
   border: none;
   border-radius: 6px;
@@ -35,6 +41,7 @@ const Item = styled.button<{ $active: boolean }>`
   font-family: inherit;
   font-size: ${tokens.type.caption.size};
   font-weight: 600;
+  white-space: nowrap;
 `;
 
 export const SegmentedControl = <T extends string>({
@@ -55,4 +62,3 @@ export const SegmentedControl = <T extends string>({
     ))}
   </Wrap>
 );
-

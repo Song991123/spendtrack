@@ -39,6 +39,17 @@ const HeaderRow = styled.div`
   align-items: flex-start;
   gap: 12px;
   width: 100%;
+
+  /*
+   * 모바일에서는 제목 블록과 세그먼티드 컨트롤을 한 줄에 밀어 넣으면
+   * 세그먼트 폭이 줄어 글자가 잘리거나 터치 영역이 너무 작아집니다.
+   * 세로로 쌓고 세그먼트는 풀-폭으로 펼쳐 앱 탭처럼 보이도록 합니다.
+   */
+  ${media.mobile} {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 `;
 
 const Body = styled.div`

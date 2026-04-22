@@ -14,6 +14,7 @@ import {
 } from "../../../components/primitives/Card";
 import { SegmentedControl } from "../../../components/primitives/SegmentedControl";
 import { tokens } from "../../../styles/tokens";
+import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
 
 export interface PlatformBarItem {
@@ -56,6 +57,17 @@ const BarRow = styled.div`
   &:last-of-type {
     border-bottom: none;
   }
+
+  /*
+   * 좁은 모바일에서는 88px + 128px 두 고정 칼럼이 본문 폭을 거의 다 먹어 가운데 바 트랙이
+   * 20~30px 만 남는 문제가 있었습니다. 라벨/값 라인을 상단으로 올리고 바 트랙을 아래 풀-폭
+   * 행으로 내려 주면 전체 정보 밀도는 유지하면서도 막대가 시각적으로 의미 있는 길이를 갖습니다.
+   */
+  ${media.mobile} {
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    padding: 12px 0;
+  }
 `;
 
 const BarLabel = styled.div`
@@ -72,6 +84,12 @@ const BarLabel = styled.div`
 const BarChartCell = styled.div`
   min-width: 0;
   height: 20px;
+
+  /* 모바일에서는 라벨/값 아래 풀-폭 한 줄을 차지하도록 두 컬럼을 모두 가로지릅니다. */
+  ${media.mobile} {
+    grid-column: 1 / -1;
+    height: 18px;
+  }
 `;
 
 const BarAmount = styled.div`
@@ -90,6 +108,12 @@ const Summary = styled.div`
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid ${tokens.color.line2};
+
+  /* 모바일은 세 개 값을 세로로 쌓아 긴 금액 문자열이 잘리지 않도록 합니다. */
+  ${media.mobile} {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 `;
 
 const SummaryLabel = styled.div`

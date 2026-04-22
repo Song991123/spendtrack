@@ -14,6 +14,7 @@ import {
 } from "../../../components/primitives/Card";
 import { SegmentedControl } from "../../../components/primitives/SegmentedControl";
 import { tokens } from "../../../styles/tokens";
+import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
 
 export interface CategoryBarItem {
@@ -52,6 +53,13 @@ const BarRow = styled.div`
   &:last-of-type {
     border-bottom: none;
   }
+
+  /* PlatformBars와 동일한 모바일 규칙: 상단 라벨/값 + 하단 풀-폭 바 트랙으로 전환합니다. */
+  ${media.mobile} {
+    grid-template-columns: 1fr auto;
+    gap: 4px 10px;
+    padding: 12px 0;
+  }
 `;
 
 const BarLabel = styled.div`
@@ -64,6 +72,11 @@ const BarChartCell = styled.div`
   min-width: 0;
   /* barSize 8px + 상하 여유를 고려해 20px 높이를 확보합니다. */
   height: 20px;
+
+  ${media.mobile} {
+    grid-column: 1 / -1;
+    height: 18px;
+  }
 `;
 
 const BarAmount = styled.div`
