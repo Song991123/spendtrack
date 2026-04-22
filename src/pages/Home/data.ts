@@ -159,11 +159,14 @@ function buildInsights(rows: TxRow[], monthKey: string): InsightItem[] {
   );
   const changePct = prevSpend > 0 ? Math.round(((totalSpend - prevSpend) / prevSpend) * 100) : 0;
 
-  // 최빈 카테고리 찾기
+  // 최빈 카테고리 찾기 — 다중 카테고리 거래는 Analysis와 같은 중복 카운트 정책을 적용해
+  // 거래 1건이 N개 카테고리에 속하면 N개 모두에 +1씩 더합니다.
   const categoryCount: Record<string, number> = {};
   for (const row of thisMonth) {
     if (row.type !== "expense" || row.status === "cancel") continue;
-    categoryCount[row.category] = (categoryCount[row.category] ?? 0) + 1;
+    for (const cat of row.categories) {
+      categoryCount[cat] = (categoryCount[cat] ?? 0) + 1;
+    }
   }
   const topCategory = Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0]?.[0];
   const CATEGORY_LABEL: Record<string, string> = {
@@ -171,6 +174,7 @@ function buildInsights(rows: TxRow[], monthKey: string): InsightItem[] {
     fashion: "패션/의류",
     digital: "전자기기",
     food: "식품/음료",
+    etc: "기타",
   };
 
   const insights: InsightItem[] = [];
@@ -240,11 +244,15 @@ export const buildHomeData = (rows: TxRow[], monthKey: string): HomeMockData => 
   ).length;
   const prevAvg = prevPurchaseCount > 0 ? Math.round(prevSpend / prevPurchaseCount) : 0;
 
+  // "총 수입 · 환불"은 순수입 지표라서 취소는 제외합니다. 취소는 의미상 수입 흐름이지만
+  // "진짜 번 돈"이 아니기 때문에, 별도의 "취소 금액" KPI에서만 집계해 지표를 분리합니다.
   const incomeRefund = thisMonth
-    .filter((row) => row.type === "income")
+    .filter((row) => row.type === "income" && row.status !== "cancel")
     .reduce((sum, row) => sum + Math.max(0, row.amount), 0);
   const refundCount = thisMonth.filter((row) => row.status === "refund").length;
 
+  // 취소 행은 저장 경로에 따라 부호가 다를 수 있어(수동 입력은 +, 과거 OCR은 -)
+  // Math.abs로 금액만 추출해 독립 카드에 보여줍니다.
   const cancelRows = thisMonth.filter((row) => row.status === "cancel");
   const cancelAmount = cancelRows.reduce((sum, row) => sum + Math.abs(row.amount), 0);
 

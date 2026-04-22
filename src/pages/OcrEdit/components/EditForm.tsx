@@ -1,115 +1,74 @@
 /**
- * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
- *       OCR 추출 결과를 보여주고 주문일자를 수정할 수 있도록 인풋으로 제공합니다.
+ * 역할: OCR 편집 화면 오른쪽 영역의 컨테이너.
+ *       한 이미지 안에 주문이 여러 개 있을 때, 각 주문을 독립된 OrderCard로 분리해서
+ *       세로로 쌓습니다. 예전 버전은 "한 카드 = 한 이미지"에 주문 블록을 내장하는 식이었지만
+ *       실제 DB 저장 단위(= TxRow)가 주문별이라서, UI도 주문별 카드로 나눠 두는 편이
+ *       저장 모델과 일관되고 카테고리/상태 편집도 서로 섞이지 않게 됩니다.
+ *       EditForm 자체는 얇은 컨테이너 역할만 하고, 실제 렌더링은 OrderCard에 위임합니다.
  * 위치: src\pages\OcrEdit\components\EditForm.tsx
  */
-import React from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 import { Card, CardBd } from "../../../components/primitives/Card";
 import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
-import type { OcrImageItem } from "../data";
-import { ProductTable } from "./ProductTable";
-import { PLATFORM_LABELS, STATUS_LABELS } from "../../../constants/labels";
+import { CATEGORY_LABELS, PLATFORM_LABELS } from "../../../constants/labels";
+import type { OcrImageItem, OcrOrder } from "../data";
+import { OrderCard, type CategoryOption } from "./OrderCard";
 
-const MetaRow = styled.div`
+const ImageSummary = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid ${tokens.color.line2};
-`;
-
-const MetaCell = styled.div`
-  .label {
-    color: ${tokens.color.ink4};
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .value {
-    margin-top: 2px;
-    color: ${tokens.color.ink1};
-    font-size: 12.5px;
-    font-weight: 500;
-  }
-`;
-
-const DateInput = styled.input`
-  margin-top: 2px;
-  width: 120px;
-  padding: 4px 6px;
-  border: 1px solid ${tokens.color.line};
-  border-radius: ${tokens.radius.control};
-  background: ${tokens.color.panel};
-  color: ${tokens.color.ink1};
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  outline: none;
-  transition:
-    border-color ${tokens.motion.fast} ease,
-    box-shadow ${tokens.motion.fast} ease;
-
-  &:focus,
-  &:focus-visible {
-    border-color: ${tokens.color.accent};
-    box-shadow: ${tokens.shadow.focus};
-  }
-`;
-
-const MetaSeparator = styled.span`
-  width: 1px;
-  height: 24px;
-  background: ${tokens.color.line2};
-`;
-
-const Total = styled.div`
-  margin-bottom: 16px;
-  padding: 8px 0 4px;
-
-  .label {
-    margin-bottom: 4px;
-    color: ${tokens.color.ink4};
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .value {
-    color: ${tokens.color.ink1};
-    font-family: ${tokens.font.mono};
-    font-size: 22px;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-`;
-
-const SectionLabel = styled.div`
-  margin-bottom: 10px;
-  color: ${tokens.color.ink2};
-  font-size: 12px;
-  font-weight: 600;
+  color: ${tokens.color.ink4};
+  font-size: 11.5px;
 `;
 
 const Hint = styled.div`
-  margin-top: 12px;
-  color: ${tokens.color.ink4};
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid ${tokens.color.line2};
+  border-radius: ${tokens.radius.card};
+  background: ${tokens.color.tint};
+  color: ${tokens.color.ink3};
   font-size: 11.5px;
-  line-height: 1.5;
+  line-height: 1.55;
 `;
+
+/**
+ * 기본 카테고리 목록. CATEGORY_LABELS의 key/label을 그대로 펼쳐 두고,
+ * 사용자가 추가한 항목은 시간값 기반 key로 뒤에 쌓입니다.
+ */
+const DEFAULT_CATEGORIES: CategoryOption[] = Object.entries(CATEGORY_LABELS).map(
+  ([key, label]) => ({ key, label })
+);
 
 interface EditFormProps {
   image?: OcrImageItem;
-  onOrderDateChange?: (value: string) => void;
+  /**
+   * 주문 블록 내부 필드(주문일자·상태 태그)를 수정했을 때 상위(OcrEditPage)로 patch를 올립니다.
+   * onOrderDateChange/onStatusTagChange를 분리하지 않고 patch로 합친 이유는 주문이 N개로 늘어나도
+   * 핸들러가 그대로 재사용되기 때문입니다.
+   */
+  onOrderPatch?: (orderId: string, patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag">>) => void;
+  /**
+   * 주문 블록 삭제 요청. 실제 삭제(마지막 1건이면 이미지 캐스케이드 + 확인 모달)는 OcrEditPage에서 처리합니다.
+   */
+  onDeleteOrder?: (orderId: string) => void;
 }
 
-export const EditForm: React.FC<EditFormProps> = ({ image, onOrderDateChange }) => {
+export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch, onDeleteOrder }) => {
+  /**
+   * 카테고리 목록 자체는 화면 전체에서 공유합니다. 사용자가 한 주문 카드에서 "뷰티"를 추가해도
+   * 같은 이미지 안 다른 카드에 곧바로 칩이 보여야 자연스럽고, 다른 이미지를 선택했을 때도
+   * 직전까지 쓰던 목록이 그대로 남아 있어야 재입력 비용이 없어집니다.
+   * 반면 어떤 카테고리를 "체크했는가"는 주문 단위로 저장되어야 해서 selectedByOrder를 orderId 키로 둡니다.
+   */
+  const [categories, setCategories] = useState<CategoryOption[]>(DEFAULT_CATEGORIES);
+  const [selectedByOrder, setSelectedByOrder] = useState<Record<string, string[]>>({});
+
   if (!image) {
     return (
       <Card>
@@ -122,45 +81,66 @@ export const EditForm: React.FC<EditFormProps> = ({ image, onOrderDateChange }) 
     );
   }
 
+  const toggleCategoryFor = (orderId: string, key: string) => {
+    setSelectedByOrder((prev) => {
+      const current = prev[orderId] ?? [];
+      const next = current.includes(key)
+        ? current.filter((k) => k !== key)
+        : [...current, key];
+      return { ...prev, [orderId]: next };
+    });
+  };
+
+  const handleAddCategory = (label: string) => {
+    const trimmed = label.trim();
+    if (!trimmed) return;
+    // 같은 이름이 이미 있으면 목록에는 더하지 않고 입력만 무시합니다.
+    const exists = categories.some((category) => category.label === trimmed);
+    if (exists) return;
+    const key = `custom_${Date.now()}`;
+    setCategories((prev) => [...prev, { key, label: trimmed }]);
+  };
+
+  const handleRemoveCategory = (key: string) => {
+    setCategories((prev) => prev.filter((category) => category.key !== key));
+    // 삭제한 카테고리가 선택 상태였던 주문이 있다면 그 선택 목록에서도 제거해 둡니다.
+    setSelectedByOrder((prev) => {
+      const next: Record<string, string[]> = {};
+      for (const [orderId, keys] of Object.entries(prev)) {
+        next[orderId] = keys.filter((selectedKey) => selectedKey !== key);
+      }
+      return next;
+    });
+  };
+
   return (
-    <Card>
-      <CardBd>
-        <MetaRow>
-          <Tag kind={image.platform}>{PLATFORM_LABELS[image.platform]}</Tag>
-          <MetaSeparator />
-          <MetaCell>
-            <div className="label">주문일자</div>
-            {onOrderDateChange ? (
-              <DateInput
-                type="text"
-                value={image.orderDate}
-                placeholder="YYYY.MM.DD"
-                onChange={(event) => onOrderDateChange(event.target.value)}
-                aria-label="주문일자"
-              />
-            ) : (
-              <div className="value">{image.orderDate}</div>
-            )}
-          </MetaCell>
-          <MetaSeparator />
-          <MetaCell>
-            <div className="label">상품 수</div>
-            <div className="value">{image.productCount}개</div>
-          </MetaCell>
-          <MetaSeparator />
-          <Tag kind={image.statusTag}>{STATUS_LABELS[image.statusTag]}</Tag>
-        </MetaRow>
+    <div>
+      {/* 이미지 한 건을 요약하는 상단 띠. 플랫폼은 주문 카드마다 다시 보여 주지만,
+       * "이 캡쳐에 주문이 몇 건 있는지"는 전역 맥락이라 여기서 한 번만 표시합니다. */}
+      <ImageSummary>
+        <Tag kind={image.platform}>{PLATFORM_LABELS[image.platform]}</Tag>
+        <span>주문 {image.orders.length}건</span>
+      </ImageSummary>
 
-        <Total>
-          <div className="label">전체 거래금액</div>
-          <div className="value">₩{image.totalAmount.toLocaleString("ko-KR")}</div>
-        </Total>
+      <Hint>
+        OCR 결과는 초안 상태예요. 같은 캡쳐에 구매·환불이 섞여 있어도 주문 단위로 카드가 분리돼
+        저장 시 각각의 거래로 들어갑니다. 카드마다 주문일자 · 상태 · 카테고리를 필요한 만큼 조정해 주세요.
+      </Hint>
 
-        <SectionLabel>상품 목록</SectionLabel>
-        <ProductTable products={image.products} />
-
-        <Hint>OCR 결과는 초안 상태예요. 주문일자가 오인식됐다면 위 입력에서 바로 수정할 수 있습니다.</Hint>
-      </CardBd>
-    </Card>
+      {image.orders.map((order) => (
+        <OrderCard
+          key={order.id}
+          platform={image.platform}
+          order={order}
+          onOrderPatch={onOrderPatch ? (patch) => onOrderPatch(order.id, patch) : undefined}
+          onDelete={onDeleteOrder ? () => onDeleteOrder(order.id) : undefined}
+          categories={categories}
+          selectedKeys={selectedByOrder[order.id] ?? []}
+          onToggleCategory={(key) => toggleCategoryFor(order.id, key)}
+          onAddCategory={handleAddCategory}
+          onRemoveCategory={handleRemoveCategory}
+        />
+      ))}
+    </div>
   );
 };

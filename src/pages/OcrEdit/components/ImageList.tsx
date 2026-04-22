@@ -1,5 +1,6 @@
-﻿/**
+/**
  * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+ *       OCR 편집 화면 좌측의 이미지 목록. 선택과 "이 캡쳐는 잘못 올린 것" 삭제까지 처리합니다.
  * 위치: src\pages\OcrEdit\components\ImageList.tsx
  */
 import React from "react";
@@ -17,10 +18,10 @@ const List = styled.ul`
 `;
 
 const Row = styled.li<{ $active?: boolean }>`
+  position: relative;
   display: grid;
-  /* 썸네일과 텍스트가 한 줄에 깔끔히 들어가도록 썸네일을 조금 줄이고
-   * Meta 쪽에 최소 폭을 보장합니다. */
-  grid-template-columns: 44px minmax(0, 1fr);
+  /* 썸네일 + 텍스트 + 삭제 버튼 슬롯. 삭제 버튼은 22px라 24px 정도면 오른쪽 끝이 밀리지 않습니다. */
+  grid-template-columns: 44px minmax(0, 1fr) 24px;
   gap: 10px;
   align-items: center;
   padding: 8px;
@@ -32,6 +33,13 @@ const Row = styled.li<{ $active?: boolean }>`
 
   &:hover {
     background: ${({ $active }) => ($active ? tokens.color.accentSubtle : tokens.color.tint)};
+  }
+
+  /* 삭제 버튼은 평상시 숨어 있다가 row hover / 키보드 포커스 시에만 노출해
+   * 목록이 시각적으로 조용하면서도, 실수로 누를 여지를 줄입니다. */
+  &:hover .row-delete,
+  &:focus-within .row-delete {
+    opacity: 1;
   }
 `;
 
@@ -92,6 +100,48 @@ const Meta = styled.div`
   }
 `;
 
+const DeleteButton = styled.button`
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: ${tokens.color.ink4};
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    background ${tokens.motion.fast},
+    color ${tokens.motion.fast},
+    opacity ${tokens.motion.fast};
+
+  &:hover {
+    background: ${tokens.color.negSubtle};
+    color: ${tokens.color.neg};
+  }
+
+  &:focus-visible {
+    opacity: 1;
+    outline: none;
+    box-shadow: ${tokens.shadow.focus};
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+`;
+
+const Empty = styled.div`
+  padding: 14px 8px;
+  color: ${tokens.color.ink4};
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.5;
+`;
+
 const AddButton = styled.button`
   width: 100%;
   margin-top: 8px;
@@ -116,7 +166,12 @@ export const ImageList: React.FC<{
   selectedId: string;
   onSelect: (id: string) => void;
   onAdd: () => void;
-}> = ({ images, selectedId, onSelect, onAdd }) => (
+  /**
+   * 이미지 전체 삭제 콜백. 잘못 올린 캡쳐를 한 번에 지울 때 사용하며,
+   * 실제 삭제 확인(모달)은 상위 페이지에서 처리합니다.
+   */
+  onDelete?: (id: string) => void;
+}> = ({ images, selectedId, onSelect, onAdd, onDelete }) => (
   <Card>
     <CardHd>
       <CardTitle>이미지 목록</CardTitle>
@@ -135,9 +190,32 @@ export const ImageList: React.FC<{
                   {image.status === "analyzed" ? "분석 완료" : "대기 중"}
                 </div>
               </Meta>
+              {onDelete && (
+                <DeleteButton
+                  type="button"
+                  className="row-delete"
+                  aria-label={`${image.fileName} 이미지 삭제`}
+                  onClick={(event) => {
+                    // 행 onClick(선택 전환)이 함께 발동하는 걸 막습니다.
+                    event.stopPropagation();
+                    onDelete(image.id);
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                    <path d="M4 4l8 8M12 4l-8 8" />
+                  </svg>
+                </DeleteButton>
+              )}
             </Row>
           );
         })}
+        {images.length === 0 && (
+          <Empty>
+            등록된 이미지가 없어요.
+            <br />
+            아래 '+ 이미지 추가'로 새 캡쳐를 올려 주세요.
+          </Empty>
+        )}
       </List>
       <AddButton type="button" onClick={onAdd}>
         + 이미지 추가
@@ -145,4 +223,3 @@ export const ImageList: React.FC<{
     </CardBd>
   </Card>
 );
-

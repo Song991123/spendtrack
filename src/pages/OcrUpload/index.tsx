@@ -74,12 +74,15 @@ export const OcrUploadPage: React.FC = () => {
         <GuideCard items={ocrUploadMockData.guide} />
         <PlatformSelect value={platform} onChange={setPlatform} />
         {/* 업로드 영역과 업로드된 목록을 분리해 실제 서비스 구조를 미리 보여 줍니다. */}
-        <UploadZone
-          acceptedTypes="PNG, JPG, WEBP"
-          maxSize="10MB"
-          maxCount={5}
-          onPick={handleAddMock}
-        />
+        {/* data-tour: ProductTour 스포트라이트 타겟. */}
+        <div data-tour="ocr-zone">
+          <UploadZone
+            acceptedTypes="PNG, JPG, WEBP"
+            maxSize="10MB"
+            maxCount={5}
+            onPick={handleAddMock}
+          />
+        </div>
 
         {images.length > 0 && <UploadedGrid images={images} onRemove={handleRemove} />}
 

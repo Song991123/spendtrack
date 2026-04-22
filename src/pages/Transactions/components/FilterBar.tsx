@@ -180,6 +180,8 @@ export const FilterBar = ({
       <option value="fashion">{CATEGORY_LABELS.fashion}</option>
       <option value="digital">{CATEGORY_LABELS.digital}</option>
       <option value="food">{CATEGORY_LABELS.food}</option>
+      {/* "기타"는 카테고리 미지정 거래를 걸러볼 수 있는 단일 진입점입니다. */}
+      <option value="etc">{CATEGORY_LABELS.etc}</option>
     </Select>
     <Select
       value={statusFilter}
@@ -190,6 +192,8 @@ export const FilterBar = ({
       <option value="cancel">{STATUS_LABELS.cancel}</option>
       <option value="refund">{STATUS_LABELS.refund}</option>
       <option value="sub">{STATUS_LABELS.sub}</option>
+      {/* "기타" 상태는 지출·수입 양쪽 폴백이라 상태 필터에도 노출해 수동 입력 정리에 쓰도록 합니다. */}
+      <option value="etc">{STATUS_LABELS.etc}</option>
     </Select>
   </Bar>
 );

@@ -9,12 +9,32 @@ import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 import { formatKRW } from "../../../utils/format";
-import { PLATFORM_LABELS, STATUS_LABELS, TYPE_LABELS } from "../../../constants/labels";
+import {
+  CATEGORY_LABELS,
+  PLATFORM_LABELS,
+  STATUS_LABELS,
+  TYPE_LABELS,
+} from "../../../constants/labels";
+import { useCategoryColorMap } from "../../../stores/categoriesStore";
 
 export type TxType = "expense" | "income";
 export type TxPlatform = "coupang" | "naver" | "musinsa";
-export type TxStatus = "purchase" | "cancel" | "refund" | "sub";
-export type TxCategory = "living" | "fashion" | "digital" | "food";
+/**
+ * 거래 상태. 유형별로 쓰이는 맥락이 다릅니다:
+ * - purchase/sub/etc: 지출(expense) 쪽에서 선택 가능.
+ * - refund/cancel/etc: 수입(income) 쪽에서 선택 가능.
+ *   취소는 돈이 다시 들어오는 흐름이라 의미상 수입이지만, 순수입 KPI에서는 제외해야 해서
+ *   Home/Analysis 집계 함수(sumIncomeAndRefund 등)가 status === "cancel"을 걸러냅니다.
+ *   별도의 "취소 금액" 카드는 status === "cancel"만 모아 보여주고, 부호는 Math.abs로
+ *   통일해서 구 OCR 데이터(-부호)와 신규 수입 분류(+부호)를 모두 안전하게 합산합니다.
+ * - "etc"(기타): 지출·수입 모두에서 쓸 수 있는 폴백.
+ */
+export type TxStatus = "purchase" | "cancel" | "refund" | "sub" | "etc";
+/**
+ * "etc"(기타)는 사용자가 카테고리를 지정하지 않은 모든 거래의 안전한 기본값입니다.
+ * CSV/OCR/수동 입력 모든 경로에서 카테고리가 비었거나 알 수 없으면 "etc"로 수렴시킵니다.
+ */
+export type TxCategory = "living" | "fashion" | "digital" | "food" | "etc";
 
 export type TxSource = "mock" | "csv" | "ocr" | "manual";
 
@@ -23,7 +43,13 @@ export interface TxRow {
   type: TxType;
   date: string;
   platform: TxPlatform;
-  category: TxCategory;
+  /**
+   * 한 거래가 속하는 카테고리 목록. 최대 MAX_CATEGORIES_PER_TX개까지 허용합니다.
+   * - 첫 번째 원소를 "대표 카테고리"로 취급해서 반복구매/요약처럼 단일 라벨이 필요한 곳에서 사용합니다.
+   * - 분석(카테고리별 지출) 집계는 중복 카운트 방식 — 한 거래가 2개 카테고리에 속하면 두 쪽 모두 전액을 더합니다.
+   * - 빈 배열은 허용하지 않으며, 카테고리가 없는 거래는 ["etc"]로 저장합니다.
+   */
+  categories: TxCategory[];
   title: string;
   amount: number;
   status: TxStatus;
@@ -37,16 +63,23 @@ export interface TxRow {
   detail?: {
     items: { name: string; price: number; link?: string }[];
     source?: "OCR" | "MANUAL";
+    /**
+     * OCR 경로로 저장된 거래일 때, 분석에 사용된 원본 캡쳐의 URL(또는 data URL).
+     * 거래내역 상세에서 "OCR 분석한 이미지 보기" 모달이 이 값을 읽어 원본을 그대로 띄웁니다.
+     * 값이 비어 있으면 모달은 "저장된 이미지가 없다" 플레이스홀더로 떨어집니다.
+     */
+    sourceImageUrl?: string;
   };
 }
 
 const Table = styled.div`
   display: grid;
-  grid-template-columns: 76px 110px 108px 1fr 140px 96px;
+  /* 7번째 컬럼(카테고리 색)은 거래명과 금액 사이에 좁게 끼워 넣어서, 색 박스 + hover 툴팁만 담당합니다. */
+  grid-template-columns: 76px 110px 108px 1fr 52px 140px 96px;
   font-size: 13px;
 
   ${media.tablet} {
-    grid-template-columns: 76px 96px 100px 1fr 132px 96px;
+    grid-template-columns: 76px 96px 100px 1fr 44px 132px 96px;
   }
 `;
 
@@ -170,6 +203,77 @@ const DataCell = styled.div<{
     `}
 `;
 
+/**
+ * 카테고리 색상 셀의 hover 범위. 한 거래가 여러 카테고리에 속할 수 있어
+ * 정사각형들을 수평으로 나란히 배치합니다(최대 MAX_CATEGORIES_PER_TX개).
+ * 부모 DataCell 폭을 가득 채워 정사각형 묶음이 컬럼 정중앙에 오게 합니다.
+ */
+const CategoryCell = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+`;
+
+/**
+ * 정사각형 + 툴팁을 묶는 wrapper. 각 정사각형마다 자기 카테고리 툴팁이 떠야 해서
+ * 툴팁 기준점이 정사각형 단위로 잡혀야 합니다.
+ */
+const SquareWrap = styled.span`
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+/**
+ * 카테고리 색을 보여주는 정사각형. 각 행에서 "이 거래가 어느 카테고리인지"를
+ * 최소 시각 노이즈로 전달하는 역할이라 테두리 없이 배경색만 씁니다.
+ * 다중 카테고리일 때 좁은 폭에 여러 개를 욱여넣어야 해서 11px로 약간 줄였습니다.
+ */
+const ColorSquare = styled.span<{ $color: string }>`
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: ${({ $color }) => $color};
+  /* 배경과 섞이지 않도록 아주 연한 윤곽선을 깔아 둡니다. 흰 배경에도, hover 배경에도 안정적입니다. */
+  box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.08);
+`;
+
+/**
+ * 카테고리 이름을 카테고리 색으로 보여주는 툴팁.
+ * 평소엔 hidden, 부모(SquareWrap) hover 시에만 opacity/translate로 부드럽게 등장합니다.
+ * 색상 가독성을 위해 흰 배경/그림자를 깔고 글씨만 해당 카테고리 색으로 강조합니다.
+ */
+const CategoryTooltip = styled.span<{ $color: string }>`
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translate(-50%, 4px);
+  padding: 4px 8px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.panel};
+  box-shadow: ${tokens.shadow.cardHover};
+  color: ${({ $color }) => $color};
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity ${tokens.motion.fast} ease,
+    transform ${tokens.motion.fast} ease;
+  z-index: 2;
+
+  ${SquareWrap}:hover & {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+`;
+
 const Amount = styled.span<{ $positive?: boolean }>`
   color: ${({ $positive }) => ($positive ? tokens.color.pos : tokens.color.neg)};
   font-family: ${tokens.font.mono};
@@ -229,6 +333,8 @@ export const TransactionTable: React.FC<Props> = ({
 }) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [hoveredId, setHoveredId] = useState<string>("");
+  // 카테고리 색상은 설정 화면에서 사용자가 편집할 수 있으므로, 직접 스토어를 구독해 즉시 반영합니다.
+  const categoryColorMap = useCategoryColorMap();
   const hasMore = rows.length < totalCount;
   const loadMoreRef = useRef(onLoadMore);
   loadMoreRef.current = onLoadMore;
@@ -293,6 +399,8 @@ export const TransactionTable: React.FC<Props> = ({
         </SortableHeader>
         <HeaderCell className="tag">플랫폼</HeaderCell>
         <HeaderCell>거래명</HeaderCell>
+        {/* 카테고리 컬럼은 색상 정사각형만 표시하고 제목도 짧게 표기합니다. */}
+        <HeaderCell style={{ textAlign: "center", padding: "10px 0" }}>분류</HeaderCell>
         <HeaderCell className="right">금액</HeaderCell>
         <HeaderCell className="tag">상태</HeaderCell>
         {rows.map((row, rowIndex) => {
@@ -327,6 +435,22 @@ export const TransactionTable: React.FC<Props> = ({
                 <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
               </DataCell>
               <DataCell {...common}>{row.title}</DataCell>
+              <DataCell {...common} style={{ ...common.style, padding: "12px 0" }}>
+                {/* 색상 정사각형 + hover 툴팁. 거래에 연결된 카테고리만큼 정사각형이 늘어납니다. */}
+                <CategoryCell>
+                  {row.categories.map((cat) => (
+                    <SquareWrap key={cat}>
+                      <ColorSquare
+                        $color={categoryColorMap[cat]}
+                        aria-label={CATEGORY_LABELS[cat]}
+                      />
+                      <CategoryTooltip role="tooltip" $color={categoryColorMap[cat]}>
+                        {CATEGORY_LABELS[cat]}
+                      </CategoryTooltip>
+                    </SquareWrap>
+                  ))}
+                </CategoryCell>
+              </DataCell>
               <DataCell {...common} $right>
                 <Amount $positive={row.amount > 0}>
                   {row.amount > 0 ? "+" : "-"}

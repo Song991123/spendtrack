@@ -9,7 +9,6 @@ import { media } from "../../tokens/breakpoints";
 import { SettingsNav, type SettingsSection } from "./components/SettingsNav";
 import { ProfileSection } from "./components/ProfileSection";
 import { AccountSection } from "./components/AccountSection";
-import { NotificationSection } from "./components/NotificationSection";
 import { CategoriesSection } from "./components/CategoriesSection";
 import { DangerSection } from "./components/DangerSection";
 
@@ -42,7 +41,6 @@ export const SettingsPage: React.FC = () => {
           {/* 실제 라우팅을 늘리지 않고 한 화면 안에서 섹션만 전환합니다. */}
           {section === "profile" && <ProfileSection />}
           {section === "account" && <AccountSection />}
-          {section === "notifications" && <NotificationSection />}
           {section === "categories" && <CategoriesSection />}
           {section === "danger" && <DangerSection />}
         </Content>

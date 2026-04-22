@@ -16,37 +16,15 @@ import { tokens } from "../../styles/tokens";
 import { TypeSegment, type TxType } from "./components/TypeSegment";
 import { MetaFields, type MetaFieldValues } from "./components/MetaFields";
 import { StatusTags, type StatusKey } from "./components/StatusTags";
+import {
+  defaultStatusForType,
+  isValidStatusForType,
+} from "./components/statusOptions";
 import { ProductRows, type ManualProduct } from "./components/ProductRows";
 import { transactionsStore } from "../../stores/transactionsStore";
-import type { TxRow, TxPlatform, TxCategory, TxStatus } from "./../Transactions/components/TransactionTable";
-
-/**
- * 입력한 플랫폼 텍스트를 TxRow 타입에 맞는 키로 매핑합니다.
- * 사용자가 "쿠팡 위클리"처럼 변형을 쓸 수도 있어서 contains 기반으로 매칭합니다.
- */
-function mapPlatform(input: string): TxPlatform {
-  const normalized = input.replace(/\s/g, "");
-  if (normalized.includes("쿠팡") || normalized.toLowerCase().includes("coupang")) return "coupang";
-  if (normalized.includes("네이버") || normalized.toLowerCase().includes("naver")) return "naver";
-  if (normalized.includes("무신사") || normalized.toLowerCase().includes("musinsa")) return "musinsa";
-  return "coupang"; // fallback: 대시보드 집계가 망가지지 않도록 알려진 플랫폼으로 수렴시킵니다.
-}
-
-/** 수동 입력 카테고리 키를 TransactionTable의 TxCategory와 매핑합니다. */
-function mapCategory(keys: string[]): TxCategory {
-  const first = keys[0];
-  if (first === "fashion") return "fashion";
-  if (first === "digital") return "digital";
-  if (first === "food") return "food";
-  return "living";
-}
-
-function mapStatus(key: StatusKey | null): TxStatus {
-  if (key === "refund") return "refund";
-  if (key === "cancel") return "cancel";
-  if (key === "sub") return "sub";
-  return "purchase";
-}
+import type { TxRow } from "./../Transactions/components/TransactionTable";
+import { todayAsDotDate } from "../../utils/date";
+import { mapCategories, mapPlatform } from "../../utils/manualMapping";
 
 const Lead = styled.p`
   margin: 0 0 16px;
@@ -116,7 +94,9 @@ const EMPTY_META: MetaFieldValues = {
   amount: "",
   platform: "",
   date: "",
-  categories: ["living"],
+  // 사용자가 카테고리를 명시적으로 선택하기 전까지는 "기타"가 디폴트로 체크돼 있습니다.
+  // 사용자가 다른 카테고리를 고르면 그대로 덮어 써집니다.
+  categories: ["etc"],
   memo: "",
 };
 
@@ -170,8 +150,7 @@ export const ManualEntryPage: React.FC = () => {
       return;
     }
     const signedAmount = type === "expense" ? -Math.abs(amountNumber) : Math.abs(amountNumber);
-    const today = new Date();
-    const fallbackDate = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
+    const fallbackDate = todayAsDotDate();
     const row: TxRow = {
       id: `m_${Date.now()}`,
       type,
@@ -179,8 +158,12 @@ export const ManualEntryPage: React.FC = () => {
       amount: signedAmount,
       date: meta.date.trim() || fallbackDate,
       platform: mapPlatform(meta.platform),
-      category: mapCategory(meta.categories),
-      status: mapStatus(status),
+      categories: mapCategories(meta.categories),
+      // 상태를 고르지 않았거나 타입과 안 맞는 상태가 남아있으면 타입별 안전 디폴트로 수렴시킵니다.
+      status:
+        status && isValidStatusForType(status, type)
+          ? status
+          : defaultStatusForType(type),
       source: "manual",
       memo: meta.memo.trim() || undefined,
       detail:
@@ -207,7 +190,19 @@ export const ManualEntryPage: React.FC = () => {
 
           <SectionLabel>거래 유형</SectionLabel>
           <div style={{ marginBottom: 16 }}>
-            <TypeSegment value={type} onChange={setType} />
+            <TypeSegment
+              value={type}
+              onChange={(nextType) => {
+                setType(nextType);
+                // 유형이 바뀌면 반대편 전용 상태(예: 지출의 "구매", 수입의 "취소")가
+                // 남아있지 않도록, 새 유형에서 유효하지 않으면 안전 디폴트로 자동 전환합니다.
+                setStatus((currentStatus) =>
+                  currentStatus && isValidStatusForType(currentStatus, nextType)
+                    ? currentStatus
+                    : defaultStatusForType(nextType)
+                );
+              }}
+            />
           </div>
 
           <MetaFields
@@ -220,7 +215,7 @@ export const ManualEntryPage: React.FC = () => {
 
           <SectionLabel>상태 태그</SectionLabel>
           <div style={{ marginBottom: 20 }}>
-            <StatusTags value={status} onChange={setStatus} />
+            <StatusTags value={status} type={type} onChange={setStatus} />
           </div>
 
           <SectionHeader>
@@ -246,7 +241,7 @@ export const ManualEntryPage: React.FC = () => {
 
           {error && <ErrorLine role="alert">{error}</ErrorLine>}
 
-          <SaveBar>
+          <SaveBar data-tour="manual-savebar">
             <Button variant="primary" size="lg" block onClick={handleSave}>
               거래 저장하기
             </Button>

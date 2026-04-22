@@ -2,7 +2,8 @@
  * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
  * 위치: src\pages\Home\index.tsx
  */
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { MonthPicker } from "../../components/primitives/MonthPicker";
@@ -16,6 +17,8 @@ import { InsightCards } from "./components/InsightCards";
 import { buildHomeData } from "./data";
 import { getMonthOption } from "../../constants/months";
 import { useTransactionsStore } from "../../stores/transactionsStore";
+// TODO(auth): 목업 로그인 분기를 걷어낼 때, 이 오버레이의 표시 조건도 실제 신규 가입 이벤트로 옮겨야 합니다.
+import { WelcomeTutorial } from "../../components/onboarding/WelcomeTutorial";
 
 const HeaderRight = styled.div`
   display: flex;
@@ -58,6 +61,24 @@ export const HomePage: React.FC = () => {
   const data = useMemo(() => buildHomeData(rows, month), [rows, month]);
   const monthOption = getMonthOption(month);
 
+  // 로그인 분기에서 navigation state로 "튜토리얼 무조건 표시"를 요청받습니다.
+  // 이 값을 한 번 캡처해 내부 state로 옮기고 즉시 history를 정리해서,
+  // 뒤로가기/새로고침 시 같은 state가 반복 소비되어 튜토리얼이 재트리거되지 않게 합니다.
+  const location = useLocation();
+  const [forceTutorialOpen, setForceTutorialOpen] = useState<boolean>(
+    () => Boolean((location.state as { showTutorial?: boolean } | null)?.showTutorial),
+  );
+  useEffect(() => {
+    if (forceTutorialOpen) {
+      // 현재 URL은 그대로 유지하되 state만 비워 "1회성 신호"로 처리합니다.
+      try {
+        window.history.replaceState({}, "", window.location.href);
+      } catch {
+        // SSR 등에서 접근이 불가하면 조용히 무시
+      }
+    }
+  }, [forceTutorialOpen]);
+
   return (
     <AppShell
       activeNav="home"
@@ -72,7 +93,10 @@ export const HomePage: React.FC = () => {
     >
       <Grid>
         {/* Home은 상단 요약 → 차트 → 최근 거래 → 인사이트 순서로 읽히도록 구성합니다. */}
-        <KpiStrip kpis={data.kpis} />
+        {/* data-tour: ProductTour 스포트라이트 타겟. 실제 인증으로 교체되더라도 유지해도 무해합니다. */}
+        <div data-tour="home-kpi">
+          <KpiStrip kpis={data.kpis} />
+        </div>
         <Row2>
           <PlatformDonut total={data.platformDonut.total} items={data.platformDonut.items} />
           <TrendChart points={data.trend.points} />
@@ -80,6 +104,19 @@ export const HomePage: React.FC = () => {
         <RecentTransactions items={data.recent} />
         <InsightCards items={data.insights} />
       </Grid>
+      {/*
+        WelcomeTutorial 표시 우선순위:
+          1) LoginForm에서 `navigate("/", { state: { showTutorial: true } })`로 넘어왔다면
+             forceTutorialOpen=true가 되어 **무조건** 뜹니다. (테스트 결정성 확보)
+          2) 그 외 일반 진입에서는 컴포넌트 내부의 localStorage 플래그 로직이
+             "최초 1회만 자동 표시"를 담당합니다.
+        onClose에서 forceTutorialOpen을 내려주어, Home 내에서 페이지 이동 후 돌아와도
+        닫힌 튜토리얼이 재오픈되지 않도록 합니다.
+      */}
+      <WelcomeTutorial
+        forceOpen={forceTutorialOpen}
+        onClose={() => setForceTutorialOpen(false)}
+      />
     </AppShell>
   );
 };

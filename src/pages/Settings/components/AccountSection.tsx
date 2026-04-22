@@ -8,6 +8,7 @@ import { Button } from "../../../components/primitives/Button";
 import { tokens } from "../../../styles/tokens";
 import { SettingsBlock } from "./SettingsSection";
 import { profileStore, useProfile } from "../../../stores/profileStore";
+import { todayAsDotDate } from "../../../utils/date";
 
 const Item = styled.div`
   display: flex;
@@ -83,12 +84,6 @@ function isEmail(value: string): boolean {
   return /.+@.+\..+/.test(value.trim());
 }
 
-function todayDot(): string {
-  const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}`;
-}
-
 export const AccountSection: React.FC = () => {
   const profile = useProfile();
   const [editing, setEditing] = useState<null | "email" | "password">(null);
@@ -135,7 +130,7 @@ export const AccountSection: React.FC = () => {
       return;
     }
     // 실제 비밀번호는 저장하지 않고 변경 시각만 기록합니다. 데모 범위에서 필요한 최소치입니다.
-    profileStore.save({ passwordChangedAt: todayDot() });
+    profileStore.save({ passwordChangedAt: todayAsDotDate() });
     setEditing(null);
     setMessage({ tone: "success", text: "비밀번호를 변경했어요." });
   };

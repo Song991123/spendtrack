@@ -34,6 +34,11 @@ export const tokens = {
     cat3: "#B45309",
     cat4: "#9F1239",
     cat5: "#6B7280",
+    // 브라우저 기본 회색 스크롤바와 구분되도록 accent 계열의 희미한 라벤더 톤으로 칠합니다.
+    // - scrollThumb  : 평소에는 ink5 와 거의 같은 "회색에 보라 한 방울" 느낌만 남겨 배경을 방해하지 않음.
+    // - scrollThumbHover : 포인터가 얹히면 한 단계 진해져 그때서야 브랜드 인디고가 또렷이 보임.
+    scrollThumb: "#D1D4E6",
+    scrollThumbHover: "#9EA2CC",
     tag: {
       coupang: { bg: "#FFF4E5", fg: "#9A3412" },
       naver: { bg: "#ECFDF5", fg: "#065F46" },
@@ -44,6 +49,8 @@ export const tokens = {
       sub: { bg: "#EEF0FF", fg: "#4338CA" },
       cancel: { bg: "#FEF2F2", fg: "#B42318" },
       refund: { bg: "#EFF6FF", fg: "#1D4ED8" },
+      // "기타" 상태는 purchase와 유사한 회색 계열로 두되, 살짝 더 옅게 해 의미 있는 상태들과 시각 가중치를 낮춥니다.
+      etc: { bg: "#F5F5F6", fg: "#6B7280" },
     },
   },
   radius: {

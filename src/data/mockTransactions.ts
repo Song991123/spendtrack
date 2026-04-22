@@ -112,8 +112,10 @@ export const mockTransactions: Transaction[] = [
     ],
   },
   {
+    // 취소는 돈이 다시 들어오는 흐름이라 type="income"으로 저장합니다. 다만 순수입 KPI에서는
+    // status === "cancel" 필터로 따로 걸러 제외합니다(Home/Analysis의 sumIncomeAndRefund 참조).
     id: "tx-006",
-    type: "expense",
+    type: "income",
     title: "삼성 갤럭시버즈 2",
     amount: 189000,
     date: "2025.04.02",

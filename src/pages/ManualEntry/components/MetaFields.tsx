@@ -6,13 +6,17 @@ import React from "react";
 import styled from "styled-components";
 import { FormField } from "../../../components/form/FormField";
 import { TextInput } from "../../../components/form/TextInput";
-import { CATEGORY_LABELS } from "../../../constants/labels";
+import { AmountInput } from "../../../components/form/AmountInput";
+import { AutoResizeTextarea } from "../../../components/form/AutoResizeTextarea";
+import { DatePicker } from "../../../components/primitives/DatePicker";
+import { CATEGORY_LABELS, MAX_CATEGORIES_PER_TX } from "../../../constants/labels";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 
 export type CategoryKey = keyof typeof CATEGORY_LABELS;
 
-const CATEGORY_OPTIONS: CategoryKey[] = ["living", "fashion", "digital", "food"];
+// "기타"를 맨 뒤에 두어, 사용자가 특정 카테고리를 고르지 못했을 때 마지막 선택지로 눈에 띄게 합니다.
+const CATEGORY_OPTIONS: CategoryKey[] = ["living", "fashion", "digital", "food", "etc"];
 
 /**
  * 수동 입력 폼의 메타 필드들. 상위 ManualEntry 페이지가 저장 버튼을 눌렀을 때
@@ -56,8 +60,9 @@ const CheckGroup = styled.div`
 /**
  * 하나의 거래가 여러 카테고리에 걸칠 수 있어서 셀렉트 대신 체크박스 칩으로 다중 선택을 받습니다.
  * 네이티브 체크박스를 숨기고 label 자체에 선택 상태 스타일을 입혀 '토글 가능한 칩' 느낌을 냅니다.
+ * $disabled인 경우(상한 도달)는 투명도/커서만 바꿔 "지금은 더 못 고른다"는 상태를 부드럽게 전달합니다.
  */
-const CheckChip = styled.label<{ $checked: boolean }>`
+const CheckChip = styled.label<{ $checked: boolean; $disabled?: boolean }>`
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -72,15 +77,22 @@ const CheckChip = styled.label<{ $checked: boolean }>`
     $checked ? tokens.color.accentHover : tokens.color.ink2};
   font-size: ${tokens.type.caption.size};
   font-weight: 600;
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? "not-allowed" : "pointer")};
+  opacity: ${({ $disabled }) => ($disabled ? 0.45 : 1)};
   user-select: none;
   transition:
     background ${tokens.motion.fast} ease,
     border-color ${tokens.motion.fast} ease,
-    color ${tokens.motion.fast} ease;
+    color ${tokens.motion.fast} ease,
+    opacity ${tokens.motion.fast} ease;
 
   &:hover {
-    border-color: ${tokens.color.accent};
+    border-color: ${({ $disabled, $checked }) =>
+      $disabled
+        ? $checked
+          ? tokens.color.accent
+          : tokens.color.line
+        : tokens.color.accent};
   }
 
   input {
@@ -108,28 +120,15 @@ const CheckChip = styled.label<{ $checked: boolean }>`
   }
 `;
 
-const Textarea = styled.textarea`
-  width: 100%;
-  min-height: 64px;
-  padding: 9px 12px;
-  border: 1px solid ${tokens.color.line};
-  border-radius: ${tokens.radius.control};
-  background: ${tokens.color.panel};
-  color: ${tokens.color.ink1};
-  font-family: inherit;
-  font-size: ${tokens.type.bodySm.size};
-  outline: none;
-  resize: vertical;
-  transition: border-color ${tokens.motion.fast}, box-shadow ${tokens.motion.fast};
-
-  &:focus {
-    border-color: ${tokens.color.accent};
-    box-shadow: ${tokens.shadow.focus};
-  }
-
-  &::placeholder {
-    color: ${tokens.color.ink5};
-  }
+/**
+ * 카테고리 체크박스 상단에 현재 선택 개수/상한을 안내하는 캡션.
+ * 사용자가 더 못 고르는 이유를 UI에서 명확히 밝혀 의도적인 제약임을 드러냅니다.
+ */
+const CategoryCounter = styled.span<{ $atLimit: boolean }>`
+  margin-left: 6px;
+  color: ${({ $atLimit }) => ($atLimit ? tokens.color.neg : tokens.color.ink4)};
+  font-size: 11px;
+  font-weight: 600;
 `;
 
 export const MetaFields: React.FC<{
@@ -139,9 +138,14 @@ export const MetaFields: React.FC<{
   const patch = (partial: Partial<MetaFieldValues>) =>
     onChange({ ...value, ...partial });
 
+  // 카테고리 상한(MAX_CATEGORIES_PER_TX)에 도달했으면 새로 추가하는 토글은 무시합니다.
+  // 이미 체크된 항목을 끄는 동작은 항상 허용되어야 하므로 가드는 "체크 시도"에만 걸립니다.
+  const atLimit = value.categories.length >= MAX_CATEGORIES_PER_TX;
   const toggle = (key: CategoryKey) => {
+    const isChecked = value.categories.includes(key);
+    if (!isChecked && atLimit) return;
     patch({
-      categories: value.categories.includes(key)
+      categories: isChecked
         ? value.categories.filter((k) => k !== key)
         : [...value.categories, key],
     });
@@ -160,10 +164,12 @@ export const MetaFields: React.FC<{
       </Field>
       <Field>
         <FormField label="금액">
-          <TextInput
-            placeholder="예: 129000"
+          {/* 저장 형태는 기존과 동일한 raw digit 문자열("129000"). 표시만 콤마가 붙습니다.
+              parsePrice()와 자연스럽게 호환되므로 상위 로직 변경이 불필요합니다. */}
+          <AmountInput
+            placeholder="예: 129,000"
             value={value.amount}
-            onChange={(event) => patch({ amount: event.target.value })}
+            onChange={(rawDigits) => patch({ amount: rawDigits })}
           />
         </FormField>
       </Field>
@@ -178,26 +184,48 @@ export const MetaFields: React.FC<{
       </Field>
       <Field>
         <FormField label="거래일자">
-          <TextInput
-            placeholder="YYYY.MM.DD"
+          {/* 저장 포맷("YYYY.MM.DD")을 그대로 주고받을 수 있는 커스텀 DatePicker.
+              네이티브 <input type="date">는 브라우저마다 팝업 UI가 달라 디자인 통일이 어려워
+              앱 토큰과 같은 결을 쓰는 자체 캘린더로 교체했습니다. */}
+          <DatePicker
             value={value.date}
-            onChange={(event) => patch({ date: event.target.value })}
+            onChange={(next) => patch({ date: next })}
+            aria-label="거래일자"
           />
         </FormField>
       </Field>
       <Field $span={2}>
         <FormField
-          label="카테고리"
-          helpText="하나의 거래가 여러 카테고리에 걸칠 수 있어서 여러 개 선택할 수 있어요."
+          label={
+            <>
+              카테고리
+              <CategoryCounter $atLimit={atLimit}>
+                {value.categories.length}/{MAX_CATEGORIES_PER_TX}
+              </CategoryCounter>
+            </>
+          }
+          helpText={`하나의 거래가 여러 카테고리에 걸칠 수 있어요. 최대 ${MAX_CATEGORIES_PER_TX}개까지 선택할 수 있어요.`}
         >
           <CheckGroup>
             {CATEGORY_OPTIONS.map((key) => {
               const checked = value.categories.includes(key);
+              // 상한 도달 + 아직 체크되지 않은 칩만 비활성화. 이미 켠 칩은 항상 끌 수 있어야 합니다.
+              const disabled = !checked && atLimit;
               return (
-                <CheckChip key={key} $checked={checked}>
+                <CheckChip
+                  key={key}
+                  $checked={checked}
+                  $disabled={disabled}
+                  title={
+                    disabled
+                      ? `카테고리는 최대 ${MAX_CATEGORIES_PER_TX}개까지만 선택할 수 있어요`
+                      : undefined
+                  }
+                >
                   <input
                     type="checkbox"
                     checked={checked}
+                    disabled={disabled}
                     onChange={() => toggle(key)}
                   />
                   <span className="mark" aria-hidden="true">
@@ -225,7 +253,9 @@ export const MetaFields: React.FC<{
       </Field>
       <Field $span={2}>
         <FormField label="메모" helpText="선택 항목">
-          <Textarea
+          {/* 사용자가 수동 리사이즈 핸들을 드래그하지 않고도 내용에 맞춰 높이가 늘어납니다.
+              상한(maxHeight) 에 닿으면 내부 스크롤로 전환되어 폼 전체 레이아웃은 안정적으로 유지. */}
+          <AutoResizeTextarea
             placeholder="거래에 대한 메모를 남겨보세요."
             value={value.memo}
             onChange={(event) => patch({ memo: event.target.value })}
