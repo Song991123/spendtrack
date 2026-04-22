@@ -46,7 +46,8 @@ export const HEADER_HINTS = [
 export function findHeaderRowIndex(rows: string[][]): number {
   const maxPeek = Math.min(rows.length, 10);
   for (let i = 0; i < maxPeek; i += 1) {
-    const cells = (rows[i] ?? []).map((cell) => String(cell ?? "").trim());
+    // 줄바꿈(Shift+Enter) 및 모든 공백을 제거하여 순수 텍스트만 추출해 비교합니다.
+    const cells = (rows[i] ?? []).map((cell) => String(cell ?? "").replace(/\s+/g, ""));
     const hits = cells.filter((cell) =>
       HEADER_HINTS.some((hint) => cell.includes(hint))
     );

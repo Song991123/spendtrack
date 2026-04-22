@@ -34,10 +34,14 @@ const CATEGORY_MAP: Record<string, TxCategory> = {
   기타: "etc",
 };
 
-function pickFirstValue(row: CsvRow, headers: readonly string[]): string {
-  for (const header of headers) {
-    const value = row[header];
-    if (value) return value;
+function pickFirstValue(row: CsvRow, hints: readonly string[]): string {
+  const keys = Object.keys(row);
+  for (const hint of hints) {
+    // 1. 정확히 일치하는 키가 있는지 먼저 확인
+    if (row[hint]) return row[hint];
+    // 2. 부분적으로 포함(includes)하는 키가 있는지 확인 ("이용금액(해외현지금액)"에서 "이용금액" 찾기)
+    const matchingKey = keys.find((key) => key.includes(hint));
+    if (matchingKey && row[matchingKey]) return row[matchingKey];
   }
   return "";
 }

@@ -7,30 +7,6 @@ import { findHeaderRowIndex } from "./importHeaders";
 
 export type CsvRow = Record<string, string>;
 
-function splitCsvLine(line: string): string[] {
-  const cells: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i += 1) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i += 1;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (ch === "," && !inQuotes) {
-      cells.push(current);
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  cells.push(current);
-  return cells;
-}
-
 export function decodeCsvBuffer(buffer: ArrayBuffer): string {
   const utf8 = new TextDecoder("utf-8", { fatal: false }).decode(buffer);
   if (!utf8.includes("\uFFFD")) return utf8;
@@ -44,23 +20,81 @@ export function decodeCsvBuffer(buffer: ArrayBuffer): string {
 
 export function parseCsvMatrix(text: string): string[][] {
   const cleaned = text.replace(/^\uFEFF/, "");
-  return cleaned
-    .split(/\r?\n/)
-    .filter((line) => line.trim() !== "")
-    .map((line) => splitCsvLine(line).map((cell) => cell.trim()));
+  const matrix: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < cleaned.length; i += 1) {
+    const ch = cleaned[i];
+    const nextCh = cleaned[i + 1];
+
+    if (ch === '"') {
+      if (inQuotes && nextCh === '"') {
+        currentCell += '"';
+        i += 1; // 이스케이프된 따옴표 건너뛰기
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === "," && !inQuotes) {
+      currentRow.push(currentCell);
+      currentCell = "";
+    } else if ((ch === "\r" || ch === "\n") && !inQuotes) {
+      if (ch === "\r" && nextCh === "\n") {
+        i += 1; // CRLF 처리
+      }
+      currentRow.push(currentCell);
+      // 빈 줄 무시
+      if (currentRow.some((c) => c.trim() !== "")) {
+        matrix.push(currentRow);
+      }
+      currentRow = [];
+      currentCell = "";
+    } else {
+      currentCell += ch;
+    }
+  }
+
+  // 마지막 셀과 행 처리
+  if (currentCell !== "" || currentRow.length > 0) {
+    currentRow.push(currentCell);
+    if (currentRow.some((c) => c.trim() !== "")) {
+      matrix.push(currentRow);
+    }
+  }
+
+  return matrix.map((row) => row.map((cell) => cell.trim()));
 }
 
 export function rowsToCsvRows(rows: string[][], headerIndex = 0): CsvRow[] {
   if (rows.length <= headerIndex + 1) return [];
 
-  const headers = (rows[headerIndex] ?? []).map((header) => header.trim());
-  return rows.slice(headerIndex + 1).reduce<CsvRow[]>((acc, cells) => {
+  let headers = (rows[headerIndex] ?? []).map((header) => String(header));
+  let dataStartIndex = headerIndex + 1;
+
+  // 다음 행이 데이터 행인지 확인 (날짜 형식이 포함되어 있는지)
+  const nextRow = rows[headerIndex + 1] ?? [];
+  const hasDateInNextRow = nextRow.some((cell) => {
+    const text = String(cell);
+    return /\d{4}[-./]\d{1,2}[-./]\d{1,2}/.test(text) || /\d{2}[-./]\d{1,2}[-./]\d{1,2}/.test(text);
+  });
+
+  // 날짜가 없고 텍스트가 있다면 두 행으로 쪼개진 헤더로 간주하고 병합합니다.
+  if (!hasDateInNextRow && nextRow.some((cell) => /[가-힣a-zA-Z]/.test(String(cell)))) {
+    headers = headers.map((h, i) => `${h}${String(nextRow[i] ?? "")}`);
+    dataStartIndex = headerIndex + 2;
+  }
+
+  // 병합된 헤더 또는 기존 헤더에서 줄바꿈(Shift+Enter) 및 모든 공백을 제거합니다.
+  const cleanedHeaders = headers.map((header) => header.replace(/\s+/g, ""));
+
+  return rows.slice(dataStartIndex).reduce<CsvRow[]>((acc, cells) => {
     const row: CsvRow = {};
     let hasValue = false;
 
-    headers.forEach((header, index) => {
+    cleanedHeaders.forEach((header, index) => {
       if (!header) return;
-      const value = (cells[index] ?? "").trim();
+      const value = String(cells[index] ?? "").trim();
       row[header] = value;
       if (value !== "") hasValue = true;
     });
