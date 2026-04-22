@@ -11,6 +11,7 @@ type ModernKind =
   | "coupang"
   | "naver"
   | "musinsa"
+  | "unspecified"
   | "expense"
   | "income"
   | "purchase"

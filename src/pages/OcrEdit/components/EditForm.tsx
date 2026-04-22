@@ -49,17 +49,19 @@ interface EditFormProps {
   image?: OcrImageItem;
   /**
    * 주문 블록 내부 필드(주문일자·상태 태그)를 수정했을 때 상위(OcrEditPage)로 patch를 올립니다.
-   * onOrderDateChange/onStatusTagChange를 분리하지 않고 patch로 합친 이유는 주문이 N개로 늘어나도
-   * 핸들러가 그대로 재사용되기 때문입니다.
    */
-  onOrderPatch?: (orderId: string, patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag">>) => void;
+  onOrderPatch?: (orderId: string, patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag" | "totalAmount">>) => void;
+  /**
+   * 상품 목록 변경. ProductTable에서 추가·수정·삭제 시 orderId + 최신 목록으로 올라옵니다.
+   */
+  onProductsChange?: (orderId: string, products: OcrOrder["products"]) => void;
   /**
    * 주문 블록 삭제 요청. 실제 삭제(마지막 1건이면 이미지 캐스케이드 + 확인 모달)는 OcrEditPage에서 처리합니다.
    */
   onDeleteOrder?: (orderId: string) => void;
 }
 
-export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch, onDeleteOrder }) => {
+export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch, onProductsChange, onDeleteOrder }) => {
   /**
    * 카테고리 목록 자체는 화면 전체에서 공유합니다. 사용자가 한 주문 카드에서 "뷰티"를 추가해도
    * 같은 이미지 안 다른 카드에 곧바로 칩이 보여야 자연스럽고, 다른 이미지를 선택했을 때도
@@ -133,6 +135,7 @@ export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch, onDelet
           platform={image.platform}
           order={order}
           onOrderPatch={onOrderPatch ? (patch) => onOrderPatch(order.id, patch) : undefined}
+          onProductsChange={onProductsChange ? (products) => onProductsChange(order.id, products) : undefined}
           onDelete={onDeleteOrder ? () => onDeleteOrder(order.id) : undefined}
           categories={categories}
           selectedKeys={selectedByOrder[order.id] ?? []}

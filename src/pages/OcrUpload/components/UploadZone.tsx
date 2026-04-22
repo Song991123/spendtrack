@@ -1,12 +1,14 @@
-﻿/**
- * 역할: 특정 페이지 안에서만 사용하는 화면 전용 UI 블록입니다.
+/**
+ * 역할: OCR 업로드의 드롭 존. 클릭/드롭으로 이미지를 고르는 것 외에,
+ *       "지금 이 버튼을 누르면 어떤 플랫폼 태그로 이미지가 찍히는가"를 함께 보여 줍니다.
+ *       최대 매수에 도달했을 때는 disabled 상태로 렌더해 상위 상태와 싱크를 맞춥니다.
  * 위치: src\pages\OcrUpload\components\UploadZone.tsx
  */
 import React from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { tokens } from "../../../styles/tokens";
 
-const Zone = styled.div`
+const Zone = styled.div<{ $disabled?: boolean }>`
   padding: 40px 24px;
   background: ${tokens.color.foot};
   border: 1.5px dashed ${tokens.color.line};
@@ -19,6 +21,18 @@ const Zone = styled.div`
     border-color: ${tokens.color.accent};
     background: ${tokens.color.accentSubtle};
   }
+
+  ${({ $disabled }) =>
+    $disabled &&
+    css`
+      cursor: not-allowed;
+      opacity: 0.6;
+
+      &:hover {
+        border-color: ${tokens.color.line};
+        background: ${tokens.color.foot};
+      }
+    `}
 `;
 
 const IconBox = styled.div`
@@ -45,12 +59,30 @@ const Title = styled.div`
 `;
 
 const Sub = styled.div`
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   color: ${tokens.color.ink4};
   font-size: ${tokens.type.caption.size};
 `;
 
-const PickButton = styled.button`
+/**
+ * "지금 이 플랫폼 태그로 올라갑니다"를 버튼 바로 위에 노출해,
+ * PlatformSelect에서 고른 값이 업로드 액션에 직접 영향을 준다는 인과관계를 강조합니다.
+ */
+const PlatformHint = styled.div`
+  margin: 0 auto 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid ${tokens.color.accentBorder};
+  border-radius: 999px;
+  background: ${tokens.color.accentSubtle};
+  color: ${tokens.color.accentHover};
+  font-size: 11.5px;
+  font-weight: 600;
+`;
+
+const PickButton = styled.button<{ $disabled?: boolean }>`
   padding: 8px 16px;
   border: none;
   border-radius: 8px;
@@ -64,6 +96,18 @@ const PickButton = styled.button`
   &:hover {
     background: ${tokens.color.accentHover};
   }
+
+  ${({ $disabled }) =>
+    $disabled &&
+    css`
+      cursor: not-allowed;
+      background: ${tokens.color.line};
+      color: ${tokens.color.ink4};
+
+      &:hover {
+        background: ${tokens.color.line};
+      }
+    `}
 `;
 
 const UpIcon: React.FC = () => (
@@ -85,25 +129,45 @@ export const UploadZone: React.FC<{
   acceptedTypes: string;
   maxSize: string;
   maxCount: number;
+  /** 현재 선택된 플랫폼 라벨. "쿠팡" 같은 한글 라벨을 받아 그대로 표시합니다. */
+  activePlatformLabel?: string;
+  /** 최대 매수 도달 시 상위에서 true로 넘겨 클릭을 차단합니다. */
+  disabled?: boolean;
   onPick: () => void;
-}> = ({ acceptedTypes, maxSize, maxCount, onPick }) => (
-  <Zone onClick={onPick}>
-    <IconBox>
-      <UpIcon />
-    </IconBox>
-    <Title>여러 장의 주문내역 캡처를 한 번에 업로드해 보세요</Title>
-    <Sub>
-      {acceptedTypes} · 최대 {maxSize} · 한 번에 {maxCount}장까지 분석할 수 있어요
-    </Sub>
-    <PickButton
-      type="button"
-      onClick={(event) => {
-        event.stopPropagation();
-        onPick();
-      }}
-    >
-      파일 선택하기
-    </PickButton>
-  </Zone>
-);
+}> = ({ acceptedTypes, maxSize, maxCount, activePlatformLabel, disabled, onPick }) => {
+  const handleClick = () => {
+    if (disabled) return;
+    onPick();
+  };
 
+  return (
+    <Zone $disabled={disabled} onClick={handleClick}>
+      <IconBox>
+        <UpIcon />
+      </IconBox>
+      <Title>
+        {disabled
+          ? `이미 ${maxCount}장까지 올렸어요`
+          : "여러 장의 주문내역 캡처를 한 번에 업로드해 보세요"}
+      </Title>
+      <Sub>
+        {acceptedTypes} · 최대 {maxSize} · 한 번에 {maxCount}장까지 분석할 수 있어요
+      </Sub>
+      {activePlatformLabel && !disabled && (
+        <PlatformHint>
+          이번 업로드는 <strong>{activePlatformLabel}</strong> 태그로 저장돼요
+        </PlatformHint>
+      )}
+      <PickButton
+        type="button"
+        $disabled={disabled}
+        onClick={(event) => {
+          event.stopPropagation();
+          handleClick();
+        }}
+      >
+        {disabled ? "더 올리려면 기존 이미지를 먼저 지워주세요" : "파일 선택하기"}
+      </PickButton>
+    </Zone>
+  );
+};

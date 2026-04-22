@@ -9,7 +9,11 @@ import { TextInput } from "../../../components/form/TextInput";
 import { AmountInput } from "../../../components/form/AmountInput";
 import { AutoResizeTextarea } from "../../../components/form/AutoResizeTextarea";
 import { DatePicker } from "../../../components/primitives/DatePicker";
-import { CATEGORY_LABELS, MAX_CATEGORIES_PER_TX } from "../../../constants/labels";
+import {
+  CATEGORY_LABELS,
+  MAX_CATEGORIES_PER_TX,
+  PLATFORM_OPTIONS,
+} from "../../../constants/labels";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
 
@@ -22,6 +26,10 @@ const CATEGORY_OPTIONS: CategoryKey[] = ["living", "fashion", "digital", "food",
  * 수동 입력 폼의 메타 필드들. 상위 ManualEntry 페이지가 저장 버튼을 눌렀을 때
  * 이 필드 값을 모두 collect 해서 transactionsStore에 addOne() 할 수 있도록
  * 컨트롤드 입력으로 만들었습니다. props가 없으면 undefined 기본값으로 동작합니다.
+ *
+ * platform 값은 TxPlatform과 동일한 키("coupang" | "naver" | "musinsa" | "unspecified")를
+ * 그대로 저장합니다. mapPlatform 유틸이 키 문자열과 한글 라벨 양쪽을 모두 받아들여 동일한
+ * TxPlatform으로 수렴시키므로, 드롭다운(키) → 저장(키) 흐름에서 별도 변환이 필요 없습니다.
  */
 export interface MetaFieldValues {
   title: string;
@@ -40,6 +48,30 @@ const Grid = styled.div`
 
   ${media.mobile} {
     grid-template-columns: 1fr;
+  }
+`;
+
+/**
+ * 플랫폼 셀렉트. TextInput/DatePicker와 높이(40px)·라운드·라인 컬러를 맞춰서
+ * 폼 안에서 시각적으로 튀지 않도록 했습니다.
+ */
+const PlatformSelect = styled.select`
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: ${tokens.radius.controlLg};
+  border: 1px solid ${tokens.color.line};
+  background: ${tokens.color.panel};
+  color: ${tokens.color.ink1};
+  font-family: inherit;
+  font-size: 13px;
+  transition: border-color ${tokens.motion.fast}, box-shadow ${tokens.motion.fast};
+
+  &:focus,
+  &:focus-visible {
+    border-color: ${tokens.color.accent};
+    box-shadow: ${tokens.shadow.focus};
+    outline: none;
   }
 `;
 
@@ -134,7 +166,8 @@ const CategoryCounter = styled.span<{ $atLimit: boolean }>`
 export const MetaFields: React.FC<{
   value: MetaFieldValues;
   onChange: (next: MetaFieldValues) => void;
-}> = ({ value, onChange }) => {
+  fieldIdPrefix?: string;
+}> = ({ value, onChange, fieldIdPrefix = "meta" }) => {
   const patch = (partial: Partial<MetaFieldValues>) =>
     onChange({ ...value, ...partial });
 
@@ -154,8 +187,9 @@ export const MetaFields: React.FC<{
   return (
     <Grid>
       <Field>
-        <FormField label="거래명">
+        <FormField label="거래명" required>
           <TextInput
+            id={`${fieldIdPrefix}-title`}
             placeholder="예: 쿠팡 주문, 네이버 환불"
             value={value.title}
             onChange={(event) => patch({ title: event.target.value })}
@@ -163,10 +197,11 @@ export const MetaFields: React.FC<{
         </FormField>
       </Field>
       <Field>
-        <FormField label="금액">
+        <FormField label="금액" required>
           {/* 저장 형태는 기존과 동일한 raw digit 문자열("129000"). 표시만 콤마가 붙습니다.
               parsePrice()와 자연스럽게 호환되므로 상위 로직 변경이 불필요합니다. */}
           <AmountInput
+            id={`${fieldIdPrefix}-amount`}
             placeholder="예: 129,000"
             value={value.amount}
             onChange={(rawDigits) => patch({ amount: rawDigits })}
@@ -174,20 +209,33 @@ export const MetaFields: React.FC<{
         </FormField>
       </Field>
       <Field>
-        <FormField label="플랫폼">
-          <TextInput
-            placeholder="쿠팡, 네이버쇼핑, 무신사"
-            value={value.platform}
+        {/*
+         * 플랫폼은 "쿠팡/네이버쇼핑/무신사" 3개 + "미지정"으로 제한합니다.
+         * 수동 입력은 플랫폼이 없는 곳(오프라인 결제 등)도 커버해야 하므로 "미지정"을 기본 선택지로 두고
+         * 필수 값에서 빠졌습니다. 기존에는 자유 텍스트라 "쿠팡 위클리" 같은 변형이 들어오면
+         * mapPlatform 기본값(coupang)으로 엉뚱하게 수렴되던 문제가 있어 드롭다운으로 제한했습니다.
+         */}
+        <FormField label="플랫폼" helpText="선택 항목 · 플랫폼이 없는 결제는 '미지정'">
+          <PlatformSelect
+            value={value.platform || "unspecified"}
             onChange={(event) => patch({ platform: event.target.value })}
-          />
+            aria-label="플랫폼"
+          >
+            {PLATFORM_OPTIONS.map((option) => (
+              <option key={option.key} value={option.key}>
+                {option.label}
+              </option>
+            ))}
+          </PlatformSelect>
         </FormField>
       </Field>
       <Field>
-        <FormField label="거래일자">
+        <FormField label="거래일자" required>
           {/* 저장 포맷("YYYY.MM.DD")을 그대로 주고받을 수 있는 커스텀 DatePicker.
               네이티브 <input type="date">는 브라우저마다 팝업 UI가 달라 디자인 통일이 어려워
               앱 토큰과 같은 결을 쓰는 자체 캘린더로 교체했습니다. */}
           <DatePicker
+            id={`${fieldIdPrefix}-date`}
             value={value.date}
             onChange={(next) => patch({ date: next })}
             aria-label="거래일자"

@@ -13,6 +13,7 @@ import styled from "styled-components";
 import { Card, CardBd } from "../../../components/primitives/Card";
 import { DatePicker } from "../../../components/primitives/DatePicker";
 import { Tag } from "../../../components/primitives/Tag";
+import { AmountInput } from "../../../components/form/AmountInput";
 import { tokens } from "../../../styles/tokens";
 import { PLATFORM_LABELS, STATUS_LABELS } from "../../../constants/labels";
 import type { OcrOrder, Platform, Status } from "../data";
@@ -305,7 +306,7 @@ const Total = styled.div`
   padding: 8px 0 4px;
 
   .label {
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     color: ${tokens.color.ink4};
     font-size: 11px;
     font-weight: 600;
@@ -313,6 +314,7 @@ const Total = styled.div`
     text-transform: uppercase;
   }
 
+  /* 읽기 전용 표시용 (onOrderPatch 없을 때) */
   .value {
     color: ${tokens.color.ink1};
     font-family: ${tokens.font.mono};
@@ -510,10 +512,14 @@ export interface OrderCardProps {
   platform: Platform;
   order: OcrOrder;
   /**
-   * 주문일자·상태 태그 변경. 상위(OcrEditPage)에서 해당 주문만 patch합니다.
+   * 주문일자·상태 태그·전체 거래금액 변경. 상위(OcrEditPage)에서 해당 주문만 patch합니다.
    * orderId는 상위가 알고 있으므로 이 컴포넌트는 자기 주문만 신경 씁니다.
    */
-  onOrderPatch?: (patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag">>) => void;
+  onOrderPatch?: (patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag" | "totalAmount">>) => void;
+  /**
+   * 상품 목록 변경. ProductTable에서 상품을 추가·수정·삭제할 때마다 올라옵니다.
+   */
+  onProductsChange?: (products: OcrOrder["products"]) => void;
   /**
    * 이 주문 블록 삭제 요청. 실제 삭제·캐스케이드 확인 모달 처리는 상위에서 담당합니다.
    */
@@ -535,6 +541,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   platform,
   order,
   onOrderPatch,
+  onProductsChange,
   onDelete,
   categories,
   selectedKeys,
@@ -573,11 +580,12 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
         <MetaRow>
           <MetaCell>
-            <div className="label">주문일자</div>
+            <div className="label">주문일자 *</div>
             {onOrderPatch ? (
               /* 수동 입력과 동일한 공용 DatePicker. 내부에서 YYYY.MM.DD ↔ YYYY-MM-DD 변환을 처리합니다. */
               <DatePickerSlot>
                 <DatePicker
+                  id={`ocr-order-date-${order.id}`}
                   value={order.orderDate}
                   onChange={(value) => onOrderPatch({ orderDate: value })}
                   size="sm"
@@ -605,12 +613,28 @@ export const OrderCard: React.FC<OrderCardProps> = ({
         </MetaRow>
 
         <Total>
-          <div className="label">전체 거래금액</div>
-          <div className="value">₩{order.totalAmount.toLocaleString("ko-KR")}</div>
+          <div className="label">전체 거래금액 *</div>
+          {onOrderPatch ? (
+            <AmountInput
+              id={`ocr-order-amount-${order.id}`}
+              value={String(order.totalAmount)}
+              onChange={(rawDigits) =>
+                onOrderPatch({ totalAmount: rawDigits ? Number(rawDigits) : 0 })
+              }
+              placeholder="0"
+              aria-label="전체 거래금액"
+            />
+          ) : (
+            <div className="value">₩{order.totalAmount.toLocaleString("ko-KR")}</div>
+          )}
         </Total>
 
-        <SectionLabel>상품 목록</SectionLabel>
-        <ProductTable products={order.products} />
+        <SectionLabel>상품 목록 *</SectionLabel>
+        <ProductTable
+          products={order.products}
+          onChange={onProductsChange}
+          fieldIdPrefix={`ocr-order-${order.id}`}
+        />
 
         <CategorySection>
           <CategoryHeader>

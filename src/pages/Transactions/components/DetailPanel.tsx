@@ -149,6 +149,32 @@ const ItemLinkPlaceholder = styled.span`
 `;
 
 /**
+ * 상품 합계가 거래 총 금액보다 작을 때 사용자에게 "이 상품 목록은 전부가 아니다"라는 사실을
+ * 조용히 상기시켜 주는 힌트 배너입니다.
+ * 저장 당시 사용자가 "이대로 등록"을 명시적으로 선택했을 때만 detail.itemsCoverage="partial"
+ * 플래그가 붙어 이 배너가 노출됩니다. 단정적인 에러 톤(warn) 대신 부드러운 ink3 톤으로 두어,
+ * "정보"에 가깝다는 걸 시각적으로도 전달합니다.
+ */
+const PartialNotice = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px dashed ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.tint};
+  color: ${tokens.color.ink3};
+  font-size: 12px;
+  line-height: 1.5;
+
+  strong {
+    color: ${tokens.color.ink2};
+    font-weight: 700;
+  }
+`;
+
+/**
  * 카테고리 칩은 표의 "분류" 컬럼처럼 색만 보여주는 대신,
  * 상세 패널에선 색 + 이름을 함께 노출해 의미가 한눈에 읽히게 합니다.
  * 여러 카테고리가 가로로 자연스럽게 줄바꿈될 수 있도록 flex-wrap을 씁니다.
@@ -273,6 +299,16 @@ export const DetailPanel: React.FC<{
         {row.detail?.items.length ? (
           <Section>
             <div className="label">상품 목록</div>
+            {row.detail.itemsCoverage === "partial" && (
+              <PartialNotice>
+                <span aria-hidden="true">ℹ️</span>
+                <span>
+                  <strong>상품 내역이 일부만 입력되어 있어요.</strong>
+                  {" "}
+                  저장 시 상품 합계가 총 금액보다 작아 누락된 항목이 있을 수 있습니다.
+                </span>
+              </PartialNotice>
+            )}
             {row.detail.items.map((item, index) => (
               <ItemRow key={`${item.name}-${index}`}>
                 <span className="name">{item.name}</span>

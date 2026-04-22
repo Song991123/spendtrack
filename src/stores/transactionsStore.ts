@@ -139,6 +139,7 @@ export const transactionsStore = {
         return {
           ...row,
           detail: {
+            ...(row.detail ?? {}),
             items: [...existingItems, ...items],
             source: row.detail?.source ?? source,
           },
