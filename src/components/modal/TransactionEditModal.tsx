@@ -120,11 +120,13 @@ const SaveBar = styled.div`
   margin-top: 16px;
 `;
 
+// 중복 제안 카드(ManualEntry SuggestionCard)와 동일한 톤·규약으로 맞춰 둡니다.
+// warn 보더 + warnBg 배경 + card radius + 12×14 padding.
 const DuplicateNotice = styled.div`
   margin-bottom: 16px;
   padding: 12px 14px;
   border: 1px solid ${tokens.color.warn};
-  border-radius: ${tokens.radius.control};
+  border-radius: ${tokens.radius.card};
   background: ${tokens.color.warnBg ?? "#fffbf0"};
   color: ${tokens.color.ink2};
   font-size: 12.5px;
@@ -138,11 +140,16 @@ const DuplicateList = styled.ul`
   font-size: 12px;
 `;
 
+// 액션 버튼 규약(다른 확인/중복 모달과 동일): flex-end + gap 8px + 버튼 min-width 96px.
 const DuplicateActions = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 20px;
+
+  > button {
+    min-width: 96px;
+  }
 `;
 
 /**

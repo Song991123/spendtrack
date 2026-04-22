@@ -7,6 +7,7 @@
 import React from "react";
 import styled from "styled-components";
 import { Modal } from "./Modal";
+import { Button } from "../primitives/Button";
 import { tokens } from "../../styles/tokens";
 import { formatKRW } from "../../utils/format";
 import type { TxRow } from "../../pages/Transactions/components/TransactionTable";
@@ -83,31 +84,15 @@ const MoreHint = styled.div`
 
 // ─── 하단 액션 ────────────────────────────────────────────────
 
+// 다른 중복/확인 모달과 같은 규약: flex-end + gap 8px + 버튼 min-width 96px.
 const Footer = styled.div`
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-`;
+  gap: 8px;
 
-const ConfirmButton = styled.button`
-  padding: 10px 20px;
-  border: none;
-  border-radius: ${tokens.radius.control};
-  background: ${tokens.color.accent};
-  color: #fff;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background ${tokens.motion.fast};
-
-  &:hover {
-    background: ${tokens.color.accentHover};
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: ${tokens.shadow.focus};
+  > button {
+    min-width: 96px;
   }
 `;
 
@@ -221,9 +206,9 @@ export const SaveResultModal: React.FC<SaveResultModalProps> = ({
       )}
 
       <Footer>
-        <ConfirmButton type="button" onClick={onConfirm}>
-          거래내역 보기 →
-        </ConfirmButton>
+        <Button variant="primary" size="md" onClick={onConfirm}>
+          거래내역 보기
+        </Button>
       </Footer>
     </Modal>
   );

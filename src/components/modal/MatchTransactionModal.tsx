@@ -34,11 +34,13 @@ const Description = styled.p`
   line-height: 1.6;
 `;
 
+// 대상 거래 요약 블록 공통 규약: solid line 보더 + card radius + foot 배경.
+// (다른 중복/확인 모달의 대상 거래 블록과 동일한 톤을 공유합니다.)
 const CandidateBlock = styled.div`
   padding: 12px 14px;
   margin-bottom: 16px;
-  border: 1px dashed ${tokens.color.line};
-  border-radius: ${tokens.radius.control};
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.card};
   background: ${tokens.color.foot};
 
   .label {
@@ -71,16 +73,18 @@ const MatchList = styled.div`
   margin-bottom: 16px;
 `;
 
+// 매칭 후보 행. 다른 중복/확인 모달의 요약 블록과 같은 radius/line 톤을 공유하되
+// 선택 시 accent 하이라이트로 "선택됨" 상태만 분리해 보여 줍니다.
 const MatchOption = styled.button<{ $selected?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 12px 14px;
+  padding: 10px 12px;
   border: 1px solid
     ${({ $selected }) => ($selected ? tokens.color.accent : tokens.color.line)};
-  border-radius: ${tokens.radius.control};
+  border-radius: ${tokens.radius.card};
   background: ${({ $selected }) =>
     $selected ? tokens.color.accentSubtle : tokens.color.panel};
   color: ${tokens.color.ink1};
@@ -103,13 +107,13 @@ const MatchOption = styled.button<{ $selected?: boolean }>`
   .left {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 2px;
     min-width: 0;
 
     .title {
       color: ${tokens.color.ink1};
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -117,7 +121,7 @@ const MatchOption = styled.button<{ $selected?: boolean }>`
 
     .meta {
       color: ${tokens.color.ink4};
-      font-size: 11.5px;
+      font-size: 12px;
     }
   }
 
@@ -134,6 +138,10 @@ const Footer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+
+  > button {
+    min-width: 96px;
+  }
 `;
 
 export const MatchTransactionModal: React.FC<MatchTransactionModalProps> = ({
@@ -206,7 +214,7 @@ export const MatchTransactionModal: React.FC<MatchTransactionModalProps> = ({
           onClick={() => onAttachToExisting(selectedId)}
           disabled={!canAttach}
         >
-          이 거래에 상품 추가
+          이 거래 수정하기
         </Button>
       </Footer>
     </Modal>

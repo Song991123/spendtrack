@@ -103,18 +103,16 @@ const SuggestionCard = styled.div`
 `;
 
 const SuggestionTitle = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
   margin-bottom: 6px;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 700;
   color: ${tokens.color.warn};
 `;
 
 const SuggestionSub = styled.div`
-  margin-bottom: 10px;
-  font-size: 12px;
+  margin-bottom: 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
   color: ${tokens.color.ink3};
 `;
 
@@ -124,19 +122,20 @@ const SuggestionList = styled.ul`
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 `;
 
+// 대상 거래 요약 블록. 다른 모달의 "대상 거래 요약"(Transactions 삭제 확인 모달 등)과 같은 규약.
+// solid line 보더 + card radius + 제목 14/700 + 메타 mono 12.
 const SuggestionItem = styled.li`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: ${tokens.radius.card};
   background: ${tokens.color.panel};
-  border: 1px solid ${tokens.color.line2};
-  font-size: 12.5px;
+  border: 1px solid ${tokens.color.line};
 `;
 
 const SuggestionItemInfo = styled.div`
@@ -152,61 +151,27 @@ const SuggestionItemTitle = styled.span`
   text-overflow: ellipsis;
   white-space: nowrap;
   color: ${tokens.color.ink1};
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 700;
 `;
 
 const SuggestionItemMeta = styled.span`
   color: ${tokens.color.ink4};
-  font-size: 11.5px;
+  font-size: 12px;
   font-family: ${tokens.font.mono};
   font-variant-numeric: tabular-nums;
 `;
 
-/**
- * "이 거래 수정하기" 버튼. 제안 항목마다 하나씩 붙습니다.
- * 눌렀을 때 해당 기존 거래를 편집하는 모달로 이동해, 사용자가 현재 입력한 값을
- * 직접 적용하지 않고 "기존 거래에 상품을 추가하는" 관점으로 전환합니다.
- * 여러 후보가 떠도 각 후보 옆에 직접 버튼을 두어 어떤 거래로 들어갈지 명확히 합니다.
- */
-const MergeBtn = styled.button`
-  flex-shrink: 0;
-  padding: 6px 10px;
-  border-radius: ${tokens.radius.control};
-  border: 1px solid ${tokens.color.accent};
-  background: ${tokens.color.accentSubtle};
-  color: ${tokens.color.accentHover};
-  font-family: inherit;
-  font-size: 11.5px;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: opacity ${tokens.motion.fast};
-
-  &:hover {
-    opacity: 0.85;
-  }
-`;
-
+// 제안 카드 하단 액션. flex-end 정렬 + gap 8px + 버튼 min-width 96px 규약은
+// 삭제 확인 모달 / OCR 매칭 모달 / 합계 경고 모달과 같습니다.
 const SuggestionActions = styled.div`
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
-`;
 
-const SuggestionBtn = styled.button<{ $primary?: boolean }>`
-  padding: 6px 14px;
-  border-radius: ${tokens.radius.control};
-  border: 1px solid ${({ $primary }) => $primary ? tokens.color.warn : tokens.color.line};
-  background: ${({ $primary }) => $primary ? tokens.color.warn : tokens.color.panel};
-  color: ${({ $primary }) => $primary ? "#fff" : tokens.color.ink2};
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity ${tokens.motion.fast};
-
-  &:hover {
-    opacity: 0.85;
+  > button {
+    min-width: 96px;
   }
 `;
 
@@ -522,10 +487,7 @@ export const ManualEntryPage: React.FC = () => {
           {/* ── 실시간 중복 제안 카드 ── */}
           {showSuggestion && (
             <SuggestionCard>
-              <SuggestionTitle>
-                <span>🔍</span>
-                <span>날짜·금액이 같은 항목이 있어요</span>
-              </SuggestionTitle>
+              <SuggestionTitle>날짜·금액이 같은 항목이 있어요</SuggestionTitle>
               <SuggestionSub>
                 혹시 이걸 입력하시려는 건 아닌가요? 같은 거래라면 해당 행의
                 '이 거래 수정하기'를 눌러 기존 거래 편집 화면으로 이동해 상품을 직접 추가할 수 있어요.
@@ -539,22 +501,24 @@ export const ManualEntryPage: React.FC = () => {
                         {row.date} · {formatKRW(Math.abs(row.amount))}
                       </SuggestionItemMeta>
                     </SuggestionItemInfo>
-                    <MergeBtn
-                      type="button"
+                    <Button
+                      variant="primary"
+                      size="sm"
                       onClick={() => handleMergeWith(row)}
                     >
                       이 거래 수정하기
-                    </MergeBtn>
+                    </Button>
                   </SuggestionItem>
                 ))}
               </SuggestionList>
               <SuggestionActions>
-                <SuggestionBtn
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => setDupDismissed(true)}
                 >
                   아니에요, 계속 입력할게요
-                </SuggestionBtn>
+                </Button>
               </SuggestionActions>
             </SuggestionCard>
           )}

@@ -39,10 +39,12 @@ interface Props {
   onCancel: () => void;
 }
 
+// 경고/에러 intro 공통 규약: 중복 제안 카드와 같은 card radius + 12×14 padding.
+// tone만 error(neg) / warn으로 분리해 경고 톤을 달리합니다.
 const Intro = styled.p<{ $tone: "error" | "warn" }>`
   margin: 0 0 14px;
-  padding: 10px 14px;
-  border-radius: ${tokens.radius.control};
+  padding: 12px 14px;
+  border-radius: ${tokens.radius.card};
   border: 1px solid
     ${({ $tone }) => ($tone === "error" ? tokens.color.neg : tokens.color.warn)};
   background: ${({ $tone }) =>
@@ -62,15 +64,16 @@ const EntryList = styled.ul`
   gap: 6px;
 `;
 
+// 다른 중복/확인 모달의 요약 블록과 같은 규약: solid line 보더 + card radius + foot 배경.
 const EntryRow = styled.li`
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid ${tokens.color.line2};
-  border-radius: ${tokens.radius.control};
-  background: ${tokens.color.tint};
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.card};
+  background: ${tokens.color.foot};
   font-size: 12.5px;
 `;
 
@@ -79,21 +82,27 @@ const EntryLabel = styled.span`
   text-overflow: ellipsis;
   white-space: nowrap;
   color: ${tokens.color.ink1};
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
 `;
 
 const EntryFigures = styled.span`
-  color: ${tokens.color.ink3};
+  color: ${tokens.color.ink4};
   font-family: ${tokens.font.mono};
   font-variant-numeric: tabular-nums;
-  font-size: 11.5px;
+  font-size: 12px;
   white-space: nowrap;
 `;
 
+// 다른 중복/확인 모달과 같은 규약: flex-end + gap 8px + 버튼 min-width 96px.
 const Footer = styled.div`
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+
+  > button {
+    min-width: 96px;
+  }
 `;
 
 /**
