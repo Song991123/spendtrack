@@ -11,7 +11,7 @@ import { tokens } from "../../../styles/tokens";
 import { formatKRW } from "../../../utils/format";
 import { PLATFORM_LABELS } from "../../../constants/labels";
 
-type Platform = "coupang" | "naver" | "musinsa";
+type Platform = "coupang" | "naver" | "musinsa" | "unspecified";
 
 export interface RecentItem {
   id: string;

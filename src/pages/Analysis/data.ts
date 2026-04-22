@@ -97,6 +97,9 @@ function buildPlatform(rows: TxRow[]): {
     coupang: { value: 0, count: 0 },
     naver: { value: 0, count: 0 },
     musinsa: { value: 0, count: 0 },
+    // "미지정"도 하나의 막대로 구분해 보여줍니다. 값이 0이면 아래 filter에서 빠지므로
+    // 실제 데이터가 없으면 차트에 등장하지 않습니다.
+    unspecified: { value: 0, count: 0 },
   };
   for (const row of rows) {
     if (row.type !== "expense" || row.status === "cancel") continue;
@@ -108,18 +111,26 @@ function buildPlatform(rows: TxRow[]): {
     { key: "coupang", label: PLATFORM_LABELS.coupang, color: tokens.color.cat3 },
     { key: "naver", label: PLATFORM_LABELS.naver, color: tokens.color.cat2 },
     { key: "musinsa", label: PLATFORM_LABELS.musinsa, color: tokens.color.cat1 },
+    // "미지정" 버킷은 중립 회색으로 — 브랜드 톤과 충돌하지 않고 "플랫폼 없음"을 시각적으로도 암시합니다.
+    { key: "unspecified", label: PLATFORM_LABELS.unspecified, color: "#9CA3AF" },
   ];
-  const items: PlatformBarItem[] = entries.map((entry) => {
-    const stats = totals[entry.key];
-    const percent = totalSpend > 0 ? Math.round((stats.value / totalSpend) * 100) : 0;
-    return {
-      label: entry.label,
-      value: stats.value,
-      percent,
-      count: stats.count,
-      color: entry.color,
-    };
-  });
+  const items: PlatformBarItem[] = entries
+    .map((entry) => {
+      const stats = totals[entry.key];
+      const percent = totalSpend > 0 ? Math.round((stats.value / totalSpend) * 100) : 0;
+      return {
+        key: entry.key,
+        label: entry.label,
+        value: stats.value,
+        percent,
+        count: stats.count,
+        color: entry.color,
+      };
+    })
+    // 기존 3개 플랫폼은 항상 노출해 "이 달엔 쿠팡만 써서 나머지는 0이야"가 한눈에 보이게 했습니다.
+    // "미지정"은 누락된 입력을 강조할 의도는 없어서, 해당 데이터가 실제로 있을 때만 차트에 등장시킵니다.
+    .filter((item) => item.key !== "unspecified" || item.value > 0)
+    .map(({ key: _key, ...rest }) => rest);
   const totalIncome = sumIncomeAndRefund(rows);
   return { items, totalSpend, totalIncome, netSpend: totalSpend - totalIncome };
 }

@@ -28,6 +28,14 @@ import {
   useTransactionsStore,
 } from "../../stores/transactionsStore";
 import { findMatches } from "../../utils/matchTransaction";
+import { checkDuplicates, autoResolveDuplicates, type SkippedItem, type MergeAction } from "../../utils/duplicateCheck";
+import { combinePatches, planEnrichment } from "../../utils/mergeEnrichment";
+import { SaveResultModal } from "../../components/modal/SaveResultModal";
+import {
+  ProductTotalWarningModal,
+  type ProductTotalWarningEntry,
+} from "../../components/modal/ProductTotalWarningModal";
+import { checkProductTotal } from "../../utils/productTotalCheck";
 import type {
   TxCategory,
   TxRow,
@@ -70,7 +78,11 @@ const Footer = styled.div`
  *   카테고리 체크박스가 상위로 승격되면 여기서 선택값을 주입하게 됩니다.
  * - id에는 주문 id 일부를 섞어 같은 캡쳐에서 나온 여러 TxRow가 식별 가능하도록 합니다.
  */
-function buildCandidateFromOrder(image: OcrImageItem, order: OcrOrder): TxRow {
+function buildCandidateFromOrder(
+  image: OcrImageItem,
+  order: OcrOrder,
+  opts?: { itemsCoverage?: "partial" | "full" }
+): TxRow {
   const categories: TxCategory[] = ["etc"];
   const title = order.products[0]?.name ?? "OCR 거래";
   const isIncome = order.statusTag === "refund" || order.statusTag === "cancel";
@@ -98,6 +110,9 @@ function buildCandidateFromOrder(image: OcrImageItem, order: OcrOrder): TxRow {
       // 편집 페이지로 이동시키지 않고 이미지만 보여 주는 쪽으로 단순화하면서 추가된 필드로,
       // mock 데이터에서는 빈 문자열이 들어갈 수 있고 그럴 때 모달은 플레이스홀더로 떨어집니다.
       sourceImageUrl: image.thumbUrl,
+      // "상품합계 < 총 금액"으로 사용자가 "이대로 등록"을 선택했을 때만 partial 플래그가 붙습니다.
+      // 기본값(없음)은 "full"과 동치로 취급해 화면에서는 아무 힌트도 표시하지 않습니다.
+      ...(opts?.itemsCoverage ? { itemsCoverage: opts.itemsCoverage } : {}),
     },
   };
 }
@@ -107,7 +122,10 @@ function buildCandidateFromOrder(image: OcrImageItem, order: OcrOrder): TxRow {
  * 저장 시점에는 "현재 보고 있는 이미지"가 아니라 업로드해 둔 캡쳐 전체가 한 번에
  * 거래내역으로 넘어가야 하므로, images 전체를 순회해 주문별 후보를 수집합니다.
  */
-function buildCandidatesFromImages(images: OcrImageItem[]): Array<{
+function buildCandidatesFromImages(
+  images: OcrImageItem[],
+  partialOrderIds?: Set<string>
+): Array<{
   image: OcrImageItem;
   order: OcrOrder;
   candidate: TxRow;
@@ -116,7 +134,9 @@ function buildCandidatesFromImages(images: OcrImageItem[]): Array<{
     image.orders.map((order) => ({
       image,
       order,
-      candidate: buildCandidateFromOrder(image, order),
+      candidate: buildCandidateFromOrder(image, order, {
+        itemsCoverage: partialOrderIds?.has(order.id) ? "partial" : undefined,
+      }),
     }))
   );
 }
@@ -167,13 +187,27 @@ export const OcrEditPage: React.FC = () => {
   // 삭제 확인 모달 상태. null이면 모달 닫힘.
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
+  /** 저장 완료 후 결과 모달. matchQueue가 모두 소진된 뒤 세팅됩니다. */
+  const [saveResult, setSaveResult] = useState<{
+    savedRows: TxRow[];
+    mergedActions: MergeAction[];
+    skipped: SkippedItem[];
+  } | null>(null);
+
+  /** matchQueue 처리 중 최종 집계를 위한 컨텍스트. */
+  const [pendingSaveContext, setPendingSaveContext] = useState<{
+    autoSaved: TxRow[];
+    modalSaved: TxRow[];
+    mergedActions: MergeAction[];
+    skipped: SkippedItem[];
+  } | null>(null);
+
   /**
-   * 주문 필드(주문일자·상태 태그) 변경을 이미지 상태에 반영합니다.
-   * orderId 단위로 patch를 받으므로 한 캡쳐에 주문이 늘어나도 핸들러는 그대로 재사용됩니다.
+   * 주문 필드(주문일자·상태 태그·전체 금액) 변경을 이미지 상태에 반영합니다.
    */
   const handleOrderPatch = (
     orderId: string,
-    patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag">>
+    patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag" | "totalAmount">>
   ) => {
     setImages((prev) =>
       prev.map((image) => {
@@ -182,6 +216,25 @@ export const OcrEditPage: React.FC = () => {
           ...image,
           orders: image.orders.map((order) =>
             order.id === orderId ? { ...order, ...patch } : order
+          ),
+        };
+      })
+    );
+  };
+
+  /**
+   * ProductTable에서 상품 추가·수정·삭제 시 images 상태에 반영합니다.
+   * 이 핸들러가 없으면 ProductTable의 변경이 로컬 state에만 머물러
+   * 저장 시 buildCandidatesFromImages가 원본 products를 읽어 변경사항이 날아갑니다.
+   */
+  const handleProductsChange = (orderId: string, products: OcrOrder["products"]) => {
+    setImages((prev) =>
+      prev.map((image) => {
+        if (image.id !== selectedId) return image;
+        return {
+          ...image,
+          orders: image.orders.map((order) =>
+            order.id === orderId ? { ...order, products } : order
           ),
         };
       })
@@ -268,59 +321,284 @@ export const OcrEditPage: React.FC = () => {
     });
   };
 
+  /**
+   * OCR 저장 시 필수 값 누락을 미리 걸러냅니다.
+   * 주문일자/금액/거래명(첫 상품 이름)이 비어 있으면 어느 이미지·몇 번째 주문에서 문제가 있는지
+   * 사용자에게 바로 알려 주고 저장을 중단합니다. 예전에는 title이 비면 "OCR 거래"라는 placeholder로
+   * 조용히 저장됐지만, 거래내역에 정체불명의 "OCR 거래"가 쌓이는 걸 막기 위해 명시 에러로 바꿨습니다.
+   */
+  const validateBeforeSave = (): { message: string; imageId: string; targetId: string } | null => {
+    for (const image of images) {
+      for (let orderIdx = 0; orderIdx < image.orders.length; orderIdx += 1) {
+        const order = image.orders[orderIdx];
+        const orderLabel = `${image.fileName} · 주문 ${orderIdx + 1}`;
+        if (!order.orderDate || !order.orderDate.trim()) {
+          return {
+            message: `${orderLabel}의 주문일자가 비어 있어요.`,
+            imageId: image.id,
+            targetId: `ocr-order-date-${order.id}`,
+          };
+        }
+        if (!order.totalAmount || Number.isNaN(order.totalAmount)) {
+          return {
+            message: `${orderLabel}의 금액이 비어 있거나 0이에요.`,
+            imageId: image.id,
+            targetId: `ocr-order-amount-${order.id}`,
+          };
+        }
+        const firstName = order.products[0]?.name?.trim() ?? "";
+        if (!firstName) {
+          return {
+            message: `${orderLabel}의 거래명(상품)이 비어 있어요.`,
+            imageId: image.id,
+            targetId: `ocr-order-${order.id}-name-${order.products[0]?.id ?? "missing"}`,
+          };
+        }
+      }
+    }
+    return null;
+  };
+  const [saveValidationError, setSaveValidationError] = useState<string | null>(null);
+  const focusOrderField = (imageId: string, targetId: string) => {
+    if (selectedId !== imageId) {
+      setSelectedId(imageId);
+    }
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const target = document.getElementById(targetId);
+        if (target instanceof HTMLElement) {
+          target.focus();
+        }
+      });
+    });
+  };
+
+  /**
+   * 상품 합계 경고 모달 상태.
+   * - mode="exceeds"는 블로킹. 어느 주문 하나라도 상품합계가 총 금액을 초과하면 전체 저장이
+   *   중단됩니다. 잘못 입력된 OCR 결과를 그대로 가계부에 흘려 보내지 않도록 한 것입니다.
+   * - mode="under"는 경고. pendingPartialOrderIds를 함께 담아 "이대로 등록"이면 해당 주문들에
+   *   itemsCoverage:"partial" 플래그를 붙여 performSaveFlow를 다시 돌립니다.
+   */
+  const [totalWarning, setTotalWarning] = useState<{
+    mode: "exceeds" | "under";
+    entries: ProductTotalWarningEntry[];
+    pendingPartialOrderIds?: Set<string>;
+  } | null>(null);
+
   const handleSave = () => {
     // 저장은 "현재 보고 있는 이미지"가 아니라 업로드해 둔 이미지 전체가 대상입니다.
-    // 여러 장의 캡쳐를 한 화면에서 확인한 뒤 한 번의 저장 액션으로 묶어 넘기는 UX라,
-    // 여기서 images 전체를 flatMap으로 돌아 주문별 후보를 만들어야 누락이 생기지 않습니다.
     if (images.length === 0) return;
 
-    const flat = buildCandidatesFromImages(images);
-
-    // 주문별로 매칭을 돌려 "이미 저장된 거래와 겹치는 것"과 "새로 저장해도 되는 것"을 분리합니다.
-    // platform은 해당 주문이 속한 이미지 기준으로 개별 판단 — 이미지마다 플랫폼이 달라질 수 있습니다.
-    const entries = flat.map(({ image, order, candidate }) => {
-      const matches = findMatches(allRows, {
-        platform: image.platform,
-        amount: Math.abs(candidate.amount),
-        date: candidate.date,
-      });
-      return {
-        candidate,
-        matches,
-        productCount: order.products.length,
-      };
-    });
-
-    if (entries.length === 0) {
-      navigate("/transactions");
+    const validationError = validateBeforeSave();
+    if (validationError) {
+      setSaveValidationError(validationError.message);
+      focusOrderField(validationError.imageId, validationError.targetId);
       return;
     }
 
+    // ── 선행: 상품 합계 vs 총 금액 일치 검증 ──────────────────────
+    // 수동 입력과 달리 OCR은 배치라 한 번의 확인으로 여러 주문의 상태를 모아 보여 줍니다.
+    // 하나라도 exceeds가 있으면 전체 저장을 막고, under만 있으면 "이대로 등록" 선택지를 띄웁니다.
+    const exceedsEntries: ProductTotalWarningEntry[] = [];
+    const underEntries: ProductTotalWarningEntry[] = [];
+    const underOrderIds = new Set<string>();
+    for (const image of images) {
+      for (let orderIdx = 0; orderIdx < image.orders.length; orderIdx += 1) {
+        const order = image.orders[orderIdx];
+        if (order.products.length === 0) continue;
+        const check = checkProductTotal({
+          totalAmount: order.totalAmount,
+          products: order.products,
+        });
+        if (check.status === "exceeds") {
+          exceedsEntries.push({
+            label: `${image.fileName} · 주문 ${orderIdx + 1}`,
+            totalAmount: order.totalAmount,
+            productsSum: check.productsSum,
+            diff: check.diff,
+          });
+        } else if (check.status === "under") {
+          underEntries.push({
+            label: `${image.fileName} · 주문 ${orderIdx + 1}`,
+            totalAmount: order.totalAmount,
+            productsSum: check.productsSum,
+            diff: check.diff,
+          });
+          underOrderIds.add(order.id);
+        }
+      }
+    }
+    if (exceedsEntries.length > 0) {
+      // exceeds는 블로킹 — under 건이 함께 있어도 잘못된 입력을 먼저 교정해 달라는 메시지만 띄웁니다.
+      setTotalWarning({ mode: "exceeds", entries: exceedsEntries });
+      return;
+    }
+    if (underEntries.length > 0) {
+      setTotalWarning({
+        mode: "under",
+        entries: underEntries,
+        pendingPartialOrderIds: underOrderIds,
+      });
+      return;
+    }
+
+    performSaveFlow();
+  };
+
+  /**
+   * 상품 합계 검사를 통과했거나 사용자가 under 경고를 승인한 뒤 실제 저장 흐름을 돌립니다.
+   * partialOrderIds에 담긴 주문 id는 결과 TxRow의 detail.itemsCoverage="partial"이 붙어
+   * 저장 이후 상세 뷰에서 "상품 내역이 일부만 입력됨" 힌트로 이어집니다.
+   */
+  const performSaveFlow = (partialOrderIds?: Set<string>) => {
+    const flat = buildCandidatesFromImages(images, partialOrderIds);
+    const allCandidates = flat.map((f) => f.candidate);
+
+    // ── 0단계: 침묵 자동 보강(silent auto-fill) ─────────────────
+    // 사용자가 이전에 "미지정(unspecified)" 플랫폼으로 수동 입력해 뒀던 거래가 있고,
+    // 지금 OCR이 같은 날짜+금액으로 해당 거래의 더 풍부한 정보(플랫폼·카테고리·상품)를 들고
+    // 왔다면, 기존 거래에 조용히 합쳐 줍니다. OCR은 배치 저장 흐름이라 여러 건의 충돌 모달을
+    // 일일이 띄우면 흐름이 끊깁니다. 그래서 "확실히 안전할 때"만 머지하고, 조금이라도 충돌이
+    // 있으면 머지를 포기하고 정상 플로우로 흘려보냅니다(체크·중복·매칭을 거쳐 새 거래로 저장).
+    //
+    // 안전 조건:
+    //   (1) 같은 date + |amount|를 가진 기존 행이 있고,
+    //   (2) 그 행의 platform === "unspecified"이며,
+    //   (3) planEnrichment의 conflicts가 0건이어야 함.
+    //       (플랫폼만 비어 있다면 autoFills로 잡히고, categories/memo가 실제로 부딪치면 포기.)
+    const existingByDateAmount = new Map<string, TxRow[]>();
+    for (const row of allRows) {
+      if (row.platform !== "unspecified") continue;
+      const key = `${row.date}|${Math.abs(row.amount)}`;
+      const list = existingByDateAmount.get(key) ?? [];
+      list.push(row);
+      existingByDateAmount.set(key, list);
+    }
+    const enrichedExistingIds = new Set<string>();
+    const candidates: TxRow[] = [];
+    for (const candidate of allCandidates) {
+      const key = `${candidate.date}|${Math.abs(candidate.amount)}`;
+      const pool = existingByDateAmount.get(key);
+      // 이미 이번 저장에서 보강한 기존 행은 제외 — 같은 타겟을 두 OCR 건이 덮어쓰지 않도록.
+      const target = pool?.find((row) => !enrichedExistingIds.has(row.id));
+      if (!target) {
+        candidates.push(candidate);
+        continue;
+      }
+      const plan = planEnrichment(candidate, target);
+      if (plan.conflicts.length > 0) {
+        // 충돌이 있으면 전통적인 플로우로 넘깁니다. 사용자는 나중에 거래내역에서 수동으로
+        // 정리할 수 있고, 배치 저장 중 여러 모달을 강요하는 것보다 이쪽이 덜 거슬립니다.
+        candidates.push(candidate);
+        continue;
+      }
+      if (plan.autoFills.length > 0) {
+        transactionsStore.updateOne(
+          target.id,
+          combinePatches(plan.autoFills.map((fill) => fill.patch))
+        );
+      }
+      if (plan.newItems.length > 0) {
+        transactionsStore.appendItemsToTransaction(target.id, plan.newItems, "OCR");
+      }
+      enrichedExistingIds.add(target.id);
+      // 이 OCR 건은 기존 행에 흡수됐으므로 저장 큐에서 떨어뜨립니다.
+    }
+
+    // ── 1단계: 중복 감지 + 자동 해결 ────────────────────────────
+    const dupResult = checkDuplicates(candidates, allRows);
+    const resolved = autoResolveDuplicates(dupResult);
+
+    // toMerge: 신규 아이템만 있는 itemDiff → 기존 거래에 즉시 병합
+    for (const action of resolved.toMerge) {
+      transactionsStore.appendItemsToTransaction(action.existingId, action.newItems, "OCR");
+    }
+
+    // toSave 중 원래 fresh였던 것만 findMatches 흐름으로 넘깁니다.
+    // (가격 변경 itemDiff는 새 거래로 직접 저장합니다.)
+    const freshIds = new Set(dupResult.fresh.map((r) => r.id));
+    const freshToMatch = resolved.toSave.filter((r) => freshIds.has(r.id));
+    const changedItemsToSave = resolved.toSave.filter((r) => !freshIds.has(r.id));
+
+    if (changedItemsToSave.length > 0) {
+      transactionsStore.addMany(changedItemsToSave);
+    }
+
+    proceedSave(freshToMatch, resolved.skipped, resolved.toMerge, flat);
+  };
+
+  /**
+   * 중복 처리 이후 fresh 거래들을 CSV 매칭 흐름으로 저장합니다.
+   * 매칭 없는 것은 즉시 저장하고, 매칭 후보가 있는 것은 MatchTransactionModal 큐로 넘깁니다.
+   */
+  const proceedSave = (
+    freshRows: TxRow[],
+    skipped: SkippedItem[],
+    mergedActions: MergeAction[],
+    flat: ReturnType<typeof buildCandidatesFromImages>
+  ) => {
+    if (freshRows.length === 0) {
+      setSaveResult({ savedRows: [], mergedActions, skipped });
+      return;
+    }
+
+    // ── 2단계: 기존 CSV 매칭 흐름 (OCR ↔ 카드 내역 연결) ─────────
+    const entries = flat
+      .filter((f) => freshRows.some((r) => r.id === f.candidate.id))
+      .map(({ image, order, candidate }) => {
+        const matches = findMatches(allRows, {
+          platform: image.platform,
+          amount: Math.abs(candidate.amount),
+          date: candidate.date,
+        });
+        return { candidate, matches, productCount: order.products.length };
+      });
+
     const needsModal = entries.filter((entry) => entry.matches.length > 0);
     const canAutoSave = entries.filter((entry) => entry.matches.length === 0);
+    const autoSaved = canAutoSave.map((entry) => entry.candidate);
 
-    if (canAutoSave.length > 0) {
-      // 매칭 후보가 없는 주문은 모달 없이 바로 묶어서 저장합니다.
-      transactionsStore.addMany(canAutoSave.map((entry) => entry.candidate));
+    if (autoSaved.length > 0) {
+      transactionsStore.addMany(autoSaved);
     }
 
     if (needsModal.length === 0) {
-      navigate("/transactions");
+      setSaveResult({ savedRows: autoSaved, mergedActions, skipped });
       return;
     }
 
     setMatchQueue(needsModal);
+    setPendingSaveContext({ autoSaved, modalSaved: [], mergedActions, skipped });
   };
 
   /**
-   * 큐에서 한 건을 처리한 뒤 다음 상태를 계산합니다. rest가 비어 있으면 전체 흐름이
-   * 끝난 것이므로 거래내역 페이지로 이동까지 같이 해 줍니다. setState를 effect
-   * 안에서 호출하는 패턴을 피하기 위해 이 작은 헬퍼에 전이 로직을 모아 둡니다.
+   * 큐에서 한 건을 처리한 뒤 다음 상태를 계산합니다.
+   * rest가 비어 있으면 전체 흐름이 끝난 것이므로 SaveResultModal을 표시합니다.
    */
-  const advanceQueue = (rest: MatchQueueEntry[]) => {
+  const advanceQueue = (rest: MatchQueueEntry[], extraSavedRow?: TxRow) => {
     setMatchQueue(rest);
     if (rest.length === 0) {
-      navigate("/transactions");
+      const ctx = pendingSaveContext;
+      const matchSaved = [
+        ...(ctx?.modalSaved ?? []),
+        ...(extraSavedRow ? [extraSavedRow] : []),
+      ];
+      setSaveResult({
+        savedRows: [...(ctx?.autoSaved ?? []), ...matchSaved],
+        mergedActions: ctx?.mergedActions ?? [],
+        skipped: ctx?.skipped ?? [],
+      });
+      setPendingSaveContext(null);
+      return;
+    }
+
+    if (extraSavedRow) {
+      setPendingSaveContext((current) =>
+        current
+          ? { ...current, modalSaved: [...current.modalSaved, extraSavedRow] }
+          : current
+      );
     }
   };
 
@@ -341,7 +619,7 @@ export const OcrEditPage: React.FC = () => {
     const [current, ...rest] = matchQueue;
     if (!current) return;
     transactionsStore.addOne(current.candidate);
-    advanceQueue(rest);
+    advanceQueue(rest, current.candidate);
   };
 
   /**
@@ -351,6 +629,7 @@ export const OcrEditPage: React.FC = () => {
    */
   const handleCloseModal = () => {
     setMatchQueue([]);
+    setPendingSaveContext(null);
   };
 
   const currentMatch = matchQueue[0];
@@ -370,6 +649,7 @@ export const OcrEditPage: React.FC = () => {
         <EditForm
           image={selected}
           onOrderPatch={handleOrderPatch}
+          onProductsChange={handleProductsChange}
           onDeleteOrder={handleDeleteOrder}
         />
       </Body>
@@ -381,6 +661,17 @@ export const OcrEditPage: React.FC = () => {
           저장
         </Button>
       </Footer>
+
+      {saveResult && (
+        <SaveResultModal
+          isOpen
+          savedRows={saveResult.savedRows}
+          mergedActions={saveResult.mergedActions}
+          allRows={allRows}
+          skipped={saveResult.skipped}
+          onConfirm={() => navigate("/transactions")}
+        />
+      )}
       {currentMatch && (
         <MatchTransactionModal
           isOpen
@@ -394,6 +685,49 @@ export const OcrEditPage: React.FC = () => {
           matches={currentMatch.matches}
           onAttachToExisting={handleAttach}
           onSaveAsNew={handleSaveAsNew}
+        />
+      )}
+      {saveValidationError && (
+        <Modal
+          isOpen
+          onClose={() => setSaveValidationError(null)}
+          title="저장 전에 확인이 필요해요"
+        >
+          <div
+            style={{
+              color: tokens.color.ink2,
+              fontSize: 13,
+              lineHeight: 1.6,
+              marginBottom: 20,
+            }}
+          >
+            {saveValidationError}
+            <div style={{ marginTop: 8, color: tokens.color.ink4, fontSize: 12 }}>
+              거래명·금액·주문일자는 모든 주문에서 반드시 있어야 저장할 수 있어요.
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => setSaveValidationError(null)}
+            >
+              확인
+            </Button>
+          </div>
+        </Modal>
+      )}
+      {totalWarning && (
+        <ProductTotalWarningModal
+          isOpen
+          mode={totalWarning.mode}
+          entries={totalWarning.entries}
+          onConfirm={() => {
+            const pendingIds = totalWarning.pendingPartialOrderIds;
+            setTotalWarning(null);
+            if (pendingIds) performSaveFlow(pendingIds);
+          }}
+          onCancel={() => setTotalWarning(null)}
         />
       )}
       {confirmState && (
@@ -436,6 +770,7 @@ export const OcrEditPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
     </AppShell>
   );
 };

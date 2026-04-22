@@ -18,7 +18,13 @@ import {
 import { useCategoryColorMap } from "../../../stores/categoriesStore";
 
 export type TxType = "expense" | "income";
-export type TxPlatform = "coupang" | "naver" | "musinsa";
+/**
+ * 거래가 어떤 플랫폼에서 발생했는지 나타냅니다.
+ * - "unspecified"는 사용자가 수동 입력 시 플랫폼을 고르지 않았거나, 플랫폼이 없는 곳(오프라인 결제 등)에서
+ *   발생한 거래를 의미합니다. 모든 거래에 플랫폼이 있다고 가정할 수 없기 때문에 열어둔 폴백입니다.
+ * - 집계/도넛/분석에서는 "미지정" 라벨로 표시되고, 필터에서도 별도 선택지로 노출됩니다.
+ */
+export type TxPlatform = "coupang" | "naver" | "musinsa" | "unspecified";
 /**
  * 거래 상태. 유형별로 쓰이는 맥락이 다릅니다:
  * - purchase/sub/etc: 지출(expense) 쪽에서 선택 가능.
@@ -69,6 +75,12 @@ export interface TxRow {
      * 값이 비어 있으면 모달은 "저장된 이미지가 없다" 플레이스홀더로 떨어집니다.
      */
     sourceImageUrl?: string;
+    /**
+     * 상품 합계가 거래 총 금액보다 작은데도 사용자가 "이대로 등록"을 선택한 경우 "partial"로 찍힙니다.
+     * 생략되면 "full"(완전히 맞는다 혹은 상품 목록 자체가 없어 비교 대상 없음)로 해석합니다.
+     * DetailPanel은 이 값을 읽어 "상품 내역이 일부만 입력되어 있어요" 힌트를 띄웁니다.
+     */
+    itemsCoverage?: "full" | "partial";
   };
 }
 

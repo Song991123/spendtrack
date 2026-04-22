@@ -170,6 +170,8 @@ export const FilterBar = ({
       <option value="coupang">{PLATFORM_LABELS.coupang}</option>
       <option value="naver">{PLATFORM_LABELS.naver}</option>
       <option value="musinsa">{PLATFORM_LABELS.musinsa}</option>
+      {/* 수동 입력에서 플랫폼을 고르지 않은 거래도 따로 걸러 볼 수 있게 "미지정" 옵션을 둡니다. */}
+      <option value="unspecified">{PLATFORM_LABELS.unspecified}</option>
     </Select>
     <Select
       value={category}

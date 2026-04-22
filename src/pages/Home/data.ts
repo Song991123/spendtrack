@@ -55,10 +55,13 @@ function sumSpend(rows: TxRow[]): number {
 }
 
 function sumByPlatform(rows: TxRow[]): Record<TxPlatform, { value: number; count: number }> {
+  // "unspecified"도 하나의 버킷으로 유지합니다. 수동 입력에서 플랫폼을 고르지 않은 거래를
+  // 어딘가에 담아야 합계/퍼센트가 일관되게 계산돼서, 도넛이나 랭크 카드에 "미지정"으로 등장할 수 있게 합니다.
   const seed: Record<TxPlatform, { value: number; count: number }> = {
     coupang: { value: 0, count: 0 },
     naver: { value: 0, count: 0 },
     musinsa: { value: 0, count: 0 },
+    unspecified: { value: 0, count: 0 },
   };
   for (const row of rows) {
     if (row.type !== "expense" || row.status === "cancel") continue;
@@ -106,9 +109,14 @@ function pickTopPlatform(
 ): { platform: TxPlatform; share: number } | null {
   const total = Object.values(totals).reduce((sum, entry) => sum + entry.value, 0);
   if (total === 0) return null;
-  const entries = Object.entries(totals) as Array<[TxPlatform, { value: number; count: number }]>;
+  // 인사이트 카드는 "어느 플랫폼에서 많이 쓰고 있나요"를 안내하는 게 목적이라,
+  // "미지정" 버킷은 최상위 후보에서 제외합니다("미지정 비중이 가장 높아요"는 도움이 안 됩니다).
+  const entries = (Object.entries(totals) as Array<[TxPlatform, { value: number; count: number }]>)
+    .filter(([platform]) => platform !== "unspecified");
+  if (entries.length === 0) return null;
   entries.sort((a, b) => b[1].value - a[1].value);
   const [platform, { value }] = entries[0];
+  if (value === 0) return null;
   return { platform, share: Math.round((value / total) * 100) };
 }
 
@@ -317,11 +325,21 @@ export const buildHomeData = (rows: TxRow[], monthKey: string): HomeMockData => 
   // 플랫폼 도넛 데이터
   const platformTotals = sumByPlatform(thisMonth);
   const donutTotal = Object.values(platformTotals).reduce((sum, entry) => sum + entry.value, 0);
-  const donutItems: DonutItem[] = [
+  // "미지정"은 실제 데이터가 있을 때만 도넛 조각으로 추가합니다. 수동 입력에서 플랫폼을 고르지 않은
+  // 거래가 없다면 기존 3개 플랫폼 도넛 모양 그대로 유지.
+  const donutSegments: Array<{ key: TxPlatform; label: string; color: string }> = [
     { key: "coupang" as const, label: PLATFORM_LABELS.coupang, color: tokens.color.warn },
     { key: "naver" as const, label: PLATFORM_LABELS.naver, color: tokens.color.cat2 },
     { key: "musinsa" as const, label: PLATFORM_LABELS.musinsa, color: tokens.color.cat1 },
-  ].map((entry) => {
+  ];
+  if (platformTotals.unspecified.value > 0) {
+    donutSegments.push({
+      key: "unspecified" as const,
+      label: PLATFORM_LABELS.unspecified,
+      color: "#9CA3AF",
+    });
+  }
+  const donutItems: DonutItem[] = donutSegments.map((entry) => {
     const stats = platformTotals[entry.key];
     const percent = donutTotal > 0 ? Math.round((stats.value / donutTotal) * 100) : 0;
     return {

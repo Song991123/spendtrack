@@ -19,6 +19,7 @@ import {
 } from "../../utils/date";
 
 interface DatePickerProps {
+  id?: string;
   /** "YYYY.MM.DD" 문자열. 빈 문자열이면 선택이 없는 상태. */
   value: string;
   onChange: (value: string) => void;
@@ -295,6 +296,7 @@ function buildMonthGrid(
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
+  id,
   value,
   onChange,
   placeholder = "날짜 선택",
@@ -389,6 +391,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   return (
     <Root ref={rootRef}>
       <Trigger
+        id={id}
         type="button"
         $open={open}
         $empty={!value}

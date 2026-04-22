@@ -35,9 +35,16 @@ import {
   type ManualProduct,
 } from "../../pages/ManualEntry/components/ProductRows";
 import type { TxRow } from "../../pages/Transactions/components/TransactionTable";
-import { PLATFORM_LABELS } from "../../constants/labels";
 import { mapCategories, mapPlatform } from "../../utils/manualMapping";
 import { tokens } from "../../styles/tokens";
+import {
+  ProductTotalWarningModal,
+  type ProductTotalWarningEntry,
+} from "./ProductTotalWarningModal";
+import { checkProductTotal } from "../../utils/productTotalCheck";
+import { checkDuplicates } from "../../utils/duplicateCheck";
+import { formatKRW } from "../../utils/format";
+import { useTransactionsStore } from "../../stores/transactionsStore";
 
 interface Props {
   /** 편집 대상 거래. 상위에서 반드시 존재할 때만 이 컴포넌트를 마운트합니다. */
@@ -45,6 +52,8 @@ interface Props {
   onClose: () => void;
   onSubmit: (id: string, patch: Partial<TxRow>) => void;
 }
+
+type RequiredMetaField = "title" | "amount" | "date";
 
 /**
  * 모달 내부가 뷰포트보다 길어질 수 있으니, 카드 높이는 유지한 채 본문만 내부에서 스크롤되게 합니다.
@@ -111,6 +120,31 @@ const SaveBar = styled.div`
   margin-top: 16px;
 `;
 
+const DuplicateNotice = styled.div`
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid ${tokens.color.warn};
+  border-radius: ${tokens.radius.control};
+  background: ${tokens.color.warnBg ?? "#fffbf0"};
+  color: ${tokens.color.ink2};
+  font-size: 12.5px;
+  line-height: 1.6;
+`;
+
+const DuplicateList = styled.ul`
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: ${tokens.color.ink3};
+  font-size: 12px;
+`;
+
+const DuplicateActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+`;
+
 /**
  * 상품(items)에는 원래 ID가 없어서 편집 UI에서 개별 행을 식별하기 위한 임시 ID를 붙여 둡니다.
  * 저장 시 ID는 떨어뜨리고 다시 { name, price, link } 형태로 직렬화해서 돌려줍니다.
@@ -123,8 +157,9 @@ function rowToMeta(row: TxRow): MetaFieldValues {
     // TxRow.amount는 부호 있는 숫자(지출은 음수). UI에서는 양수값으로 보여주고,
     // 저장 시 type에 따라 다시 부호를 붙입니다.
     amount: String(Math.abs(row.amount)),
-    // TxPlatform enum → 사람이 읽는 라벨. mapPlatform이 다시 enum으로 수렴해 주므로 양방향 안전.
-    platform: PLATFORM_LABELS[row.platform],
+    // 드롭다운은 TxPlatform 키("coupang" 등)를 그대로 value로 사용합니다. mapPlatform이 키/라벨을
+    // 모두 받아들이므로 왕복 변환이 안전합니다. "unspecified"도 PlatformSelect의 옵션 중 하나라 자연스럽게 표시됩니다.
+    platform: row.platform,
     date: row.date,
     categories: [...row.categories],
     memo: row.memo ?? "",
@@ -143,6 +178,7 @@ function rowToProducts(row: TxRow): ManualProduct[] {
 }
 
 export const TransactionEditModal: React.FC<Props> = ({ row, onClose, onSubmit }) => {
+  const allRows = useTransactionsStore();
   // row는 마운트 시점의 prop으로만 초기화됩니다. 새로운 거래를 편집하려면 상위에서 key를 바꿔
   // 이 컴포넌트를 다시 마운트하도록 합니다. 이렇게 하면 사용자가 편집 중 값이 엉뚱하게 튀는
   // 동기화 문제도 사라지고, useEffect + setState 안티패턴도 없어집니다.
@@ -152,6 +188,29 @@ export const TransactionEditModal: React.FC<Props> = ({ row, onClose, onSubmit }
   const [products, setProducts] = useState<ManualProduct[]>(() => rowToProducts(row));
   const [productModal, setProductModal] = useState<ProductModalMode | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * 상품 합계 경고 모달 상태. 수동 입력과 같은 규칙으로 저장 직전에 한 번 더 검사합니다.
+   * 편집에서는 특히 "상품 가격을 잘못 수정"해 총 금액과 어긋나는 상황이 생기기 쉬워서,
+   * 저장 직전에 한 번 더 짚어 주는 것이 가치 있습니다. pendingPatch는 under 승인 후
+   * 그대로 onSubmit에 넘기는 용도입니다.
+   */
+  const [totalWarning, setTotalWarning] = useState<{
+    mode: "exceeds" | "under";
+    entries: ProductTotalWarningEntry[];
+    pendingPatch?: Partial<TxRow>;
+  } | null>(null);
+  const [pendingDuplicatePatch, setPendingDuplicatePatch] = useState<Partial<TxRow> | null>(null);
+  const [duplicateSummary, setDuplicateSummary] = useState<{
+    exactDup: TxRow[];
+    itemDiff: TxRow[];
+  } | null>(null);
+
+  const focusMetaField = (field: RequiredMetaField) => {
+    const target = document.getElementById(`edit-${field}`);
+    if (target instanceof HTMLElement) {
+      target.focus();
+    }
+  };
 
   const editingProduct =
     productModal?.type === "edit"
@@ -174,26 +233,32 @@ export const TransactionEditModal: React.FC<Props> = ({ row, onClose, onSubmit }
     setProductModal(null);
   };
 
-  const handleSave = () => {
-    // 수동 입력과 같은 규칙: 거래명과 금액은 최소한 필요.
+  const buildPatch = (): Partial<TxRow> | null => {
     const amountNumber = Number(meta.amount.replace(/[^0-9]/g, ""));
     if (!meta.title.trim()) {
       setError("거래명을 입력해 주세요.");
-      return;
+      focusMetaField("title");
+      return null;
     }
     if (!amountNumber || Number.isNaN(amountNumber)) {
       setError("금액을 숫자로 입력해 주세요.");
-      return;
+      focusMetaField("amount");
+      return null;
+    }
+    if (!meta.date.trim()) {
+      setError("거래일자를 선택해 주세요.");
+      focusMetaField("date");
+      return null;
     }
 
     const signedAmount =
       type === "expense" ? -Math.abs(amountNumber) : Math.abs(amountNumber);
 
-    const patch: Partial<TxRow> = {
+    return {
       type,
       title: meta.title.trim(),
       amount: signedAmount,
-      date: meta.date.trim() || row.date,
+      date: meta.date.trim(),
       platform: mapPlatform(meta.platform),
       categories: mapCategories(meta.categories),
       status:
@@ -211,14 +276,86 @@ export const TransactionEditModal: React.FC<Props> = ({ row, onClose, onSubmit }
                 price: product.price,
                 link: product.link,
               })),
-              // 기존 입력 경로(MANUAL/OCR) 표기는 유지하고, 비어 있으면 수동 편집으로 표기.
               source: row.detail?.source ?? "MANUAL",
+              ...(row.detail?.sourceImageUrl
+                ? { sourceImageUrl: row.detail.sourceImageUrl }
+                : {}),
             }
           : undefined,
     };
+  };
+
+  const submitPatch = (patch: Partial<TxRow>) => {
+    const nextRow: TxRow = { ...row, ...patch, detail: patch.detail };
+    const otherRows = allRows.filter((candidate) => candidate.id !== row.id);
+    const dupResult = checkDuplicates([nextRow], otherRows);
+    if (dupResult.exactDup.length > 0 || dupResult.itemDiff.length > 0) {
+      setPendingDuplicatePatch(patch);
+      setDuplicateSummary({
+        exactDup: dupResult.exactDup,
+        itemDiff: dupResult.itemDiff.map((entry) => entry.existing),
+      });
+      return;
+    }
 
     onSubmit(row.id, patch);
     onClose();
+  };
+
+  const handleSave = () => {
+    // 수동 입력과 동일한 규칙: 거래명·금액·거래일자는 모두 필수입니다.
+    // 편집 모달은 초기값이 이미 존재하지만, 사용자가 실수로 필드를 비운 채 저장하려는 흐름을 막습니다.
+    const patch = buildPatch();
+    if (!patch) {
+      return;
+    }
+    const signedAmount = patch.amount ?? row.amount;
+
+    // 상품이 있을 때만 합계 검증을 실행합니다. (수동 입력과 동일한 규약)
+    if (products.length > 0) {
+      const totalCheck = checkProductTotal({
+        totalAmount: signedAmount,
+        products,
+      });
+      if (totalCheck.status === "exceeds") {
+        setTotalWarning({
+          mode: "exceeds",
+          entries: [
+            {
+              label: meta.title.trim(),
+              totalAmount: signedAmount,
+              productsSum: totalCheck.productsSum,
+              diff: totalCheck.diff,
+            },
+          ],
+        });
+        return;
+      }
+      if (totalCheck.status === "under") {
+        // under 승인 시 detail에 partial 플래그를 덧붙여 저장합니다.
+        const partialPatch: Partial<TxRow> = {
+          ...patch,
+          detail: patch.detail
+            ? { ...patch.detail, itemsCoverage: "partial" }
+            : patch.detail,
+        };
+        setTotalWarning({
+          mode: "under",
+          entries: [
+            {
+              label: meta.title.trim(),
+              totalAmount: signedAmount,
+              productsSum: totalCheck.productsSum,
+              diff: totalCheck.diff,
+            },
+          ],
+          pendingPatch: partialPatch,
+        });
+        return;
+      }
+    }
+
+    submitPatch(patch);
   };
 
   return (
@@ -242,6 +379,7 @@ export const TransactionEditModal: React.FC<Props> = ({ row, onClose, onSubmit }
           </div>
 
           <MetaFields
+            fieldIdPrefix="edit"
             value={meta}
             onChange={(next) => {
               setMeta(next);
@@ -289,6 +427,76 @@ export const TransactionEditModal: React.FC<Props> = ({ row, onClose, onSubmit }
         onClose={() => setProductModal(null)}
         onSubmit={handleProductSubmit}
       />
+
+      {/* 상품 합계 경고. handleSave가 exceeds/under를 감지하면 이 모달로 이어지고,
+          under에서 "이대로 등록"을 누르면 pendingPatch를 그대로 onSubmit에 넘겨 저장합니다. */}
+      {totalWarning && (
+        <ProductTotalWarningModal
+          isOpen
+          mode={totalWarning.mode}
+          entries={totalWarning.entries}
+          onConfirm={() => {
+            const pending = totalWarning.pendingPatch;
+            setTotalWarning(null);
+            if (pending) {
+              submitPatch(pending);
+            }
+          }}
+          onCancel={() => setTotalWarning(null)}
+        />
+      )}
+      {duplicateSummary && pendingDuplicatePatch && (
+        <Modal
+          isOpen
+          onClose={() => {
+            setDuplicateSummary(null);
+            setPendingDuplicatePatch(null);
+          }}
+          title="이미 있는 거래와 비슷해 보여요"
+        >
+          <DuplicateNotice>
+            수정 후 값이 이미 저장된 거래와 많이 비슷합니다. 정말 이 값이 맞다면 그대로 저장하고,
+            중복이라고 판단되면 이번 수정은 취소한 뒤 거래 목록에서 직접 정리해 주세요.
+            <DuplicateList>
+              {duplicateSummary.exactDup.map((match) => (
+                <li key={`exact-${match.id}`}>
+                  동일한 값으로 보이는 거래: {match.title} · {match.date} · {formatKRW(Math.abs(match.amount))}
+                </li>
+              ))}
+              {duplicateSummary.itemDiff.map((match) => (
+                <li key={`diff-${match.id}`}>
+                  같은 결제로 보이는 거래: {match.title} · {match.date} · {formatKRW(Math.abs(match.amount))}
+                </li>
+              ))}
+            </DuplicateList>
+          </DuplicateNotice>
+          <DuplicateActions>
+            <Button
+              variant="ghost"
+              size="md"
+              onClick={() => {
+                setDuplicateSummary(null);
+                setPendingDuplicatePatch(null);
+                onClose();
+              }}
+            >
+              아, 중복이네요
+            </Button>
+            <Button
+              variant="primary"
+              size="md"
+              onClick={() => {
+                onSubmit(row.id, pendingDuplicatePatch);
+                setDuplicateSummary(null);
+                setPendingDuplicatePatch(null);
+                onClose();
+              }}
+            >
+              맞아요, 이 값으로 수정할게요
+            </Button>
+          </DuplicateActions>
+        </Modal>
+      )}
     </>
   );
 };

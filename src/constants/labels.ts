@@ -6,7 +6,22 @@ export const PLATFORM_LABELS = {
   coupang: "쿠팡",
   naver: "네이버쇼핑",
   musinsa: "무신사",
+  // 플랫폼을 지정하지 않았거나 오프라인 결제처럼 플랫폼이 없는 거래의 라벨입니다.
+  // 입력 폼의 "미지정" 선택지와 동일한 텍스트를 써서 사용자 멘탈 모델을 일치시킵니다.
+  unspecified: "미지정",
 } as const;
+
+/**
+ * 입력 폼(드롭다운)에 노출되는 사용자 선택 가능한 플랫폼 옵션 목록.
+ * "미지정"(unspecified)을 맨 앞에 두어, 플랫폼을 고르지 않고 넘어가는 흐름이
+ * 가장 부담 없이 보이도록 합니다.
+ */
+export const PLATFORM_OPTIONS = [
+  { key: "unspecified", label: "미지정" },
+  { key: "coupang", label: "쿠팡" },
+  { key: "naver", label: "네이버쇼핑" },
+  { key: "musinsa", label: "무신사" },
+] as const;
 
 export const STATUS_LABELS = {
   purchase: "구매",

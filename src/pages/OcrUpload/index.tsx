@@ -1,12 +1,21 @@
-﻿/**
- * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
+/**
+ * 역할: OCR 업로드 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
+ *
+ *       업로드 흐름은 "배치 단위"로 설계돼 있습니다. 사용자는 플랫폼을 고른 뒤 그 플랫폼의
+ *       캡쳐 여러 장을 한 번에 올리고, 필요하면 플랫폼을 바꿔 다른 몰의 캡쳐를 이어서 올릴 수
+ *       있습니다. 각 이미지는 "업로드 시점에 선택돼 있던 플랫폼"을 태그로 지니며, 이 태그는
+ *       UploadedGrid의 뱃지와 OcrEdit의 image.platform으로 그대로 이어집니다.
+ *
+ *       플랫폼 선택 카드는 페이지 상단이 아니라 업로드 영역 바로 위에 둬, "지금 고른 플랫폼이
+ *       바로 이 업로드 버튼을 눌렀을 때 찍힌다"는 점을 시각적으로 붙여 인지시킵니다.
  * 위치: src\pages\OcrUpload\index.tsx
  */
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/primitives/Button";
+import { PLATFORM_LABELS } from "../../constants/labels";
 import { tokens } from "../../styles/tokens";
 import { PlatformSelect, type Platform } from "./components/PlatformSelect";
 import { UploadZone } from "./components/UploadZone";
@@ -19,6 +28,15 @@ const Wrap = styled.div`
   gap: 16px;
 `;
 
+/**
+ * 플랫폼 ↔ 업로드 구역을 하나의 "현재 배치" 묶음으로 보이게 감싸는 컨테이너.
+ * 두 카드가 한 번의 업로드 액션에 엮여 있다는 시각적 힌트 역할을 합니다.
+ */
+const UploadStack = styled.div`
+  display: grid;
+  gap: 12px;
+`;
+
 const Footer = styled.div`
   display: flex;
   justify-content: space-between;
@@ -29,6 +47,12 @@ const Footer = styled.div`
   .count {
     color: ${tokens.color.ink4};
     font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .count strong {
+    color: ${tokens.color.ink2};
+    font-weight: 700;
   }
 `;
 
@@ -37,9 +61,16 @@ const Actions = styled.div`
   gap: 8px;
 `;
 
+/**
+ * 업로드할 수 있는 최대 이미지 수. 한 번에 너무 많은 캡쳐를 처리하면 OCR 비용과
+ * 편집 화면 체감 부하가 커지므로 MVP에서는 5로 제한합니다.
+ */
+const MAX_IMAGES = 5;
+
 export const OcrUploadPage: React.FC = () => {
   const navigate = useNavigate();
-  // 플랫폼 값은 업로드 예시 파일 이름과 안내 문구에 함께 반영됩니다.
+  // 여기서의 platform은 "다음에 올릴 이미지에 찍힐 태그"입니다.
+  // 업로드를 실행할 때마다 새 이미지의 UploadedImage.platform에 스냅샷으로 복사됩니다.
   const [platform, setPlatform] = useState<Platform>("coupang");
   const [images, setImages] = useState<UploadedImage[]>(ocrUploadMockData.images);
 
@@ -50,10 +81,9 @@ export const OcrUploadPage: React.FC = () => {
   const handleAddMock = () => {
     setImages((current) => {
       // v1 데모에서는 실제 파일 대신 목업 썸네일 행을 추가해 흐름만 검증합니다.
-      if (current.length >= 5) {
+      if (current.length >= MAX_IMAGES) {
         return current;
       }
-
       const nextIndex = current.length + 1;
       return [
         ...current,
@@ -63,31 +93,62 @@ export const OcrUploadPage: React.FC = () => {
           fileName: `${platform}-capture-${nextIndex}.png`,
           sizeLabel: `${(0.8 + nextIndex * 0.2).toFixed(1)} MB`,
           status: "ready",
+          // 현재 선택된 플랫폼을 이미지에 "찍어" 둡니다. 이 값이 OcrEdit까지 그대로 이어집니다.
+          platform,
         },
       ];
     });
   };
 
+  /**
+   * 플랫폼 뱃지별로 현재 몇 장이 올라가 있는지 요약합니다.
+   * 사용자가 "내가 쿠팡 3장, 네이버 2장 올렸구나"를 한 눈에 확인할 수 있게 Footer에 노출합니다.
+   */
+  const platformCounts = useMemo(() => {
+    const counts: Partial<Record<Platform, number>> = {};
+    for (const image of images) {
+      counts[image.platform] = (counts[image.platform] ?? 0) + 1;
+    }
+    return counts;
+  }, [images]);
+
+  const atCapacity = images.length >= MAX_IMAGES;
+
   return (
     <AppShell activeNav="upload" crumb="입력 · OCR" title="OCR 업로드">
       <Wrap>
         <GuideCard items={ocrUploadMockData.guide} />
-        <PlatformSelect value={platform} onChange={setPlatform} />
-        {/* 업로드 영역과 업로드된 목록을 분리해 실제 서비스 구조를 미리 보여 줍니다. */}
-        {/* data-tour: ProductTour 스포트라이트 타겟. */}
-        <div data-tour="ocr-zone">
-          <UploadZone
-            acceptedTypes="PNG, JPG, WEBP"
-            maxSize="10MB"
-            maxCount={5}
-            onPick={handleAddMock}
-          />
-        </div>
+
+        {/* 플랫폼 선택과 업로드 구역은 "한 번의 배치"를 구성하므로 시각적으로 붙여 보여 줍니다. */}
+        <UploadStack>
+          <PlatformSelect value={platform} onChange={setPlatform} />
+          {/* data-tour: ProductTour 스포트라이트 타겟. */}
+          <div data-tour="ocr-zone">
+            <UploadZone
+              acceptedTypes="PNG, JPG, WEBP"
+              maxSize="10MB"
+              maxCount={MAX_IMAGES}
+              activePlatformLabel={PLATFORM_LABELS[platform]}
+              disabled={atCapacity}
+              onPick={handleAddMock}
+            />
+          </div>
+        </UploadStack>
 
         {images.length > 0 && <UploadedGrid images={images} onRemove={handleRemove} />}
 
         <Footer>
-          <span className="count">업로드한 이미지 {images.length}/5</span>
+          <span className="count">
+            업로드한 이미지 <strong>{images.length}/{MAX_IMAGES}</strong>
+            {images.length > 0 && (
+              <>
+                {" · "}
+                {(Object.keys(platformCounts) as Platform[])
+                  .map((p) => `${PLATFORM_LABELS[p]} ${platformCounts[p]}장`)
+                  .join(", ")}
+              </>
+            )}
+          </span>
           <Actions>
             <Button variant="ghost" size="lg" onClick={() => navigate("/upload")}>
               취소
@@ -106,4 +167,3 @@ export const OcrUploadPage: React.FC = () => {
     </AppShell>
   );
 };
-
