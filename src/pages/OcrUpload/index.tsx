@@ -17,6 +17,7 @@ import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/primitives/Button";
 import { PLATFORM_LABELS } from "../../constants/labels";
 import { tokens } from "../../styles/tokens";
+import { media } from "../../tokens/breakpoints";
 import { PlatformSelect, type Platform } from "./components/PlatformSelect";
 import { UploadZone } from "./components/UploadZone";
 import { UploadedGrid } from "./components/UploadedGrid";
@@ -54,11 +55,40 @@ const Footer = styled.div`
     color: ${tokens.color.ink2};
     font-weight: 700;
   }
+
+  /*
+   * 좁은 모바일에서는 왼쪽의 업로드 요약(쿠팡 2장, 네이버 1장 …)이 길어지면
+   * flex-shrink 로 오른쪽 버튼 컨테이너가 1~2 글자 폭까지 쪼그라들어 "취/소",
+   * "분/석/시/작/하/기" 처럼 세로로 잘리는 현상이 생깁니다. 세로로 쌓아 요약을
+   * 먼저 보여 주고, 액션 버튼은 바로 아래에 풀-폭으로 배치합니다.
+   */
+  ${media.mobile} {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
 `;
 
 const Actions = styled.div`
   display: flex;
   gap: 8px;
+  flex-shrink: 0;
+
+  /*
+   * 버튼 자체가 pc 에서는 자연 폭, 모바일에서는 Footer 가 세로 스택이 된 뒤
+   * Actions 가 풀-폭이 되도록 잡아 두고, 그 안에서 두 버튼이 50:50 으로 나눠 갖게 합니다.
+   * && 를 써서 styled.button 의 기본 클래스보다 specificity 를 한 단계 높여 확실히 덮어씁니다.
+   */
+  ${media.mobile} {
+    width: 100%;
+
+    && > * {
+      flex: 1;
+      min-width: 0;
+      padding: 0 14px;
+      white-space: nowrap;
+    }
+  }
 `;
 
 /**

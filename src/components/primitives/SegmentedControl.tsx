@@ -30,7 +30,11 @@ const Wrap = styled.div`
 `;
 
 const Item = styled.button<{ $active: boolean }>`
-  flex: 1;
+  /*
+   * 데스크톱에서는 Wrap 이 inline-flex + 자연 폭이라 각 Item 이 자기 라벨 만큼만
+   * 폭을 차지해야 기존 레퍼런스(3개월 / 6개월 / 12개월 등) 비율이 유지됩니다.
+   * 모바일에서는 Wrap 이 풀-폭이 되므로 그때만 flex:1 로 균등 분할해 터치 타겟을 확보합니다.
+   */
   padding: 5px 12px;
   border: none;
   border-radius: 6px;
@@ -42,6 +46,10 @@ const Item = styled.button<{ $active: boolean }>`
   font-size: ${tokens.type.caption.size};
   font-weight: 600;
   white-space: nowrap;
+
+  ${media.mobile} {
+    flex: 1;
+  }
 `;
 
 export const SegmentedControl = <T extends string>({

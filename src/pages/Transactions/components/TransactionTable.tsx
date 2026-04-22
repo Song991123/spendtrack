@@ -116,6 +116,46 @@ const MobileList = styled.div`
   }
 `;
 
+/**
+ * 모바일에서 한 행 + (활성 시) 바로 아래 "거래 상세" 드롭다운이 시각적으로 한 덩어리처럼
+ * 붙어 보이도록 감싸는 컨테이너입니다. 이전에는 MobileList 가 gap: 10px 로 모든 행을
+ * 일정 간격으로 벌렸지만, 아코디언 구조에서는 "펼쳐진 행"과 그 아래 "상세 카드"가
+ * 간격 없이 하나의 그룹처럼 보여야 사용자가 "이 행을 열었다"는 걸 즉시 인지합니다.
+ */
+const MobileGroup = styled.div<{ $active?: boolean }>`
+  display: grid;
+  gap: ${({ $active }) => ($active ? "8px" : "0")};
+  transition: gap ${tokens.motion.fast} ease;
+`;
+
+/**
+ * 아코디언을 펼칠 때 살짝 슬라이드-다운하며 등장하는 키프레임.
+ * "이 행을 눌러서 방금 열렸다"는 피드백을 최소한의 모션으로 전달합니다.
+ * prefers-reduced-motion 환경에서는 MobileDetailSlot 쪽에서 애니메이션을 비활성화합니다.
+ */
+const accordionEnter = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+`;
+
+/**
+ * 아코디언 내용물(DetailPanel)을 감싸는 박스.
+ * 단일 행 아래에 펼쳐져, 사용자가 "이 행을 열었다"는 맥락을 잃지 않게 합니다.
+ */
+const MobileDetailSlot = styled.div`
+  animation: ${accordionEnter} 220ms ease-out both;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
 const MobileRow = styled.button<{ $active?: boolean }>`
   display: grid;
   gap: 10px;
@@ -425,6 +465,12 @@ interface Props {
   sortOrder: "desc" | "asc";
   /** 정렬 방향을 뒤집습니다. */
   onToggleSort: () => void;
+  /**
+   * 모바일에서 활성 행 바로 아래에 펼쳐질 "거래 상세" 내용을 렌더하는 함수입니다.
+   * PC에서는 기존대로 오른쪽 패널(DetailPanel)에 상세가 표시되므로 이 값이 없어도 동작합니다.
+   * 모바일 아코디언 경로에서만 주입되며, 사용자가 같은 행을 다시 탭하면 onSelect("") 로 닫힙니다.
+   */
+  renderMobileDetail?: (row: TxRow) => React.ReactNode;
 }
 
 export const TransactionTable: React.FC<Props> = ({
@@ -435,6 +481,7 @@ export const TransactionTable: React.FC<Props> = ({
   onLoadMore,
   sortOrder,
   onToggleSort,
+  renderMobileDetail,
 }) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [hoveredId, setHoveredId] = useState<string>("");
@@ -572,55 +619,71 @@ export const TransactionTable: React.FC<Props> = ({
         </Table>
       </TableScroll>
       <MobileList>
-        {rows.map((row) => (
-          <MobileRow
-            key={row.id}
-            type="button"
-            $active={row.id === selectedId}
-            onClick={() => onSelect(row.id)}
-          >
-            <MobileTop>
-              <MobileTitle>
-                <div className="title">{row.title}</div>
-                <div className="meta">{row.date}</div>
-              </MobileTitle>
-              <MobileAmount $positive={row.amount > 0}>
-                {row.amount > 0 ? "+" : "-"}
-                {formatKRW(Math.abs(row.amount))}
-              </MobileAmount>
-            </MobileTop>
-            <MobileTags>
-              <Tag kind={row.type === "expense" ? "expense" : "income"}>
-                {TYPE_LABELS[row.type]}
-              </Tag>
-              <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
-              <Tag kind={row.status}>{STATUS_LABELS[row.status]}</Tag>
-            </MobileTags>
-            <MobileFooter>
-              <MobileCategories aria-label="카테고리">
-                {row.categories.map((cat) => (
-                  <ColorSquare
-                    key={cat}
-                    $color={categoryColorMap[cat]}
-                    aria-label={CATEGORY_LABELS[cat]}
-                  />
-                ))}
-              </MobileCategories>
-              <SortIcon $dir={row.id === selectedId ? "asc" : "desc"} aria-hidden="true">
-                <svg width={14} height={14} viewBox="0 0 12 12">
-                  <polyline
-                    points="3 4.5 6 7.5 9 4.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </SortIcon>
-            </MobileFooter>
-          </MobileRow>
-        ))}
+        {rows.map((row) => {
+          const isActive = row.id === selectedId;
+          return (
+            <MobileGroup key={row.id} $active={isActive}>
+              <MobileRow
+                type="button"
+                $active={isActive}
+                aria-expanded={isActive}
+                aria-controls={`mobile-detail-${row.id}`}
+                // 같은 행을 다시 탭하면 닫히는 "토글" 동작. 사용자가 한 행에 대한
+                // 상세를 열었다가 바로 닫을 수 있어야 여러 거래를 빠르게 스캔할 수 있습니다.
+                onClick={() => onSelect(isActive ? "" : row.id)}
+              >
+                <MobileTop>
+                  <MobileTitle>
+                    <div className="title">{row.title}</div>
+                    <div className="meta">{row.date}</div>
+                  </MobileTitle>
+                  <MobileAmount $positive={row.amount > 0}>
+                    {row.amount > 0 ? "+" : "-"}
+                    {formatKRW(Math.abs(row.amount))}
+                  </MobileAmount>
+                </MobileTop>
+                <MobileTags>
+                  <Tag kind={row.type === "expense" ? "expense" : "income"}>
+                    {TYPE_LABELS[row.type]}
+                  </Tag>
+                  <Tag kind={row.platform}>{PLATFORM_LABELS[row.platform]}</Tag>
+                  <Tag kind={row.status}>{STATUS_LABELS[row.status]}</Tag>
+                </MobileTags>
+                <MobileFooter>
+                  <MobileCategories aria-label="카테고리">
+                    {row.categories.map((cat) => (
+                      <ColorSquare
+                        key={cat}
+                        $color={categoryColorMap[cat]}
+                        aria-label={CATEGORY_LABELS[cat]}
+                      />
+                    ))}
+                  </MobileCategories>
+                  {/* 활성 상태에서는 아래쪽으로 펼쳐진 것처럼 셰브런을 180° 뒤집어 "열림" 상태를 전달합니다. */}
+                  <SortIcon $dir={isActive ? "asc" : "desc"} aria-hidden="true">
+                    <svg width={14} height={14} viewBox="0 0 12 12">
+                      <polyline
+                        points="3 4.5 6 7.5 9 4.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </SortIcon>
+                </MobileFooter>
+              </MobileRow>
+              {/* 활성 행 바로 밑에 상세 카드를 아코디언처럼 펼칩니다.
+                  PC 에서는 renderMobileDetail 을 넘기지 않으므로 이 영역은 렌더되지 않습니다. */}
+              {isActive && renderMobileDetail && (
+                <MobileDetailSlot id={`mobile-detail-${row.id}`}>
+                  {renderMobileDetail(row)}
+                </MobileDetailSlot>
+              )}
+            </MobileGroup>
+          );
+        })}
       </MobileList>
       {rows.length === 0 ? (
         <Footer>조건에 맞는 거래가 없어요</Footer>

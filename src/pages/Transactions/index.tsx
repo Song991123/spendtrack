@@ -46,6 +46,11 @@ const Left = styled.div`
   min-width: 0;
 `;
 
+/**
+ * PC/태블릿에서만 보이는 오른쪽 상세 패널 슬롯.
+ * 모바일에서는 상세를 행 아래에 아코디언으로 펼치기 때문에, 이 슬롯을 완전히 숨겨
+ * "거래 목록을 다 본 뒤 맨 아래에 상세가 붙는" 이전 구조를 제거합니다.
+ */
 const PanelSlot = styled.div`
   min-width: 0;
   position: sticky;
@@ -59,6 +64,10 @@ const PanelSlot = styled.div`
     position: static;
     max-height: none;
     overflow: visible;
+  }
+
+  ${media.mobile} {
+    display: none;
   }
 `;
 
@@ -269,13 +278,19 @@ export const TransactionsPage: React.FC = () => {
         <SummaryStrip summary={buildTransactionSummary(monthRows, prevMonthRows)} />
         <Body $hasPanel={isOpen}>
           <Left>
-            {/* 왼쪽 영역은 필터와 표, 오른쪽 영역은 상세 패널로 역할을 분리합니다. */}
+            {/* 왼쪽 영역은 필터와 표, 오른쪽 영역은 상세 패널로 역할을 분리합니다.
+                모바일에서는 FilterBar 가 아이콘 바 + 확장 패널로 축약되고, TransactionTable
+                의 MobileList 가 각 행 아래에 DetailPanel 을 아코디언으로 펼칩니다. */}
             <FilterBar
               search={search}
               typeFilter={typeFilter}
               platform={platform}
               category={category}
               statusFilter={statusFilter}
+              sortOrder={sortOrder}
+              onToggleSort={() =>
+                setSortOrder((current) => (current === "desc" ? "asc" : "desc"))
+              }
               onSearchChange={setSearch}
               onTypeChange={setTypeFilter}
               onPlatformChange={setPlatform}
@@ -292,6 +307,17 @@ export const TransactionsPage: React.FC = () => {
               onToggleSort={() =>
                 setSortOrder((current) => (current === "desc" ? "asc" : "desc"))
               }
+              // 모바일 아코디언: 활성 행 바로 아래에 기존 DetailPanel 을 그대로 붙여 보여줍니다.
+              // 같은 컴포넌트를 재활용해, 데스크톱 오른쪽 패널과 정보 구조가 분화되지 않도록 합니다.
+              renderMobileDetail={(row) => (
+                <DetailPanel
+                  row={row}
+                  onClose={() => setSelectedId("")}
+                  onEdit={() => handleEditOpen(row)}
+                  onDelete={handleDelete}
+                  onOpenSource={handleOpenSource}
+                />
+              )}
             />
           </Left>
           <PanelSlot>

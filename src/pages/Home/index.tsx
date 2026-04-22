@@ -26,14 +26,20 @@ const HeaderRight = styled.div`
   gap: 10px;
   min-width: 0;
 
-  ${media.tablet} {
-    /*
-     * 태블릿부터는 오른쪽 영역이 좁아져서 날짜 스탬프 문구가 제멋대로 3~4줄로
-     * 줄바꿈되는 문제가 있었습니다. MonthPicker 는 그대로 자연 폭으로 두고,
-     * 스탬프는 그 옆에 한 줄로만 보이도록 min-width:0 과 nowrap 을 걸어 정리합니다.
-     */
+  /*
+   * 데스크톱/태블릿에서는 오른쪽 슬롯이 자연 폭이어야 제목 영역(Heading)이 남은 공간을
+   * 자연스럽게 확보하고, 레이아웃 비율이 기존 레퍼런스와 동일하게 유지됩니다.
+   * 모바일에서는 TopHeader 가 세로 스택으로 바뀌고 HeaderRight 가 풀-폭이 되므로,
+   * 내부도 세로 스택으로 전환해 MonthPicker 는 풀-폭 pill 로 깔끔히 펴지고
+   * DateStamp 는 그 아래 한 줄로 붙도록 합니다. 이전에 justify-content:flex-start
+   * 로만 바꿨더니 MonthPicker(width:100%) 가 가로를 전부 먹어 DateStamp(nowrap)가
+   * 오른쪽으로 삐져나가며 비율이 깨지는 문제가 있었습니다.
+   */
+  ${media.mobile} {
     width: 100%;
-    justify-content: flex-start;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
   }
 `;
 
@@ -43,6 +49,12 @@ const DateStamp = styled.div`
   font-weight: 500;
   /* 짧게 정리된 stamp("2026.04.20")가 한 줄로 보여야 '오늘과 같다'는 걸 한눈에 읽힙니다. */
   white-space: nowrap;
+
+  ${media.mobile} {
+    /* 세로 스택 전환 이후 stamp 는 pill 아래에 한 줄로 붙이되, 왼쪽 정렬로 유지해
+       MonthPicker 시작점과 시선이 맞도록 합니다. */
+    text-align: left;
+  }
 `;
 
 const Grid = styled.div`

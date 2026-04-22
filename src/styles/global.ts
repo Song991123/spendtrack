@@ -24,10 +24,19 @@ export const GlobalStyle = createGlobalStyle`
     font-family: ${tokens.font.sans};
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
-    /* 모바일 환경에서 가로 스크롤이 생기면 레이아웃이 통째로 밀려 보이는 문제가 생깁니다.
-       어떤 셸 자식이 실수로 뷰포트 폭을 넘겨도 본 body에서는 가로 스크롤이 나지 않도록
-       안전망으로 overflow-x를 잠가 둡니다. 세로 스크롤은 필요 시 기본적으로 허용합니다. */
-    overflow-x: hidden;
+  }
+
+  /*
+   * 모바일 전용 가로 스크롤 잠금.
+   * 데스크톱에서는 어떤 이유로든 가로 오버플로가 발생하면 '왜 그런지' 바로 보이도록
+   * 기본 브라우저 동작(가로 스크롤)을 유지해야 디자인 회귀를 빨리 찾을 수 있어서
+   * overflow-x 를 건드리지 않습니다. 반면 좁은 모바일에서는 셸 자식 중 하나만
+   * 1~2px 초과해도 레이아웃이 통째로 밀려 보여서 안전망이 필요합니다.
+   */
+  @media (max-width: 768px) {
+    body {
+      overflow-x: hidden;
+    }
   }
 
   button,

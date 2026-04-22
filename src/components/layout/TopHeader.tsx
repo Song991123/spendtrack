@@ -27,7 +27,15 @@ const Header = styled.header`
 
 const Heading = styled.div`
   min-width: 0;
-  width: 100%;
+
+  /*
+   * 모바일(세로 스택) 상황에서만 제목 영역이 부모 폭을 꽉 채우도록 width:100% 를 걸어
+   * 크럼/타이틀이 줄바꿈돼도 좌측 정렬이 유지되게 합니다.
+   * 데스크톱/태블릿에서는 기존처럼 자연 폭으로 두어 RightSlot 쪽 여유를 확보합니다.
+   */
+  ${media.mobile} {
+    width: 100%;
+  }
 `;
 
 const Crumb = styled.div`
@@ -42,6 +50,13 @@ const Title = styled.h1`
   font-size: ${tokens.type.h1.size};
   font-weight: ${tokens.type.h1.weight};
   letter-spacing: ${tokens.type.h1.tracking};
+  /*
+   * 데스크톱/태블릿에서는 기존처럼 한 줄 말줄임을 유지해 긴 제목이 다음 행으로 넘어가며
+   * 레이아웃이 밀려 보이는 현상을 차단합니다. 모바일에서만 2줄 이상 허용.
+   */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   ${media.mobile} {
     white-space: normal;
