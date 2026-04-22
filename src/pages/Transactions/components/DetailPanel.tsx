@@ -339,8 +339,11 @@ export const DetailPanel: React.FC<{
         </Actions>
 
         {row.detail?.source === "OCR" && (
+          // 이전에는 OCR 편집 페이지로 이동시켰지만, 이 거래는 이미 파싱이 끝나 수정 모달로 편집되기 때문에
+          // 편집 페이지 재방문은 불필요한 왕복이 됩니다. 대신 "분석에 사용된 원본 이미지만 보여 주기"로
+          // 역할을 좁혀, 필요한 사용자는 캡쳐 원본을 한 번 더 확인할 수 있게 합니다.
           <LinkButton type="button" onClick={onOpenSource}>
-            OCR 결과 화면으로 이동
+            OCR 분석한 이미지 보기
           </LinkButton>
         )}
       </CardBd>

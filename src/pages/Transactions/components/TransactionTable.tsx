@@ -63,6 +63,12 @@ export interface TxRow {
   detail?: {
     items: { name: string; price: number; link?: string }[];
     source?: "OCR" | "MANUAL";
+    /**
+     * OCR 경로로 저장된 거래일 때, 분석에 사용된 원본 캡쳐의 URL(또는 data URL).
+     * 거래내역 상세에서 "OCR 분석한 이미지 보기" 모달이 이 값을 읽어 원본을 그대로 띄웁니다.
+     * 값이 비어 있으면 모달은 "저장된 이미지가 없다" 플레이스홀더로 떨어집니다.
+     */
+    sourceImageUrl?: string;
   };
 }
 

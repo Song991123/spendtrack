@@ -5,7 +5,6 @@
  * 위치: src\pages\Transactions\index.tsx
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { MonthPicker } from "../../components/primitives/MonthPicker";
@@ -22,6 +21,7 @@ import {
   useTransactionsStore,
 } from "../../stores/transactionsStore";
 import { TransactionEditModal } from "../../components/modal/TransactionEditModal";
+import { Modal } from "../../components/modal/Modal";
 import type { TxRow } from "./components/TransactionTable";
 
 const Body = styled.div<{ $hasPanel: boolean }>`
@@ -90,7 +90,6 @@ function toMonthKey(dateStr: string): string {
 }
 
 export const TransactionsPage: React.FC = () => {
-  const navigate = useNavigate();
   // 필터 상태는 모두 페이지 상단에서 관리해서 표와 상세 패널이 같은 기준을 보게 합니다.
   const [month, setMonth] = useState("2026-04");
   const [search, setSearch] = useState("");
@@ -248,6 +247,17 @@ export const TransactionsPage: React.FC = () => {
     transactionsStore.updateOne(id, patch);
   }, []);
 
+  // OCR 경로로 저장된 거래에서 "원본 캡쳐만 다시 보기" 흐름을 위한 모달 상태입니다.
+  // 이전에는 편집 페이지로 이동했지만, 이 거래는 이미 파싱된 상태라 재방문이 낭비였고
+  // 이미지 한 장만 띄우는 가벼운 뷰로 역할을 좁혔습니다. URL이 비어 있는 경우도
+  // 있어(mock/구데이터), 모달 본문에서 플레이스홀더로 떨어뜨립니다.
+  const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null);
+
+  const handleOpenSource = useCallback(() => {
+    if (!displayed) return;
+    setSourceImageUrl(displayed.detail?.sourceImageUrl ?? "");
+  }, [displayed]);
+
   return (
     <AppShell
       activeNav="transactions"
@@ -292,7 +302,7 @@ export const TransactionsPage: React.FC = () => {
                   onClose={() => setSelectedId("")}
                   onEdit={() => handleEditOpen(displayed)}
                   onDelete={handleDelete}
-                  onOpenSource={() => navigate("/ocr-edit")}
+                  onOpenSource={handleOpenSource}
                 />
               </PanelInner>
             )}
@@ -306,6 +316,44 @@ export const TransactionsPage: React.FC = () => {
           onClose={() => setEditTarget(null)}
           onSubmit={handleEditSave}
         />
+      )}
+      {sourceImageUrl !== null && (
+        <Modal
+          isOpen
+          onClose={() => setSourceImageUrl(null)}
+          title="OCR 분석한 이미지"
+        >
+          {/* 이미지 URL이 비어 있는 경우(mock/구데이터)엔 플레이스홀더로 떨어뜨려,
+            "버튼은 보이는데 눌러도 아무것도 안 뜬다"는 상태를 피합니다. */}
+          {sourceImageUrl ? (
+            <img
+              src={sourceImageUrl}
+              alt="OCR 분석에 사용된 원본 캡쳐"
+              style={{
+                display: "block",
+                width: "100%",
+                maxHeight: "70vh",
+                objectFit: "contain",
+                borderRadius: tokens.radius.control,
+                background: tokens.color.bg,
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                padding: "32px 0",
+                textAlign: "center",
+                color: tokens.color.ink4,
+                fontSize: 13,
+                lineHeight: 1.6,
+              }}
+            >
+              저장된 원본 이미지가 없어 표시할 수 없어요.
+              <br />
+              예전 데이터이거나 이미지가 유실된 경우일 수 있습니다.
+            </div>
+          )}
+        </Modal>
       )}
     </AppShell>
   );

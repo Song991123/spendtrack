@@ -94,6 +94,10 @@ function buildCandidateFromOrder(image: OcrImageItem, order: OcrOrder): TxRow {
         price: product.price,
       })),
       source: "OCR",
+      // 거래내역 상세에서 "OCR 분석한 이미지 보기"로 원본 캡쳐를 그대로 띄우기 위한 경로입니다.
+      // 편집 페이지로 이동시키지 않고 이미지만 보여 주는 쪽으로 단순화하면서 추가된 필드로,
+      // mock 데이터에서는 빈 문자열이 들어갈 수 있고 그럴 때 모달은 플레이스홀더로 떨어집니다.
+      sourceImageUrl: image.thumbUrl,
     },
   };
 }
