@@ -73,8 +73,8 @@ export const GlobalStyle = createGlobalStyle`
   }
 
   *::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
 
   *::-webkit-scrollbar-track {
@@ -83,7 +83,7 @@ export const GlobalStyle = createGlobalStyle`
 
   *::-webkit-scrollbar-thumb {
     background-color: ${tokens.color.scrollThumb};
-    border-radius: 6px;
+    border-radius: 4px;
     /* 트랙과의 사이에 2px 여백을 만들어 썸이 떠 있는 것처럼 보이게 합니다. */
     border: 2px solid transparent;
     background-clip: padding-box;
