@@ -14,7 +14,7 @@ import { media } from "../../tokens/breakpoints";
 import { ImageList } from "./components/ImageList";
 import { ImagePreview } from "./components/ImagePreview";
 import { EditForm } from "./components/EditForm";
-import { ocrEditMockData, type OcrImageItem } from "./data";
+import { ocrEditMockData, type OcrImageItem, type Status } from "./data";
 import {
   transactionsStore,
   useTransactionsStore,
@@ -98,6 +98,19 @@ export const OcrEditPage: React.FC = () => {
     );
   };
 
+  /**
+   * 사용자가 EditForm의 statusTag 팝오버에서 값을 바꿨을 때 이미지 상태에 반영합니다.
+   * OCR이 자동 추정한 초기값이 틀렸을 때 사용자가 즉시 보정할 수 있게 하는 경로입니다
+   * (팀 논의에서 합의한 "자동 인식 + 사용자 확정" 하이브리드의 사용자 확정 단계).
+   */
+  const handleStatusTagChange = (value: Status) => {
+    setImages((prev) =>
+      prev.map((image) =>
+        image.id === selectedId ? { ...image, statusTag: value } : image
+      )
+    );
+  };
+
   const candidateMatches = useMemo(() => {
     if (!selected) return [];
     return findMatches(allRows, {
@@ -156,7 +169,11 @@ export const OcrEditPage: React.FC = () => {
           onAdd={() => navigate("/ocr-upload")}
         />
         <ImagePreview image={selected} />
-        <EditForm image={selected} onOrderDateChange={handleOrderDateChange} />
+        <EditForm
+          image={selected}
+          onOrderDateChange={handleOrderDateChange}
+          onStatusTagChange={handleStatusTagChange}
+        />
       </Body>
       <Footer>
         <Button variant="ghost" size="lg" onClick={() => navigate("/ocr-upload")}>

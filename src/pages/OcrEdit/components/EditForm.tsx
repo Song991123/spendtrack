@@ -5,12 +5,12 @@
  *       카테고리 목록을 추가/삭제할 수 있도록 인터페이스를 제공합니다.
  * 위치: src\pages\OcrEdit\components\EditForm.tsx
  */
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { Card, CardBd } from "../../../components/primitives/Card";
 import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
-import type { OcrImageItem } from "../data";
+import type { OcrImageItem, Status } from "../data";
 import { ProductTable } from "./ProductTable";
 import { CATEGORY_LABELS, PLATFORM_LABELS, STATUS_LABELS } from "../../../constants/labels";
 import { fromIsoDate, toIsoDate } from "../../../utils/date";
@@ -70,6 +70,178 @@ const MetaSeparator = styled.span`
   height: 24px;
   background: ${tokens.color.line2};
 `;
+
+/**
+ * statusTag을 클릭으로 편집할 수 있게 감싸는 래퍼.
+ *
+ * 디자인 요구사항: 기존 Tag의 외형(크기·색·라운드)을 그대로 보여주되,
+ * "클릭해서 바꿀 수 있다"는 사실만 전달되어야 합니다.
+ *  - resting 상태: Tag 그대로, 테두리/배경 추가 없음
+ *  - hover 상태: accent 색의 옅은 외곽 링을 살짝 띄워 상호작용 힌트
+ *  - open 상태: 조금 더 진한 링으로 "지금 편집 중"을 표시
+ * 이렇게 해서 OCR 초안을 훑다가 태그가 틀렸을 때 바로 탭 한 번으로
+ * 보정할 수 있게 합니다. (팀 논의 결론: 자동 인식 + 사용자 확정 하이브리드)
+ */
+const StatusTagWrapper = styled.div`
+  position: relative;
+  display: inline-flex;
+`;
+
+const StatusTagTrigger = styled.button`
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: ${tokens.radius.tag};
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+  transition: box-shadow ${tokens.motion.fast} ease;
+
+  &:hover {
+    box-shadow: 0 0 0 2px ${tokens.color.accentSubtle};
+  }
+
+  &[aria-expanded="true"] {
+    box-shadow: 0 0 0 2px ${tokens.color.accent};
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${tokens.shadow.focus};
+  }
+`;
+
+const StatusPopover = styled.div`
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 116px;
+  padding: 4px;
+  background: ${tokens.color.panel};
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.control};
+  box-shadow: ${tokens.shadow.cardHover};
+`;
+
+const StatusOptionButton = styled.button<{ $active: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: ${tokens.radius.tag};
+  background: ${({ $active }) =>
+    $active ? tokens.color.accentSubtle : "transparent"};
+  color: ${({ $active }) =>
+    $active ? tokens.color.accentHover : tokens.color.ink2};
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background ${tokens.motion.fast} ease;
+
+  &:hover {
+    background: ${tokens.color.tint};
+  }
+`;
+
+/**
+ * OCR 편집 화면에서 사용자에게 노출할 상태 선택지.
+ * - 쇼핑 플랫폼 OCR 맥락에서 구매/정기결제/취소/환불이면 대부분의 케이스가 커버됩니다.
+ * - 같은 캡쳐에 여러 상태가 섞여 있더라도, 항목 단위 편집이 가능하도록 이 값은 이미지별로 관리됩니다.
+ */
+const STATUS_EDIT_OPTIONS: Status[] = ["purchase", "sub", "cancel", "refund"];
+
+interface EditableStatusTagProps {
+  value: Status;
+  onChange: (next: Status) => void;
+}
+
+const EditableStatusTag: React.FC<EditableStatusTagProps> = ({
+  value,
+  onChange,
+}) => {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    // 팝오버 바깥을 클릭하거나 Esc를 눌렀을 때 닫히도록 document 레벨 리스너를 연결합니다.
+    // open일 때만 리스너를 걸어 불필요한 이벤트 구독을 피합니다.
+    const handleClickOutside = (event: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [open]);
+
+  return (
+    <StatusTagWrapper ref={wrapperRef}>
+      <StatusTagTrigger
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`거래유형 ${STATUS_LABELS[value]} · 클릭해서 변경`}
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        <Tag kind={value}>{STATUS_LABELS[value]}</Tag>
+      </StatusTagTrigger>
+      {open && (
+        <StatusPopover role="listbox">
+          {STATUS_EDIT_OPTIONS.map((option) => (
+            <StatusOptionButton
+              key={option}
+              type="button"
+              role="option"
+              aria-selected={option === value}
+              $active={option === value}
+              onClick={() => {
+                onChange(option);
+                setOpen(false);
+              }}
+            >
+              <span>{STATUS_LABELS[option]}</span>
+              {option === value && (
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M3 8.5 6.5 12 13 4.5" />
+                </svg>
+              )}
+            </StatusOptionButton>
+          ))}
+        </StatusPopover>
+      )}
+    </StatusTagWrapper>
+  );
+};
 
 const Total = styled.div`
   margin-bottom: 16px;
@@ -302,9 +474,14 @@ const DEFAULT_CATEGORIES: CategoryOption[] = Object.entries(CATEGORY_LABELS).map
 interface EditFormProps {
   image?: OcrImageItem;
   onOrderDateChange?: (value: string) => void;
+  onStatusTagChange?: (value: Status) => void;
 }
 
-export const EditForm: React.FC<EditFormProps> = ({ image, onOrderDateChange }) => {
+export const EditForm: React.FC<EditFormProps> = ({
+  image,
+  onOrderDateChange,
+  onStatusTagChange,
+}) => {
   /**
    * 카테고리 목록은 이미지 간에 공유되도록 상단에서 관리합니다. 사용자가 한 번
    * 추가한 카테고리는 다른 OCR 이미지 편집 시에도 그대로 선택할 수 있어야 자연스럽기 때문입니다.
@@ -393,7 +570,14 @@ export const EditForm: React.FC<EditFormProps> = ({ image, onOrderDateChange }) 
             <div className="value">{image.productCount}개</div>
           </MetaCell>
           <MetaSeparator />
-          <Tag kind={image.statusTag}>{STATUS_LABELS[image.statusTag]}</Tag>
+          {/* statusTag은 OCR이 자동 추정한 값이라 오인식될 수 있어, Tag를 그대로 두되
+           * 클릭하면 팝오버에서 바로 바꿀 수 있게 합니다. 디자인은 변경하지 않고
+           * 호버 시 옅은 링만 띄워 "편집 가능"을 알립니다. */}
+          {onStatusTagChange ? (
+            <EditableStatusTag value={image.statusTag} onChange={onStatusTagChange} />
+          ) : (
+            <Tag kind={image.statusTag}>{STATUS_LABELS[image.statusTag]}</Tag>
+          )}
         </MetaRow>
 
         <Total>
