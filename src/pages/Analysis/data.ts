@@ -70,9 +70,14 @@ function countPurchase(rows: TxRow[]): number {
   return rows.filter((row) => row.type === "expense" && row.status !== "cancel").length;
 }
 
+/**
+ * 이름 그대로 '순수입(수입 + 환불)' 합계. 취소(cancel)는 의미상 수입 흐름이지만
+ * 실제로 번 돈이 아니므로 이 합계에서는 제외합니다. 대신 sumCancel으로 따로 집계해
+ * 별도 KPI(예: "환불·취소")에서 합쳐 보여줍니다.
+ */
 function sumIncomeAndRefund(rows: TxRow[]): number {
   return rows
-    .filter((row) => row.type === "income")
+    .filter((row) => row.type === "income" && row.status !== "cancel")
     .reduce((sum, row) => sum + Math.max(0, row.amount), 0);
 }
 

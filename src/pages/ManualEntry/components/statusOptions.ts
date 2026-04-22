@@ -11,13 +11,18 @@ import type {
 
 /**
  * 거래 유형별로 노출할 상태 목록. 쇼핑 중심 컨셉에 맞춰
- * - 지출: 구매 / 정기결제 / 취소 / 기타
- * - 수입: 환불 / 기타
- * 로 분기해 "취소가 수입으로 잡히는 모순"을 UI 레벨에서 차단합니다.
+ * - 지출: 구매 / 정기결제 / 기타
+ * - 수입: 환불 / 취소 / 기타
+ * 로 분기합니다.
+ *
+ * '취소'가 수입 쪽에 있는 이유: 상품 주문이 취소되면 돈이 다시 들어오는 흐름이라
+ * 의미상 수입(inflow)에 가깝습니다. 다만 "진짜 번 돈"은 아니므로, 집계 단계에서는
+ * Home/Analysis의 순수입 계산(sumIncomeAndRefund)에서 status === "cancel"을 제외합니다.
+ * 별도 "취소 금액" 카드는 status === "cancel"만 모아 독립적으로 보여줍니다.
  */
 export const STATUS_OPTIONS_BY_TYPE: Record<TxType, TxStatus[]> = {
-  expense: ["purchase", "sub", "cancel", "etc"],
-  income: ["refund", "etc"],
+  expense: ["purchase", "sub", "etc"],
+  income: ["refund", "cancel", "etc"],
 };
 
 /**
@@ -30,7 +35,8 @@ export function defaultStatusForType(type: TxType): TxStatus {
 
 /**
  * 상태가 현재 거래 유형의 허용 목록에 포함되는지 검사.
- * 지출 → 수입 전환 시 '취소' 같은 지출 전용 상태가 남아있지 않도록 가드합니다.
+ * 수입 ↔ 지출 전환 시 반대편 전용 상태(예: 지출의 '구매', 수입의 '취소')가
+ * 남아있지 않도록 가드합니다.
  */
 export function isValidStatusForType(status: TxStatus, type: TxType): boolean {
   return STATUS_OPTIONS_BY_TYPE[type].includes(status);

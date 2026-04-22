@@ -72,8 +72,14 @@ function inferStatus(statusRaw: string, amount: number): TxStatus {
   return "purchase";
 }
 
+/**
+ * status → (type, 부호)로 변환. 쇼핑 데이터 관점의 규칙:
+ * - refund(환불), cancel(취소): 돈이 다시 들어오는 흐름이라 type="income"·양수.
+ *   단, 취소는 Home/Analysis의 순수입 집계에서는 status로 따로 걸러 제외합니다(sumIncomeAndRefund 참조).
+ * - purchase/sub/etc 등: 돈이 나가는 흐름이라 type="expense"·음수.
+ */
 function toTxShape(amount: number, status: TxStatus): Pick<TxRow, "amount" | "type" | "status"> {
-  if (status === "refund") {
+  if (status === "refund" || status === "cancel") {
     return {
       amount: Math.abs(amount),
       type: "income" as TxType,

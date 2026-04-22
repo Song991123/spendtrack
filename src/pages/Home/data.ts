@@ -244,11 +244,15 @@ export const buildHomeData = (rows: TxRow[], monthKey: string): HomeMockData => 
   ).length;
   const prevAvg = prevPurchaseCount > 0 ? Math.round(prevSpend / prevPurchaseCount) : 0;
 
+  // "총 수입 · 환불"은 순수입 지표라서 취소는 제외합니다. 취소는 의미상 수입 흐름이지만
+  // "진짜 번 돈"이 아니기 때문에, 별도의 "취소 금액" KPI에서만 집계해 지표를 분리합니다.
   const incomeRefund = thisMonth
-    .filter((row) => row.type === "income")
+    .filter((row) => row.type === "income" && row.status !== "cancel")
     .reduce((sum, row) => sum + Math.max(0, row.amount), 0);
   const refundCount = thisMonth.filter((row) => row.status === "refund").length;
 
+  // 취소 행은 저장 경로에 따라 부호가 다를 수 있어(수동 입력은 +, 과거 OCR은 -)
+  // Math.abs로 금액만 추출해 독립 카드에 보여줍니다.
   const cancelRows = thisMonth.filter((row) => row.status === "cancel");
   const cancelAmount = cancelRows.reduce((sum, row) => sum + Math.abs(row.amount), 0);
 

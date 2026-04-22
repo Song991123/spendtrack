@@ -20,11 +20,14 @@ import { useCategoryColorMap } from "../../../stores/categoriesStore";
 export type TxType = "expense" | "income";
 export type TxPlatform = "coupang" | "naver" | "musinsa";
 /**
- * 거래 상태. 표시 맥락:
- * - purchase/sub/cancel/etc: 지출(expense) 쪽에서 선택 가능한 상태.
- * - refund/etc: 수입(income) 쪽에서 선택 가능한 상태.
- * - "etc"(기타)는 어느 유형에든 들어갈 수 있는 폴백으로, 지출·수입 모두에서 쓸 수 있습니다.
- *   취소 집계("취소 금액")나 환불 건수 집계에는 포함되지 않아 요약 카드를 흐리지 않습니다.
+ * 거래 상태. 유형별로 쓰이는 맥락이 다릅니다:
+ * - purchase/sub/etc: 지출(expense) 쪽에서 선택 가능.
+ * - refund/cancel/etc: 수입(income) 쪽에서 선택 가능.
+ *   취소는 돈이 다시 들어오는 흐름이라 의미상 수입이지만, 순수입 KPI에서는 제외해야 해서
+ *   Home/Analysis 집계 함수(sumIncomeAndRefund 등)가 status === "cancel"을 걸러냅니다.
+ *   별도의 "취소 금액" 카드는 status === "cancel"만 모아 보여주고, 부호는 Math.abs로
+ *   통일해서 구 OCR 데이터(-부호)와 신규 수입 분류(+부호)를 모두 안전하게 합산합니다.
+ * - "etc"(기타): 지출·수입 모두에서 쓸 수 있는 폴백.
  */
 export type TxStatus = "purchase" | "cancel" | "refund" | "sub" | "etc";
 /**

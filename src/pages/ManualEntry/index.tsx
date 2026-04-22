@@ -194,8 +194,8 @@ export const ManualEntryPage: React.FC = () => {
               value={type}
               onChange={(nextType) => {
                 setType(nextType);
-                // 지출 → 수입으로 바꾸면 "취소" 같은 지출 전용 상태가 남아있으면 안 되니,
-                // 새 유형에서 유효하지 않은 상태는 새 유형의 안전 디폴트로 자동 전환합니다.
+                // 유형이 바뀌면 반대편 전용 상태(예: 지출의 "구매", 수입의 "취소")가
+                // 남아있지 않도록, 새 유형에서 유효하지 않으면 안전 디폴트로 자동 전환합니다.
                 setStatus((currentStatus) =>
                   currentStatus && isValidStatusForType(currentStatus, nextType)
                     ? currentStatus
