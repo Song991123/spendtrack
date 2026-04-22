@@ -61,9 +61,11 @@ const Footer = styled.div`
 /**
  * 주문(OcrOrder) 하나를 TxRow 하나로 변환합니다.
  *
- * - 환불(refund)은 수입(+)으로, 구매/취소/정기결제는 지출(-)로 부호를 통일합니다.
- *   가계부 집계에서 지출/수입 부호가 섞이면 합계가 엉키므로 저장 시점에
- *   명시적으로 분기해 두는 편이 안전합니다.
+ * - 환불(refund)·취소(cancel)는 돈이 다시 들어오는 흐름이라 type="income"·양수로 저장합니다.
+ *   b341470에서 수동 입력/CSV 임포트 경로가 이미 같은 규약으로 수렴했고, OCR 경로만
+ *   이전 리팩토링에서 빠져 있었습니다. 이렇게 맞춰 둬야 Home/Analysis의 순수입 집계
+ *   (sumIncomeAndRefund에서 status !== "cancel"로 취소를 따로 걸러내는 로직)와 부호 규약이
+ *   어긋나지 않습니다. 구매/정기결제/기타는 종전대로 type="expense"·음수.
  * - 카테고리는 OCR만으로 단정할 수 없어 ["etc"]로 시작합니다. EditForm의
  *   카테고리 체크박스가 상위로 승격되면 여기서 선택값을 주입하게 됩니다.
  * - id에는 주문 id 일부를 섞어 같은 캡쳐에서 나온 여러 TxRow가 식별 가능하도록 합니다.
@@ -71,7 +73,7 @@ const Footer = styled.div`
 function buildCandidateFromOrder(image: OcrImageItem, order: OcrOrder): TxRow {
   const categories: TxCategory[] = ["etc"];
   const title = order.products[0]?.name ?? "OCR 거래";
-  const isIncome = order.statusTag === "refund";
+  const isIncome = order.statusTag === "refund" || order.statusTag === "cancel";
   const signedAmount = isIncome
     ? Math.abs(order.totalAmount)
     : -Math.abs(order.totalAmount);
