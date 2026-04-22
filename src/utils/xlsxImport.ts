@@ -22,7 +22,7 @@ export async function readXlsxAsRows(file: File): Promise<CsvRow[]> {
     defval: "",
     raw: false,
     dateNF: "yyyy-mm-dd",
-    blankrows: false,
+    blankrows: true,
   });
 
   if (aoa.length === 0) return [];

@@ -277,7 +277,7 @@ export const CsvUploadPage: React.FC = () => {
                 <ul>
                   {result.skipped.slice(0, 8).map((item) => (
                     <li key={item.index}>
-                      {item.index + 1}행: {item.reason}
+                      {item.sourceRow}행: {item.reason}
                     </li>
                   ))}
                   {result.skipped.length > 8 && (

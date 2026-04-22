@@ -43,11 +43,8 @@ export function parseCsvMatrix(text: string): string[][] {
       if (ch === "\r" && nextCh === "\n") {
         i += 1; // CRLF 처리
       }
-      currentRow.push(currentCell);
-      // 빈 줄 무시
-      if (currentRow.some((c) => c.trim() !== "")) {
-        matrix.push(currentRow);
-      }
+      // 원본 행 번호를 유지하기 위해 빈 줄도 삽입합니다.
+      matrix.push(currentRow);
       currentRow = [];
       currentCell = "";
     } else {
@@ -58,9 +55,7 @@ export function parseCsvMatrix(text: string): string[][] {
   // 마지막 셀과 행 처리
   if (currentCell !== "" || currentRow.length > 0) {
     currentRow.push(currentCell);
-    if (currentRow.some((c) => c.trim() !== "")) {
-      matrix.push(currentRow);
-    }
+    matrix.push(currentRow);
   }
 
   return matrix.map((row) => row.map((cell) => cell.trim()));
@@ -88,7 +83,7 @@ export function rowsToCsvRows(rows: string[][], headerIndex = 0): CsvRow[] {
   // 병합된 헤더 또는 기존 헤더에서 줄바꿈(Shift+Enter) 및 모든 공백을 제거합니다.
   const cleanedHeaders = headers.map((header) => header.replace(/\s+/g, ""));
 
-  return rows.slice(dataStartIndex).reduce<CsvRow[]>((acc, cells) => {
+  return rows.slice(dataStartIndex).reduce<CsvRow[]>((acc, cells, i) => {
     const row: CsvRow = {};
     let hasValue = false;
 
@@ -99,7 +94,11 @@ export function rowsToCsvRows(rows: string[][], headerIndex = 0): CsvRow[] {
       if (value !== "") hasValue = true;
     });
 
-    if (hasValue) acc.push(row);
+    if (hasValue) {
+      // 실제 엑셀 상의 행 번호 = (배열 인덱스) + 1
+      row._sourceRow = String(dataStartIndex + i + 1);
+      acc.push(row);
+    }
     return acc;
   }, []);
 }

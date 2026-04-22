@@ -100,6 +100,7 @@ function toTxShape(amount: number, status: TxStatus): Pick<TxRow, "amount" | "ty
 
 export interface CsvImportSkipped {
   index: number;
+  sourceRow: number;
   reason: string;
   raw: Record<string, string>;
 }
@@ -116,6 +117,8 @@ export function importRows(parsed: CsvRow[]): CsvImportResult {
   const now = Date.now();
 
   parsed.forEach((raw, index) => {
+    const sourceRow = Number(raw._sourceRow) || index + 1;
+
     const dateRaw = pickFirstValue(raw, DATE_HEADERS);
     const merchantRaw = pickFirstValue(raw, MERCHANT_HEADERS);
     const amountRaw = pickFirstValue(raw, AMOUNT_HEADERS);
@@ -127,20 +130,21 @@ export function importRows(parsed: CsvRow[]): CsvImportResult {
     const { platform, cleaned } = normalizeMerchant(merchantRaw);
 
     if (!merchantRaw) {
-      skipped.push({ index, reason: "가맹점명이 없습니다.", raw });
+      skipped.push({ index, sourceRow, reason: "가맹점명이 없습니다.", raw });
       return;
     }
     if (!date) {
-      skipped.push({ index, reason: "날짜 형식을 읽을 수 없습니다.", raw });
+      skipped.push({ index, sourceRow, reason: "날짜 형식을 읽을 수 없습니다.", raw });
       return;
     }
     if (amount === null) {
-      skipped.push({ index, reason: "금액 형식을 읽을 수 없습니다.", raw });
+      skipped.push({ index, sourceRow, reason: "금액 형식을 읽을 수 없습니다.", raw });
       return;
     }
     if (!platform) {
       skipped.push({
         index,
+        sourceRow,
         reason: `지원 플랫폼이 아닙니다. (${cleaned || merchantRaw})`,
         raw,
       });
