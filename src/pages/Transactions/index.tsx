@@ -5,6 +5,7 @@
  * 위치: src\pages\Transactions\index.tsx
  */
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { MonthPicker } from "../../components/primitives/MonthPicker";
@@ -100,6 +101,8 @@ function toMonthKey(dateStr: string): string {
 
 export const TransactionsPage: React.FC = () => {
   // 필터 상태는 모두 페이지 상단에서 관리해서 표와 상세 패널이 같은 기준을 보게 합니다.
+  const location = useLocation();
+  const navigate = useNavigate();
   const [month, setMonth] = useState("2026-04");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "expense" | "income">("all");
@@ -255,6 +258,30 @@ export const TransactionsPage: React.FC = () => {
   const handleEditSave = useCallback((id: string, patch: Partial<TxRow>) => {
     transactionsStore.updateOne(id, patch);
   }, []);
+
+  /**
+   * 수동 입력 페이지에서 "이 거래 수정하기"로 넘어올 때 location.state.editTransactionId 에
+   * 대상 거래 id 가 담겨 옵니다. 이 경우 해당 거래를 스토어에서 찾아 편집 모달을 자동으로 엽니다.
+   * 한 번 처리한 뒤에는 state 를 비워 같은 거래를 다시 새로 고침·뒤로가기 해도 모달이 불쑥
+   * 다시 뜨지 않게 합니다.
+   */
+  useEffect(() => {
+    const state = location.state as { editTransactionId?: string } | null;
+    const targetId = state?.editTransactionId;
+    if (!targetId) return;
+    const target = allRows.find((row) => row.id === targetId);
+    if (target) {
+      handleEditOpen(target);
+      // 해당 거래가 현재 선택되도록 상세 하이라이트도 맞춰 둡니다.
+      setSelectedId(target.id);
+      // 선택 후에 month 기본값을 타겟 행의 월로 맞춰 두어야 editor 를 닫았을 때도
+      // 같은 거래가 표에 보이도록 보장됩니다.
+      const key = toMonthKey(target.date);
+      if (key) setMonth(key);
+    }
+    // state 를 비워 두 번째 진입에서 재오픈되지 않도록 합니다.
+    navigate(location.pathname, { replace: true, state: null });
+  }, [location.state, location.pathname, allRows, handleEditOpen, navigate]);
 
   // OCR 경로로 저장된 거래에서 "원본 캡쳐만 다시 보기" 흐름을 위한 모달 상태입니다.
   // 이전에는 편집 페이지로 이동했지만, 이 거래는 이미 파싱된 상태라 재방문이 낭비였고

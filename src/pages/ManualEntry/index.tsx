@@ -24,12 +24,10 @@ import { ProductRows, type ManualProduct } from "./components/ProductRows";
 import { transactionsStore, useTransactionsStore } from "../../stores/transactionsStore";
 import { checkDuplicates, autoResolveDuplicates, type MergeAction } from "../../utils/duplicateCheck";
 import { SaveResultModal } from "../../components/modal/SaveResultModal";
-import { ConflictResolveModal } from "../../components/modal/ConflictResolveModal";
 import {
   ProductTotalWarningModal,
   type ProductTotalWarningEntry,
 } from "../../components/modal/ProductTotalWarningModal";
-import { combinePatches, planEnrichment, type EnrichmentPlan } from "../../utils/mergeEnrichment";
 import { checkProductTotal } from "../../utils/productTotalCheck";
 import { formatKRW } from "../../utils/format";
 import type { TxRow } from "./../Transactions/components/TransactionTable";
@@ -165,9 +163,10 @@ const SuggestionItemMeta = styled.span`
 `;
 
 /**
- * "이 거래와 합치기" 버튼. 제안 항목마다 하나씩 붙습니다.
- * 여러 후보가 떠도 사용자가 정확히 어느 기존 거래와 합칠지 고를 수 있게
- * 카드 전체가 아니라 각 후보 옆에 직접 배치합니다.
+ * "이 거래 수정하기" 버튼. 제안 항목마다 하나씩 붙습니다.
+ * 눌렀을 때 해당 기존 거래를 편집하는 모달로 이동해, 사용자가 현재 입력한 값을
+ * 직접 적용하지 않고 "기존 거래에 상품을 추가하는" 관점으로 전환합니다.
+ * 여러 후보가 떠도 각 후보 옆에 직접 버튼을 두어 어떤 거래로 들어갈지 명확히 합니다.
  */
 const MergeBtn = styled.button`
   flex-shrink: 0;
@@ -208,23 +207,6 @@ const SuggestionBtn = styled.button<{ $primary?: boolean }>`
 
   &:hover {
     opacity: 0.85;
-  }
-`;
-
-/** "맞아요" 이후 표시되는 확정 배너 */
-const DupConfirmedBanner = styled.div`
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border: 1px solid ${tokens.color.line};
-  border-radius: ${tokens.radius.card};
-  background: ${tokens.color.tint};
-  font-size: 12.5px;
-  color: ${tokens.color.ink3};
-  line-height: 1.55;
-
-  strong {
-    color: ${tokens.color.ink1};
-    font-weight: 700;
   }
 `;
 
@@ -286,35 +268,18 @@ export const ManualEntryPage: React.FC = () => {
   }, [meta.date, meta.amount, meta.platform, allRows]);
 
   /**
-   * 사용자가 제안을 "맞아요"로 확정했는지 여부.
-   * true면 저장 버튼을 비활성화하고 안내 배너를 표시합니다.
-   */
-  const [dupConfirmed, setDupConfirmed] = useState(false);
-  /**
    * 사용자가 "아니에요"로 제안을 기각했는지 여부.
    * 날짜·금액이 바뀌면 자동으로 초기화됩니다.
+   * true일 때 performSave는 중복 감지를 우회하고 곧바로 새 거래로 저장합니다.
    */
   const [dupDismissed, setDupDismissed] = useState(false);
 
-  /**
-   * 충돌 해결 모달에 넘길 컨텍스트. 사용자가 "이 거래와 합치기"를 눌렀을 때
-   * 자동 보강(autoFills)은 즉시 적용되고, 남은 conflicts만 여기에 담아 모달을 띄웁니다.
-   */
-  const [pendingMerge, setPendingMerge] = useState<{
-    existing: TxRow;
-    plan: EnrichmentPlan;
-    /** 사용자 입력 측의 거래명 — 모달 헤더에서 두 거래를 구분하기 위해 함께 넘깁니다. */
-    incomingTitle: string;
-  } | null>(null);
-
   // 날짜 또는 금액이 바뀌면 제안 상태를 초기화해 다시 판단할 수 있게 합니다.
   useEffect(() => {
-    setDupConfirmed(false);
     setDupDismissed(false);
   }, [meta.date, meta.amount]);
 
-  const showSuggestion =
-    candidateMatches.length > 0 && !dupConfirmed && !dupDismissed;
+  const showSuggestion = candidateMatches.length > 0 && !dupDismissed;
 
   /** autoResolve 후 건너뜀 항목이 있을 때만 표시하는 결과 모달. */
   const [saveResult, setSaveResult] = useState<{
@@ -410,77 +375,36 @@ export const ManualEntryPage: React.FC = () => {
   };
 
   /**
-   * 사용자가 후보 카드에서 "이 거래와 합치기"를 눌렀을 때 호출됩니다.
-   * 1) 현재 폼으로 incoming TxRow를 만들고,
-   * 2) planEnrichment로 기존 거래에 옮겨 심을 수 있는 필드를 계산한 뒤,
-   * 3) 자동 보강(autoFills)은 바로 updateOne으로 적용하고,
-   * 4) 새 아이템은 appendItemsToTransaction으로 기존 거래에 추가하며,
-   * 5) 충돌이 있으면 ConflictResolveModal을 열어 사용자가 직접 선택하도록 합니다.
-   * 충돌이 없으면 곧바로 거래내역 페이지로 이동해 "머지 완료" 상태를 보여줍니다.
+   * 사용자가 후보 카드에서 "이 거래 수정하기"를 눌렀을 때 호출됩니다.
+   * 현재 입력 중인 폼 값을 자동으로 기존 거래로 옮겨 심지 않습니다.
+   * 대신 거래내역 페이지로 이동해 해당 기존 거래의 편집 모달을 바로 열어,
+   * 사용자가 직접 "이 거래에 상품을 추가"하는 관점에서 원하는 정보만 수동으로
+   * 채우게 합니다. 자동 머지·충돌 해결 흐름은 이 경로에서 완전히 제거됩니다.
    */
   const handleMergeWith = (existingRow: TxRow) => {
-    const incoming = buildRowFromForm(setError);
-    if (!incoming) return;
-    const mergeCheck = checkDuplicates([incoming], [existingRow]);
-    const changedItemDiff = mergeCheck.itemDiff[0];
-    if (changedItemDiff && changedItemDiff.changedItems.length > 0) {
-      const changedNames = changedItemDiff.changedItems
-        .map((item) => item.after.name)
-        .slice(0, 2)
-        .join(", ");
-      const extraCount = Math.max(changedItemDiff.changedItems.length - 2, 0);
-      setError(
-        changedItemDiff.changedItems.length === 1
-          ? `${changedNames} 상품 금액이 기존 거래와 달라서 합칠 수 없어요. 이 경우는 별도 거래로 저장해 주세요.`
-          : extraCount > 0
-            ? `${changedNames} 외 ${extraCount}개 상품 금액이 기존 거래와 달라서 합칠 수 없어요. 이 경우는 별도 거래로 저장해 주세요.`
-            : `${changedNames} 상품 금액이 기존 거래와 달라서 합칠 수 없어요. 이 경우는 별도 거래로 저장해 주세요.`
-      );
-      return;
-    }
-    const plan = planEnrichment(incoming, existingRow);
-
-    // 자동 보강은 사용자에게 묻지 않고 즉시 반영합니다. "기존이 비어 있던 자리를 채우는" 동작뿐이라
-    // 잃을 게 없습니다.
-    if (plan.autoFills.length > 0) {
-      transactionsStore.updateOne(
-        existingRow.id,
-        combinePatches(plan.autoFills.map((fill) => fill.patch))
-      );
-    }
-    if (plan.newItems.length > 0) {
-      transactionsStore.appendItemsToTransaction(
-        existingRow.id,
-        plan.newItems,
-        "MANUAL"
-      );
-    }
-
-    // 새 입력은 저장하지 않습니다(사용자가 "같은 거래"라고 확정했으므로).
-    setDupConfirmed(true);
-
-    if (plan.conflicts.length > 0) {
-      // 가장 최신의 existing 상태를 넘겨야 모달 헤더의 제목이 맞습니다.
-      // updateOne 이후를 반영하려면 스토어에서 다시 읽어와야 하지만, title은 autoFills로 바뀌지 않으므로
-      // existingRow 그대로 써도 헤더 표시는 정확합니다.
-      setPendingMerge({
-        existing: existingRow,
-        plan,
-        incomingTitle: incoming.title,
-      });
-      return;
-    }
-
-    // 충돌 없이 전부 처리됐으면 곧바로 거래내역으로 이동.
-    navigate("/transactions");
+    // 현재 폼이 필수값을 갖췄는지까지는 검증하지 않습니다. "사용자가 중복임을 알아챘고,
+    // 기존 거래를 수정하겠다"는 의도이므로 입력창 값은 의미가 없어지고 버려집니다.
+    navigate("/transactions", {
+      state: { editTransactionId: existingRow.id },
+    });
   };
 
   /**
    * 중복 감지 → autoResolve → 저장까지의 실제 저장 경로. 상품 합계 확인을 통과한 뒤에만
    * 호출됩니다. "이대로 등록"을 거친 경우 buildRowFromForm이 만든 row에 itemsCoverage:"partial"이
    * 이미 붙어 들어옵니다.
+   *
+   * 사용자가 제안 카드에서 "아니에요, 계속 입력할게요"로 명시적으로 "다른 거래"임을 밝혔다면
+   * (dupDismissed === true) 중복 감지를 우회하고 곧바로 새 거래로 저장합니다. 이렇게 해야
+   * 사용자가 의도한 "두 개의 독립된 거래"가 기존 거래 하위 항목으로 빨려들어가지 않습니다.
    */
   const performSave = (row: TxRow) => {
+    if (dupDismissed) {
+      transactionsStore.addOne(row);
+      navigate("/transactions");
+      return;
+    }
+
     const dupResult = checkDuplicates([row], allRows);
     const resolved = autoResolveDuplicates(dupResult);
 
@@ -513,8 +437,6 @@ export const ManualEntryPage: React.FC = () => {
    * 이 화면에서 볼 때 정상 흐름(예: 통신비 요금처럼 상품 개념이 없는 지출)이기 때문입니다.
    */
   const handleSave = () => {
-    // "맞아요"로 이미 같은 항목임을 확정했으면 저장하지 않습니다.
-    if (dupConfirmed) return;
     const row = buildRowFromForm(setError);
     if (!row) return;
 
@@ -606,7 +528,7 @@ export const ManualEntryPage: React.FC = () => {
               </SuggestionTitle>
               <SuggestionSub>
                 혹시 이걸 입력하시려는 건 아닌가요? 같은 거래라면 해당 행의
-                '이 거래와 합치기'를 눌러 플랫폼·메모·카테고리·상품을 한 번에 옮겨 심을 수 있어요.
+                '이 거래 수정하기'를 눌러 기존 거래 편집 화면으로 이동해 상품을 직접 추가할 수 있어요.
               </SuggestionSub>
               <SuggestionList>
                 {candidateMatches.map((row) => (
@@ -621,7 +543,7 @@ export const ManualEntryPage: React.FC = () => {
                       type="button"
                       onClick={() => handleMergeWith(row)}
                     >
-                      이 거래와 합치기
+                      이 거래 수정하기
                     </MergeBtn>
                   </SuggestionItem>
                 ))}
@@ -635,14 +557,6 @@ export const ManualEntryPage: React.FC = () => {
                 </SuggestionBtn>
               </SuggestionActions>
             </SuggestionCard>
-          )}
-
-          {/* "맞아요" 확정 후 안내 배너 */}
-          {dupConfirmed && (
-            <DupConfirmedBanner>
-              <strong>이미 등록된 항목이에요.</strong> 같은 거래가 이미 있어서 저장하지 않을게요.
-              다른 거래라면 날짜나 금액을 바꾸면 다시 확인할 수 있어요.
-            </DupConfirmedBanner>
           )}
 
           <SectionLabel>상태 태그</SectionLabel>
@@ -678,14 +592,13 @@ export const ManualEntryPage: React.FC = () => {
               variant="primary"
               size="lg"
               block
-              disabled={dupConfirmed}
               onClick={() => {
                 setSaveResult(null);
                 setError(null);
                 handleSave();
               }}
             >
-              {dupConfirmed ? "이미 등록된 항목이에요" : "거래 저장하기"}
+              거래 저장하기
             </Button>
           </SaveBar>
 
@@ -709,33 +622,6 @@ export const ManualEntryPage: React.FC = () => {
           skipped={saveResult.skipped}
           onConfirm={() => {
             setSaveResult(null);
-            navigate("/transactions");
-          }}
-        />
-      )}
-
-      {/*
-        충돌 해결 모달은 사용자가 "이 거래와 합치기"를 누른 뒤 자동 보강으로 처리할 수 없는
-        필드가 남아있을 때만 띄웁니다. 모달에서 '선택 적용'을 누르면 합쳐진 patch를
-        updateOne으로 기존 거래에 반영한 뒤 거래내역 페이지로 이동합니다. '취소'를 눌러도
-        이미 autoFills와 newItems는 반영된 상태이기 때문에, 사용자가 본인 입력으로 다시
-        돌아갈 이유가 없어 마찬가지로 거래내역 페이지로 이동시킵니다.
-      */}
-      {pendingMerge && (
-        <ConflictResolveModal
-          isOpen
-          existing={pendingMerge.existing}
-          conflicts={pendingMerge.plan.conflicts}
-          incomingTitle={pendingMerge.incomingTitle}
-          onConfirm={(patch) => {
-            if (Object.keys(patch).length > 0) {
-              transactionsStore.updateOne(pendingMerge.existing.id, patch);
-            }
-            setPendingMerge(null);
-            navigate("/transactions");
-          }}
-          onCancel={() => {
-            setPendingMerge(null);
             navigate("/transactions");
           }}
         />
