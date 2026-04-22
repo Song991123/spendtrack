@@ -34,6 +34,11 @@ export const tokens = {
     cat3: "#B45309",
     cat4: "#9F1239",
     cat5: "#6B7280",
+    // 브라우저 기본 회색 스크롤바와 구분되도록 브랜드 accent 에 그레이를 섞은 페리윙클 톤.
+    // - scrollThumb  : 평소 노출 상태. 배경과 충돌하지 않을 정도의 채도.
+    // - scrollThumbHover : 포인터가 썸 위에 있을 때의 더 또렷한 인디고.
+    scrollThumb: "#A0A1D8",
+    scrollThumbHover: "#6F71CC",
     tag: {
       coupang: { bg: "#FFF4E5", fg: "#9A3412" },
       naver: { bg: "#ECFDF5", fg: "#065F46" },

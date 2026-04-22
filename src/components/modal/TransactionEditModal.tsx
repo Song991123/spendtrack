@@ -53,9 +53,15 @@ interface Props {
 const ScrollBody = styled.div`
   max-height: min(70vh, 640px);
   overflow-y: auto;
-  /* 스크롤바가 보여도 입력 필드와 겹쳐 보이지 않도록 소량의 우측 여백을 확보합니다. */
-  padding-right: 4px;
-  margin-right: -4px;
+  /*
+   * 스크롤바와 입력 필드가 딱 붙지 않도록 우측에 12px 여백을 둡니다. 같은 크기의 음수
+   * 마진으로 상쇄해서 ScrollBody 자체 너비는 그대로 유지 — 모달 레이아웃이 밀려 나오지
+   * 않으면서 오른쪽으로만 약간 튀어나와 스크롤바가 숨을 쉬는 영역을 확보합니다.
+   * scrollbar-gutter 로 대체할 수도 있지만, 지원 브라우저 편차가 있어 padding 트릭을
+   * 유지해 구형 Safari 에서도 동일하게 보이게 합니다.
+   */
+  padding-right: 12px;
+  margin-right: -12px;
 `;
 
 const SectionLabel = styled.div`
