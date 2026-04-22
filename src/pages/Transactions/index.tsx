@@ -23,6 +23,8 @@ import {
 } from "../../stores/transactionsStore";
 import { TransactionEditModal } from "../../components/modal/TransactionEditModal";
 import { Modal } from "../../components/modal/Modal";
+import { Button } from "../../components/primitives/Button";
+import { formatKRW } from "../../utils/format";
 import type { TxRow } from "./components/TransactionTable";
 
 const Body = styled.div<{ $hasPanel: boolean }>`
@@ -89,6 +91,58 @@ const PanelInner = styled.div<{ $open: boolean }>`
 const Grid = styled.div`
   display: grid;
   gap: 16px;
+`;
+
+// 삭제 확인 모달의 본문 레이아웃. 모달 컴포넌트 자체가 padding 을 책임지므로 여기선
+// 안내문 · 대상 거래 요약 · 액션 버튼 세 영역만 수직으로 쌓아 줍니다.
+const ConfirmBody = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+`;
+
+const ConfirmLead = styled.p`
+  margin: 0;
+  color: ${tokens.color.ink2};
+  font-size: 13.5px;
+  line-height: 1.55;
+`;
+
+const ConfirmTarget = styled.div`
+  padding: 12px 14px;
+  border: 1px solid ${tokens.color.line};
+  border-radius: ${tokens.radius.card};
+  background: ${tokens.color.foot};
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+const ConfirmTargetTitle = styled.div`
+  color: ${tokens.color.ink1};
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const ConfirmTargetMeta = styled.div`
+  color: ${tokens.color.ink4};
+  font-size: 12px;
+  font-family: ${tokens.font.mono};
+  font-variant-numeric: tabular-nums;
+`;
+
+const ConfirmActions = styled.div`
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  > button {
+    min-width: 96px;
+  }
 `;
 
 function toMonthKey(dateStr: string): string {
@@ -226,21 +280,30 @@ export const TransactionsPage: React.FC = () => {
     return () => window.clearTimeout(timer);
   }, [selected]);
 
-  const handleDelete = () => {
-    if (!selected) {
-      return;
-    }
+  /**
+   * 삭제는 돌이킬 수 없으므로 실제 store.removeOne 호출 전에 확인 모달을 띄웁니다.
+   * 상세 패널에서 '거래 삭제'를 누르면 여기로 와서 대상 행을 보관만 해두고,
+   * 모달의 확인 버튼을 눌렀을 때 `confirmDelete`가 실제 삭제를 수행합니다.
+   */
+  const [deleteTarget, setDeleteTarget] = useState<TxRow | null>(null);
 
+  const handleDelete = useCallback((row: TxRow) => {
+    setDeleteTarget(row);
+  }, []);
+
+  const confirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
     // 삭제 후에는 가능한 한 바로 다음 또는 이전 행을 선택해 사용 흐름이 끊기지 않게 합니다.
-    const currentIndex = filteredRows.findIndex((row) => row.id === selected.id);
+    const currentIndex = filteredRows.findIndex((row) => row.id === deleteTarget.id);
     const nextSelectedId =
       filteredRows[currentIndex + 1]?.id ??
       filteredRows[currentIndex - 1]?.id ??
       "";
 
-    transactionsStore.removeOne(selected.id);
+    transactionsStore.removeOne(deleteTarget.id);
     setSelectedId(nextSelectedId);
-  };
+    setDeleteTarget(null);
+  }, [deleteTarget, filteredRows]);
 
   // 수정 모달은 상세 패널에서 '수정하기'를 누르는 순간 열려, 대상 거래의 id와 현재 값을 그대로 받습니다.
   // 수동 입력 화면으로의 전체 페이지 이동 대신 해당 거래만 가볍게 편집할 수 있게 합니다.
@@ -341,7 +404,7 @@ export const TransactionsPage: React.FC = () => {
                   row={row}
                   onClose={() => setSelectedId("")}
                   onEdit={() => handleEditOpen(row)}
-                  onDelete={handleDelete}
+                  onDelete={() => handleDelete(row)}
                   onOpenSource={handleOpenSource}
                 />
               )}
@@ -354,7 +417,7 @@ export const TransactionsPage: React.FC = () => {
                   row={displayed}
                   onClose={() => setSelectedId("")}
                   onEdit={() => handleEditOpen(displayed)}
-                  onDelete={handleDelete}
+                  onDelete={() => handleDelete(displayed)}
                   onOpenSource={handleOpenSource}
                 />
               </PanelInner>
@@ -369,6 +432,39 @@ export const TransactionsPage: React.FC = () => {
           onClose={() => setEditTarget(null)}
           onSubmit={handleEditSave}
         />
+      )}
+      {deleteTarget && (
+        <Modal
+          isOpen
+          onClose={() => setDeleteTarget(null)}
+          title="정말 삭제하시겠습니까?"
+        >
+          {/*
+            삭제는 되돌릴 수 없으므로 어떤 거래를 지우려고 하는지 제목·날짜·금액을 함께
+            보여 사용자가 잘못된 행을 고른 게 아닌지 마지막으로 확인하게 합니다.
+          */}
+          <ConfirmBody>
+            <ConfirmLead>이 거래는 삭제 후 되돌릴 수 없어요.</ConfirmLead>
+            <ConfirmTarget>
+              <ConfirmTargetTitle>{deleteTarget.title}</ConfirmTargetTitle>
+              <ConfirmTargetMeta>
+                {deleteTarget.date} · {formatKRW(Math.abs(deleteTarget.amount))}
+              </ConfirmTargetMeta>
+            </ConfirmTarget>
+            <ConfirmActions>
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setDeleteTarget(null)}
+              >
+                취소
+              </Button>
+              <Button variant="danger" size="md" onClick={confirmDelete}>
+                삭제하기
+              </Button>
+            </ConfirmActions>
+          </ConfirmBody>
+        </Modal>
       )}
       {sourceImageUrl !== null && (
         <Modal
