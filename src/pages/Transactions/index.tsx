@@ -21,6 +21,8 @@ import {
   transactionsStore,
   useTransactionsStore,
 } from "../../stores/transactionsStore";
+import { TransactionEditModal } from "../../components/modal/TransactionEditModal";
+import type { TxRow } from "./components/TransactionTable";
 
 const Body = styled.div<{ $hasPanel: boolean }>`
   display: grid;
@@ -229,6 +231,23 @@ export const TransactionsPage: React.FC = () => {
     setSelectedId(nextSelectedId);
   };
 
+  // 수정 모달은 상세 패널에서 '수정하기'를 누르는 순간 열려, 대상 거래의 id와 현재 값을 그대로 받습니다.
+  // 수동 입력 화면으로의 전체 페이지 이동 대신 해당 거래만 가볍게 편집할 수 있게 합니다.
+  // editEpoch는 "같은 거래를 다시 열었을 때도 모달을 remount"시키기 위한 단조 증가 카운터입니다.
+  // 모달 내부 상태는 row prop 기반 useState 초기자로만 세팅되므로, 새로 열릴 때마다
+  // key를 바꿔 remount해야 편집 중이던 값이 남지 않습니다.
+  const [editTarget, setEditTarget] = useState<TxRow | null>(null);
+  const [editEpoch, setEditEpoch] = useState(0);
+
+  const handleEditOpen = useCallback((row: TxRow) => {
+    setEditTarget(row);
+    setEditEpoch((current) => current + 1);
+  }, []);
+
+  const handleEditSave = useCallback((id: string, patch: Partial<TxRow>) => {
+    transactionsStore.updateOne(id, patch);
+  }, []);
+
   return (
     <AppShell
       activeNav="transactions"
@@ -271,7 +290,7 @@ export const TransactionsPage: React.FC = () => {
                 <DetailPanel
                   row={displayed}
                   onClose={() => setSelectedId("")}
-                  onEdit={() => navigate("/manual-entry")}
+                  onEdit={() => handleEditOpen(displayed)}
                   onDelete={handleDelete}
                   onOpenSource={() => navigate("/ocr-edit")}
                 />
@@ -280,6 +299,14 @@ export const TransactionsPage: React.FC = () => {
           </PanelSlot>
         </Body>
       </Grid>
+      {editTarget && (
+        <TransactionEditModal
+          key={editEpoch}
+          row={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSubmit={handleEditSave}
+        />
+      )}
     </AppShell>
   );
 };
