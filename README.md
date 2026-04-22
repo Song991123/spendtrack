@@ -1,5 +1,14 @@
 # spend-track
 
+## 문서 안내
+
+- 기획 기준: `docs/SpendTrack_Planning_Document.md`
+- AI 작업 규칙: `CLAUDE.md`
+- AI 프로젝트 요약: `docs/AI_PROJECT_GUIDE.md`
+- 차기 구현 참고:
+  - `docs/collaboration/SpendTrack_Firestore_Data_Model.md`
+  - `docs/collaboration/SpendTrack_MockAuth_Replacement.md`
+
 ## Requirements
 
 - Node.js `20.19.0+` or `22.12.0+`
