@@ -8,12 +8,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
 import { Card, CardBd } from "../../../components/primitives/Card";
+import { DatePicker } from "../../../components/primitives/DatePicker";
 import { Tag } from "../../../components/primitives/Tag";
 import { tokens } from "../../../styles/tokens";
 import type { OcrImageItem, Status } from "../data";
 import { ProductTable } from "./ProductTable";
 import { CATEGORY_LABELS, PLATFORM_LABELS, STATUS_LABELS } from "../../../constants/labels";
-import { fromIsoDate, toIsoDate } from "../../../utils/date";
 
 const MetaRow = styled.div`
   display: flex;
@@ -42,27 +42,15 @@ const MetaCell = styled.div`
   }
 `;
 
-const DateInput = styled.input`
+/**
+ * 메타 행은 플랫폼 태그·주문일자·상품수·상태 태그를 좁은 가로 바에 병렬로 배치하므로
+ * DatePicker 트리거 기본 너비(100%)로 두면 행이 밀립니다. 수동 입력 폼(MetaFields)의
+ * 한 칸을 차지하는 케이스와 달리 여기서는 140px로 고정해 원래의 DateInput과 같은
+ * 슬롯 크기를 유지합니다.
+ */
+const DatePickerSlot = styled.div`
   margin-top: 2px;
-  width: 120px;
-  padding: 4px 6px;
-  border: 1px solid ${tokens.color.line};
-  border-radius: ${tokens.radius.control};
-  background: ${tokens.color.panel};
-  color: ${tokens.color.ink1};
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  outline: none;
-  transition:
-    border-color ${tokens.motion.fast} ease,
-    box-shadow ${tokens.motion.fast} ease;
-
-  &:focus,
-  &:focus-visible {
-    border-color: ${tokens.color.accent};
-    box-shadow: ${tokens.shadow.focus};
-  }
+  width: 140px;
 `;
 
 const MetaSeparator = styled.span`
@@ -553,13 +541,16 @@ export const EditForm: React.FC<EditFormProps> = ({
           <MetaCell>
             <div className="label">주문일자</div>
             {onOrderDateChange ? (
-              /* 수동 입력과 동일하게 네이티브 달력을 쓰고, 저장 포맷은 YYYY.MM.DD로 정규화합니다. */
-              <DateInput
-                type="date"
-                value={toIsoDate(image.orderDate)}
-                onChange={(event) => onOrderDateChange(fromIsoDate(event.target.value))}
-                aria-label="주문일자"
-              />
+              /* 수동 입력과 동일한 공용 DatePicker를 써서 앱 전체의 달력 UX를 통일합니다.
+                 내부에서 YYYY.MM.DD ↔ YYYY-MM-DD 변환을 처리하므로 호출부는 저장 포맷을 그대로 주고받습니다. */
+              <DatePickerSlot>
+                <DatePicker
+                  value={image.orderDate}
+                  onChange={onOrderDateChange}
+                  size="sm"
+                  aria-label="주문일자"
+                />
+              </DatePickerSlot>
             ) : (
               <div className="value">{image.orderDate}</div>
             )}

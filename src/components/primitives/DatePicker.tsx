@@ -23,6 +23,12 @@ interface DatePickerProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  /**
+   * 트리거 버튼의 크기.
+   * - "md"(기본): 수동 입력 폼처럼 한 줄을 차지할 때. 40px 높이로 다른 TextInput과 맞춥니다.
+   * - "sm": OCR 편집의 메타 바처럼 태그/구분선 사이에 끼워 넣을 때. 28px 높이로 작게.
+   */
+  size?: "sm" | "md";
   "aria-label"?: string;
 }
 
@@ -53,20 +59,20 @@ const Root = styled.div`
  * 트리거 버튼. <input>과 동일한 높이/둥글기/테두리를 유지해 폼 안에서 이질감이 없게 합니다.
  * 값이 비었을 때는 placeholder 색, 값이 있으면 ink1 진한 색으로 표기해 "정해짐/미정"을 구분합니다.
  */
-const Trigger = styled.button<{ $open: boolean; $empty: boolean }>`
+const Trigger = styled.button<{ $open: boolean; $empty: boolean; $size: "sm" | "md" }>`
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  height: 40px;
-  padding: 0 12px;
+  height: ${({ $size }) => ($size === "sm" ? "28px" : "40px")};
+  padding: ${({ $size }) => ($size === "sm" ? "0 8px" : "0 12px")};
   border: 1px solid
     ${({ $open }) => ($open ? tokens.color.accent : tokens.color.line)};
   border-radius: ${tokens.radius.control};
   background: ${tokens.color.panel};
   color: ${({ $empty }) => ($empty ? tokens.color.ink5 : tokens.color.ink1)};
   font-family: inherit;
-  font-size: ${tokens.type.bodySm.size};
+  font-size: ${({ $size }) => ($size === "sm" ? "12.5px" : tokens.type.bodySm.size)};
   font-weight: 500;
   cursor: pointer;
   outline: none;
@@ -292,6 +298,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   value,
   onChange,
   placeholder = "날짜 선택",
+  size = "md",
   "aria-label": ariaLabel,
 }) => {
   const [open, setOpen] = useState(false);
@@ -385,6 +392,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         type="button"
         $open={open}
         $empty={!value}
+        $size={size}
         onClick={toggleOpen}
         aria-haspopup="dialog"
         aria-expanded={open}
