@@ -661,6 +661,10 @@ export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch, onDelet
               {/* statusTag은 OCR이 자동 추정한 값이라 오인식될 수 있어, Tag를 그대로 두되
                * 클릭하면 팝오버에서 바로 바꿀 수 있게 합니다. 디자인은 변경하지 않고
                * 호버 시 옅은 링만 띄워 "편집 가능"을 알립니다. */}
+              {/* statusTag 옆에 쇼핑몰 원문 라벨(예: "배송완료")을 병기하던 슬롯이 있었지만,
+               * 사용자 입장에서는 우리 내부 분류(Tag) 하나만 보이면 충분하고 원문은 노이즈였습니다.
+               * OCR 파싱은 내부 로직이 알아서 대응해 주면 되는 부분이라 UI에서는 걷어냈고,
+               * order.statusLabel 필드 자체는 오분류 역추적용으로 데이터에만 남겨 둡니다. */}
               {onOrderPatch ? (
                 <EditableStatusTag
                   value={order.statusTag}
@@ -668,17 +672,6 @@ export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch, onDelet
                 />
               ) : (
                 <Tag kind={order.statusTag}>{STATUS_LABELS[order.statusTag]}</Tag>
-              )}
-              {/* 쇼핑몰이 실제로 찍어 준 원문 라벨(예: "배송완료 · 4/9(목) 도착")은
-               * statusTag 옆에 작게 노출해서 "우리 내부 분류"와 "쇼핑몰 원문"이
-               * 어떻게 대응되는지 사용자가 확인할 수 있게 합니다. */}
-              {order.statusLabel && (
-                <MetaCell>
-                  <div className="label">원문 라벨</div>
-                  <div className="value" style={{ color: tokens.color.ink4, fontSize: 11.5 }}>
-                    {order.statusLabel}
-                  </div>
-                </MetaCell>
               )}
             </MetaRow>
 
