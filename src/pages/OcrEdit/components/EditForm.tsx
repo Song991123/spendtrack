@@ -28,9 +28,10 @@ const HeaderRow = styled.div`
  * 한 캡쳐 안의 주문 블록 하나를 감싸는 래퍼.
  * 카드 내부에 살짝 들여 쓴 패널을 두어 "여기서부터 여기까지가 하나의 주문"이
  * 명확히 구분되게 합니다. 여러 주문이 있을 때는 블록 사이 세로 간격으로
- * 시각적으로 떨어지게 보여 줍니다.
+ * 시각적으로 떨어지게 보여 줍니다. position: relative는 우측 상단 × 버튼의 기준점.
  */
 const OrderBlock = styled.section`
+  position: relative;
   padding: 14px 14px 16px;
   border: 1px solid ${tokens.color.line2};
   border-radius: ${tokens.radius.card};
@@ -38,6 +39,48 @@ const OrderBlock = styled.section`
 
   & + & {
     margin-top: 12px;
+  }
+`;
+
+/**
+ * 주문 블록 우측 상단의 삭제 버튼. 잘못 섞여 들어간 주문 한 건만 떼어낼 때 사용합니다.
+ * 평상시에는 차분한 ink 색이고 hover 시 neg 색으로 전환해 "삭제 의도"를 시각적으로 확실히 합니다.
+ */
+const OrderDeleteButton = styled.button`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: ${tokens.radius.control};
+  background: transparent;
+  color: ${tokens.color.ink4};
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  transition:
+    background ${tokens.motion.fast},
+    color ${tokens.motion.fast},
+    border-color ${tokens.motion.fast};
+
+  &:hover {
+    background: ${tokens.color.negSubtle};
+    color: ${tokens.color.neg};
+    border-color: ${tokens.color.negBorder};
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: ${tokens.shadow.focus};
+  }
+
+  svg {
+    width: 12px;
+    height: 12px;
   }
 `;
 
@@ -492,9 +535,14 @@ interface EditFormProps {
    * 주문이 N개로 늘어나면 핸들러도 N배로 늘어나 관리 비용이 커지기 때문입니다.
    */
   onOrderPatch?: (orderId: string, patch: Partial<Pick<OcrOrder, "orderDate" | "statusTag">>) => void;
+  /**
+   * 주문 블록 삭제 요청을 상위로 올립니다. 실제 삭제 처리(마지막 1건이면 이미지까지
+   * 함께 사라지는 캐스케이드 + 확인 모달 여부)는 OcrEditPage에서 결정합니다.
+   */
+  onDeleteOrder?: (orderId: string) => void;
 }
 
-export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch }) => {
+export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch, onDeleteOrder }) => {
   /**
    * 카테고리 목록은 이미지 간에 공유되도록 상단에서 관리합니다. 사용자가 한 번
    * 추가한 카테고리는 다른 OCR 이미지 편집 시에도 그대로 선택할 수 있어야 자연스럽기 때문입니다.
@@ -574,6 +622,18 @@ export const EditForm: React.FC<EditFormProps> = ({ image, onOrderPatch }) => {
 
         {image.orders.map((order) => (
           <OrderBlock key={order.id}>
+            {onDeleteOrder && (
+              <OrderDeleteButton
+                type="button"
+                aria-label="이 주문 삭제"
+                onClick={() => onDeleteOrder(order.id)}
+              >
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+                  <path d="M4 4l8 8M12 4l-8 8" />
+                </svg>
+                삭제
+              </OrderDeleteButton>
+            )}
             <MetaRow>
               <MetaCell>
                 <div className="label">주문일자</div>

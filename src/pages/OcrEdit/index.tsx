@@ -11,6 +11,8 @@ import styled from "styled-components";
 import { AppShell } from "../../components/layout/AppShell";
 import { Button } from "../../components/primitives/Button";
 import { MatchTransactionModal } from "../../components/modal/MatchTransactionModal";
+import { Modal } from "../../components/modal/Modal";
+import { tokens } from "../../styles/tokens";
 import { media } from "../../tokens/breakpoints";
 import { ImageList } from "./components/ImageList";
 import { ImagePreview } from "./components/ImagePreview";
@@ -109,6 +111,24 @@ interface MatchQueueEntry {
   productCount: number;
 }
 
+/**
+ * 삭제 확인 모달 상태.
+ *
+ * UX 규칙:
+ * - 이미지 통째 삭제는 한 번에 여러 주문이 날아가므로 항상 확인 모달을 띄웁니다.
+ * - 주문 블록 삭제는 같은 이미지에 다른 주문이 남아 있으면 바로 삭제(실수 복구 용이).
+ *   단, 마지막 주문을 지우면 이미지까지 함께 사라지므로 이때만 확인 모달을 띄웁니다.
+ *
+ * 이 두 케이스 모두 결과적으로 "이미지가 사라진다"는 점이 공통이라 같은 모달 포맷에
+ * 얹되, title/message로 맥락만 다르게 표현합니다.
+ */
+interface ConfirmState {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+}
+
 export const OcrEditPage: React.FC = () => {
   const navigate = useNavigate();
   const allRows = useTransactionsStore();
@@ -122,6 +142,9 @@ export const OcrEditPage: React.FC = () => {
 
   // 매칭 후보가 있는 주문을 순차적으로 처리하기 위한 큐. 0번 인덱스가 현재 모달에 뜨는 건.
   const [matchQueue, setMatchQueue] = useState<MatchQueueEntry[]>([]);
+
+  // 삭제 확인 모달 상태. null이면 모달 닫힘.
+  const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
 
   /**
    * 주문 필드(주문일자·상태 태그) 변경을 이미지 상태에 반영합니다.
@@ -142,6 +165,86 @@ export const OcrEditPage: React.FC = () => {
         };
       })
     );
+  };
+
+  /**
+   * 이미지 목록에서 특정 이미지를 제거한 뒤, 현재 선택된 이미지가 사라졌다면
+   * 남아 있는 이미지 중 가장 인접한 후보로 selection을 옮깁니다.
+   *
+   * 삭제 전 인덱스를 기준으로 다음 이미지를 우선 고르고, 없으면 그 앞을 고릅니다.
+   * 모두 지워진 경우 빈 문자열을 세팅해 EditForm/ImagePreview의 빈 상태를 활용합니다.
+   *
+   * 사용자가 확인 모달에서 '삭제'를 누른 직후 호출되므로 현재 렌더의 images 스냅샷을
+   * 그대로 사용해도 안전합니다. 이렇게 하면 setImages updater 안에서 setSelectedId를
+   * 호출하는 중첩 구조를 피할 수 있습니다.
+   */
+  const removeImage = (id: string) => {
+    const removedIndex = images.findIndex((image) => image.id === id);
+    if (removedIndex < 0) return;
+    const next = images.filter((image) => image.id !== id);
+    setImages(next);
+    if (selectedId === id) {
+      const fallback = next[removedIndex] ?? next[removedIndex - 1] ?? next[0];
+      setSelectedId(fallback?.id ?? "");
+    }
+  };
+
+  /**
+   * 이미지 삭제 요청. 캡쳐 전체(주문 N건)가 날아가는 동작이라 항상 확인 모달을 거칩니다.
+   */
+  const handleDeleteImage = (id: string) => {
+    const target = images.find((image) => image.id === id);
+    if (!target) return;
+    const orderCount = target.orders.length;
+    setConfirmState({
+      title: "이미지를 삭제할까요?",
+      message:
+        orderCount > 1
+          ? `이 캡쳐 안의 주문 ${orderCount}건이 모두 사라집니다. 되돌릴 수 없어요.`
+          : "이 캡쳐와 안의 주문이 함께 삭제됩니다. 되돌릴 수 없어요.",
+      confirmLabel: "이미지 삭제",
+      onConfirm: () => {
+        removeImage(id);
+        setConfirmState(null);
+      },
+    });
+  };
+
+  /**
+   * 주문 블록 삭제 요청.
+   *
+   * - 같은 이미지에 다른 주문이 남아 있으면 즉시 삭제(모달 없음). 다른 블록이 시각적으로
+   *   남아 있어 실수를 바로 알 수 있고, 재업로드가 큰 부담이 아니라 속도를 우선합니다.
+   * - 마지막 주문을 지우면 이미지 자체가 의미를 잃어 함께 삭제되므로, 이때만 확인 모달을 띄웁니다.
+   */
+  const handleDeleteOrder = (orderId: string) => {
+    if (!selected) return;
+    const isLastOrder = selected.orders.length <= 1;
+
+    if (!isLastOrder) {
+      setImages((prev) =>
+        prev.map((image) => {
+          if (image.id !== selected.id) return image;
+          return {
+            ...image,
+            orders: image.orders.filter((order) => order.id !== orderId),
+          };
+        })
+      );
+      return;
+    }
+
+    // 마지막 주문이면 이미지까지 캐스케이드 삭제. 메시지에서 이 사실을 명시해 놀라지 않게 합니다.
+    setConfirmState({
+      title: "이 주문을 삭제하면 이미지도 함께 삭제돼요",
+      message:
+        "이 캡쳐에는 이 주문 하나만 남아 있어서, 주문을 지우면 캡쳐 자체도 같이 사라져요. 계속할까요?",
+      confirmLabel: "주문과 이미지 삭제",
+      onConfirm: () => {
+        removeImage(selected.id);
+        setConfirmState(null);
+      },
+    });
   };
 
   const handleSave = () => {
@@ -232,9 +335,14 @@ export const OcrEditPage: React.FC = () => {
           selectedId={selectedId}
           onSelect={setSelectedId}
           onAdd={() => navigate("/ocr-upload")}
+          onDelete={handleDeleteImage}
         />
         <ImagePreview image={selected} />
-        <EditForm image={selected} onOrderPatch={handleOrderPatch} />
+        <EditForm
+          image={selected}
+          onOrderPatch={handleOrderPatch}
+          onDeleteOrder={handleDeleteOrder}
+        />
       </Body>
       <Footer>
         <Button variant="ghost" size="lg" onClick={() => navigate("/ocr-upload")}>
@@ -258,6 +366,46 @@ export const OcrEditPage: React.FC = () => {
           onAttachToExisting={handleAttach}
           onSaveAsNew={handleSaveAsNew}
         />
+      )}
+      {confirmState && (
+        <Modal
+          isOpen
+          onClose={() => setConfirmState(null)}
+          title={confirmState.title}
+        >
+          <div
+            style={{
+              color: tokens.color.ink2,
+              fontSize: 13,
+              lineHeight: 1.6,
+              marginBottom: 20,
+            }}
+          >
+            {confirmState.message}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 8,
+            }}
+          >
+            <Button
+              variant="secondary"
+              size="md"
+              onClick={() => setConfirmState(null)}
+            >
+              취소
+            </Button>
+            <Button
+              variant="danger"
+              size="md"
+              onClick={confirmState.onConfirm}
+            >
+              {confirmState.confirmLabel}
+            </Button>
+          </div>
+        </Modal>
       )}
     </AppShell>
   );
