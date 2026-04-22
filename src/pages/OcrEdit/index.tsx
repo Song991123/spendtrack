@@ -1,8 +1,9 @@
 /**
  * 역할: 해당 화면의 상태와 레이아웃을 조립하는 페이지 진입 파일입니다.
  *       OCR 초안을 보여주고 주문별로 주문일자/상태 태그를 수정할 수 있게 하며,
- *       저장 시에는 주문 하나당 TxRow 하나를 만들어 매칭 후보가 있는 건만
- *       모달을 띄우고, 나머지는 자동으로 저장해 여러 건을 한 번에 처리합니다.
+ *       저장 시에는 현재 선택된 이미지만이 아니라 업로드된 모든 이미지의 모든 주문을
+ *       훑어 주문 하나당 TxRow 하나를 만들고, 매칭 후보가 있는 건만 모달을 띄우고
+ *       나머지는 자동으로 저장해 여러 건을 한 번에 처리합니다.
  * 위치: src\pages\OcrEdit\index.tsx
  */
 import React, { useState } from "react";
@@ -95,9 +96,23 @@ function buildCandidateFromOrder(image: OcrImageItem, order: OcrOrder): TxRow {
   };
 }
 
-/** 한 이미지에서 주문별 TxRow 후보 배열을 만듭니다. */
-function buildCandidatesFromImage(image: OcrImageItem): TxRow[] {
-  return image.orders.map((order) => buildCandidateFromOrder(image, order));
+/**
+ * 모든 이미지의 모든 주문을 평탄화해 TxRow 후보 배열로 만듭니다.
+ * 저장 시점에는 "현재 보고 있는 이미지"가 아니라 업로드해 둔 캡쳐 전체가 한 번에
+ * 거래내역으로 넘어가야 하므로, images 전체를 순회해 주문별 후보를 수집합니다.
+ */
+function buildCandidatesFromImages(images: OcrImageItem[]): Array<{
+  image: OcrImageItem;
+  order: OcrOrder;
+  candidate: TxRow;
+}> {
+  return images.flatMap((image) =>
+    image.orders.map((order) => ({
+      image,
+      order,
+      candidate: buildCandidateFromOrder(image, order),
+    }))
+  );
 }
 
 /**
@@ -248,15 +263,18 @@ export const OcrEditPage: React.FC = () => {
   };
 
   const handleSave = () => {
-    if (!selected) return;
+    // 저장은 "현재 보고 있는 이미지"가 아니라 업로드해 둔 이미지 전체가 대상입니다.
+    // 여러 장의 캡쳐를 한 화면에서 확인한 뒤 한 번의 저장 액션으로 묶어 넘기는 UX라,
+    // 여기서 images 전체를 flatMap으로 돌아 주문별 후보를 만들어야 누락이 생기지 않습니다.
+    if (images.length === 0) return;
 
-    const candidates = buildCandidatesFromImage(selected);
+    const flat = buildCandidatesFromImages(images);
 
     // 주문별로 매칭을 돌려 "이미 저장된 거래와 겹치는 것"과 "새로 저장해도 되는 것"을 분리합니다.
-    const entries = candidates.map((candidate, index) => {
-      const order = selected.orders[index];
+    // platform은 해당 주문이 속한 이미지 기준으로 개별 판단 — 이미지마다 플랫폼이 달라질 수 있습니다.
+    const entries = flat.map(({ image, order, candidate }) => {
       const matches = findMatches(allRows, {
-        platform: selected.platform,
+        platform: image.platform,
         amount: Math.abs(candidate.amount),
         date: candidate.date,
       });
@@ -266,6 +284,11 @@ export const OcrEditPage: React.FC = () => {
         productCount: order.products.length,
       };
     });
+
+    if (entries.length === 0) {
+      navigate("/transactions");
+      return;
+    }
 
     const needsModal = entries.filter((entry) => entry.matches.length > 0);
     const canAutoSave = entries.filter((entry) => entry.matches.length === 0);
