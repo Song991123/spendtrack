@@ -16,7 +16,8 @@ type ModernKind =
   | "purchase"
   | "sub"
   | "cancel"
-  | "refund";
+  | "refund"
+  | "etc";
 
 interface TagProps {
   kind?: ModernKind;

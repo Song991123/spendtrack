@@ -192,6 +192,8 @@ export const FilterBar = ({
       <option value="cancel">{STATUS_LABELS.cancel}</option>
       <option value="refund">{STATUS_LABELS.refund}</option>
       <option value="sub">{STATUS_LABELS.sub}</option>
+      {/* "기타" 상태는 지출·수입 양쪽 폴백이라 상태 필터에도 노출해 수동 입력 정리에 쓰도록 합니다. */}
+      <option value="etc">{STATUS_LABELS.etc}</option>
     </Select>
   </Bar>
 );

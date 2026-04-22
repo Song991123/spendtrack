@@ -44,6 +44,8 @@ export const tokens = {
       sub: { bg: "#EEF0FF", fg: "#4338CA" },
       cancel: { bg: "#FEF2F2", fg: "#B42318" },
       refund: { bg: "#EFF6FF", fg: "#1D4ED8" },
+      // "기타" 상태는 purchase와 유사한 회색 계열로 두되, 살짝 더 옅게 해 의미 있는 상태들과 시각 가중치를 낮춥니다.
+      etc: { bg: "#F5F5F6", fg: "#6B7280" },
     },
   },
   radius: {

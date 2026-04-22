@@ -16,10 +16,15 @@ import { tokens } from "../../styles/tokens";
 import { TypeSegment, type TxType } from "./components/TypeSegment";
 import { MetaFields, type MetaFieldValues } from "./components/MetaFields";
 import { StatusTags, type StatusKey } from "./components/StatusTags";
+import {
+  defaultStatusForType,
+  isValidStatusForType,
+} from "./components/statusOptions";
 import { ProductRows, type ManualProduct } from "./components/ProductRows";
 import { transactionsStore } from "../../stores/transactionsStore";
-import type { TxRow, TxPlatform, TxCategory, TxStatus } from "./../Transactions/components/TransactionTable";
+import type { TxRow, TxPlatform, TxCategory } from "./../Transactions/components/TransactionTable";
 import { MAX_CATEGORIES_PER_TX } from "../../constants/labels";
+import { todayAsDotDate } from "../../utils/date";
 
 /**
  * 입력한 플랫폼 텍스트를 TxRow 타입에 맞는 키로 매핑합니다.
@@ -52,13 +57,6 @@ function mapCategories(keys: string[]): TxCategory[] {
   }
   if (picked.length === 0) return ["etc"];
   return picked;
-}
-
-function mapStatus(key: StatusKey | null): TxStatus {
-  if (key === "refund") return "refund";
-  if (key === "cancel") return "cancel";
-  if (key === "sub") return "sub";
-  return "purchase";
 }
 
 const Lead = styled.p`
@@ -185,8 +183,7 @@ export const ManualEntryPage: React.FC = () => {
       return;
     }
     const signedAmount = type === "expense" ? -Math.abs(amountNumber) : Math.abs(amountNumber);
-    const today = new Date();
-    const fallbackDate = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, "0")}.${String(today.getDate()).padStart(2, "0")}`;
+    const fallbackDate = todayAsDotDate();
     const row: TxRow = {
       id: `m_${Date.now()}`,
       type,
@@ -195,7 +192,11 @@ export const ManualEntryPage: React.FC = () => {
       date: meta.date.trim() || fallbackDate,
       platform: mapPlatform(meta.platform),
       categories: mapCategories(meta.categories),
-      status: mapStatus(status),
+      // 상태를 고르지 않았거나 타입과 안 맞는 상태가 남아있으면 타입별 안전 디폴트로 수렴시킵니다.
+      status:
+        status && isValidStatusForType(status, type)
+          ? status
+          : defaultStatusForType(type),
       source: "manual",
       memo: meta.memo.trim() || undefined,
       detail:
@@ -222,7 +223,19 @@ export const ManualEntryPage: React.FC = () => {
 
           <SectionLabel>거래 유형</SectionLabel>
           <div style={{ marginBottom: 16 }}>
-            <TypeSegment value={type} onChange={setType} />
+            <TypeSegment
+              value={type}
+              onChange={(nextType) => {
+                setType(nextType);
+                // 지출 → 수입으로 바꾸면 "취소" 같은 지출 전용 상태가 남아있으면 안 되니,
+                // 새 유형에서 유효하지 않은 상태는 새 유형의 안전 디폴트로 자동 전환합니다.
+                setStatus((currentStatus) =>
+                  currentStatus && isValidStatusForType(currentStatus, nextType)
+                    ? currentStatus
+                    : defaultStatusForType(nextType)
+                );
+              }}
+            />
           </div>
 
           <MetaFields
@@ -235,7 +248,7 @@ export const ManualEntryPage: React.FC = () => {
 
           <SectionLabel>상태 태그</SectionLabel>
           <div style={{ marginBottom: 20 }}>
-            <StatusTags value={status} onChange={setStatus} />
+            <StatusTags value={status} type={type} onChange={setStatus} />
           </div>
 
           <SectionHeader>

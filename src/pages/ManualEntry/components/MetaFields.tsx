@@ -9,6 +9,7 @@ import { TextInput } from "../../../components/form/TextInput";
 import { CATEGORY_LABELS, MAX_CATEGORIES_PER_TX } from "../../../constants/labels";
 import { tokens } from "../../../styles/tokens";
 import { media } from "../../../tokens/breakpoints";
+import { fromIsoDate, toIsoDate } from "../../../utils/date";
 
 export type CategoryKey = keyof typeof CATEGORY_LABELS;
 
@@ -203,10 +204,12 @@ export const MetaFields: React.FC<{
       </Field>
       <Field>
         <FormField label="거래일자">
+          {/* 네이티브 date input은 ISO(YYYY-MM-DD)를 쓰지만 저장 포맷은 "YYYY.MM.DD"로 유지하므로
+              경계에서 toIsoDate/fromIsoDate로 변환해 저장값이 일관되도록 합니다. */}
           <TextInput
-            placeholder="YYYY.MM.DD"
-            value={value.date}
-            onChange={(event) => patch({ date: event.target.value })}
+            type="date"
+            value={toIsoDate(value.date)}
+            onChange={(event) => patch({ date: fromIsoDate(event.target.value) })}
           />
         </FormField>
       </Field>

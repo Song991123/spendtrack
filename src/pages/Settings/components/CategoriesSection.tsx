@@ -203,10 +203,10 @@ export const CategoriesSection: React.FC = () => {
     <>
       <SettingsBlock
         title="카테고리"
-        subtitle="지출과 수입을 구분하는 카테고리 목록이에요. 색상은 리포트와 차트에 반영돼요. ‘기타’는 카테고리를 지정하지 않은 거래의 기본값이라 삭제할 수 없어요."
+        subtitle="지출과 수입을 구분하는 카테고리 목록이에요. 색상은 리포트와 차트에 반영돼요. ‘기타’는 카테고리를 지정하지 않은 거래의 기본값이라 수정·삭제할 수 없어요."
       >
         <HeaderBar>
-          <HeaderNote>총 {categories.length}개 · 기타 제외 삭제 가능</HeaderNote>
+          <HeaderNote>총 {categories.length}개 · 기타 제외 수정·삭제 가능</HeaderNote>
           <Button variant="secondary" size="sm" onClick={() => setModal({ kind: "add" })}>
             + 카테고리 추가
           </Button>
@@ -229,38 +229,42 @@ export const CategoriesSection: React.FC = () => {
                   {category.isLocked && <LockBadge>기본</LockBadge>}
                 </NameCell>
                 <Count>{count}건</Count>
-                {/* "수정" 버튼은 모든 카테고리에 노출. 잠긴(기타) 항목은 이름 필드만 비활성화한 채
-                    색상 편집은 허용해서 사용자의 색 커스터마이즈 욕구를 막지 않습니다. */}
-                <RowActionButton
-                  type="button"
-                  $variant="edit"
-                  aria-label={`${category.name} 카테고리 수정`}
-                  title="수정"
-                  onClick={() =>
-                    setModal({
-                      kind: "edit",
-                      id: category.id,
-                      name: category.name,
-                      color: category.color,
-                      locked: category.isLocked,
-                    })
-                  }
-                >
-                  수정
-                </RowActionButton>
-                {/* 잠긴 행은 삭제 버튼을 렌더하지 않고 자리만 빈 칸으로 남겨 그리드를 정렬합니다. */}
+                {/* 잠긴(기타) 행은 시스템 디폴트라 색/이름 모두 편집 불가. 수정·삭제 버튼을 둘 다 숨기고
+                    그리드 정렬만 유지하기 위해 빈 span으로 자리를 채웁니다. */}
                 {category.isLocked ? (
-                  <span aria-hidden="true" />
+                  <>
+                    <span aria-hidden="true" />
+                    <span aria-hidden="true" />
+                  </>
                 ) : (
-                  <RowActionButton
-                    type="button"
-                    $variant="delete"
-                    aria-label={`${category.name} 카테고리 삭제`}
-                    title="삭제"
-                    onClick={() => handleDelete(category.id)}
-                  >
-                    삭제
-                  </RowActionButton>
+                  <>
+                    <RowActionButton
+                      type="button"
+                      $variant="edit"
+                      aria-label={`${category.name} 카테고리 수정`}
+                      title="수정"
+                      onClick={() =>
+                        setModal({
+                          kind: "edit",
+                          id: category.id,
+                          name: category.name,
+                          color: category.color,
+                          locked: category.isLocked,
+                        })
+                      }
+                    >
+                      수정
+                    </RowActionButton>
+                    <RowActionButton
+                      type="button"
+                      $variant="delete"
+                      aria-label={`${category.name} 카테고리 삭제`}
+                      title="삭제"
+                      onClick={() => handleDelete(category.id)}
+                    >
+                      삭제
+                    </RowActionButton>
+                  </>
                 )}
               </Row>
             );

@@ -95,7 +95,7 @@ export const TransactionsPage: React.FC = () => {
   const [typeFilter, setTypeFilter] = useState<"all" | "expense" | "income">("all");
   const [platform, setPlatform] = useState<"all" | "coupang" | "naver" | "musinsa">("all");
   const [category, setCategory] = useState<"all" | "living" | "fashion" | "digital" | "food" | "etc">("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "purchase" | "cancel" | "refund" | "sub">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "purchase" | "cancel" | "refund" | "sub" | "etc">("all");
   // 거래 내역은 기본적으로 최신이 위로 오게 두고, 사용자가 원하면 오름차순으로 뒤집을 수 있습니다.
   const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
 

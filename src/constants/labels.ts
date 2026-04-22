@@ -13,6 +13,9 @@ export const STATUS_LABELS = {
   cancel: "취소",
   refund: "환불",
   sub: "정기결제",
+  // "기타"는 지출·수입 어느 쪽에도 넣을 수 있는 폴백 상태로, 정해진 라벨(구매/환불 등)에
+  // 깔끔히 들어맞지 않는 거래를 위한 탈출구입니다.
+  etc: "기타",
 } as const;
 
 export const TYPE_LABELS = {

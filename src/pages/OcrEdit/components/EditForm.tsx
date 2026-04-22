@@ -13,6 +13,7 @@ import { tokens } from "../../../styles/tokens";
 import type { OcrImageItem } from "../data";
 import { ProductTable } from "./ProductTable";
 import { CATEGORY_LABELS, PLATFORM_LABELS, STATUS_LABELS } from "../../../constants/labels";
+import { fromIsoDate, toIsoDate } from "../../../utils/date";
 
 const MetaRow = styled.div`
   display: flex;
@@ -375,11 +376,11 @@ export const EditForm: React.FC<EditFormProps> = ({ image, onOrderDateChange }) 
           <MetaCell>
             <div className="label">주문일자</div>
             {onOrderDateChange ? (
+              /* 수동 입력과 동일하게 네이티브 달력을 쓰고, 저장 포맷은 YYYY.MM.DD로 정규화합니다. */
               <DateInput
-                type="text"
-                value={image.orderDate}
-                placeholder="YYYY.MM.DD"
-                onChange={(event) => onOrderDateChange(event.target.value)}
+                type="date"
+                value={toIsoDate(image.orderDate)}
+                onChange={(event) => onOrderDateChange(fromIsoDate(event.target.value))}
                 aria-label="주문일자"
               />
             ) : (

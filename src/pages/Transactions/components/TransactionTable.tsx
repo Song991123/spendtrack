@@ -19,7 +19,14 @@ import { useCategoryColorMap } from "../../../stores/categoriesStore";
 
 export type TxType = "expense" | "income";
 export type TxPlatform = "coupang" | "naver" | "musinsa";
-export type TxStatus = "purchase" | "cancel" | "refund" | "sub";
+/**
+ * 거래 상태. 표시 맥락:
+ * - purchase/sub/cancel/etc: 지출(expense) 쪽에서 선택 가능한 상태.
+ * - refund/etc: 수입(income) 쪽에서 선택 가능한 상태.
+ * - "etc"(기타)는 어느 유형에든 들어갈 수 있는 폴백으로, 지출·수입 모두에서 쓸 수 있습니다.
+ *   취소 집계("취소 금액")나 환불 건수 집계에는 포함되지 않아 요약 카드를 흐리지 않습니다.
+ */
+export type TxStatus = "purchase" | "cancel" | "refund" | "sub" | "etc";
 /**
  * "etc"(기타)는 사용자가 카테고리를 지정하지 않은 모든 거래의 안전한 기본값입니다.
  * CSV/OCR/수동 입력 모든 경로에서 카테고리가 비었거나 알 수 없으면 "etc"로 수렴시킵니다.
