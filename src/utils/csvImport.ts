@@ -134,14 +134,10 @@ export function importRows(parsed: CsvRow[]): CsvImportResult {
       skipped.push({ index, reason: "금액 형식을 읽을 수 없습니다.", raw });
       return;
     }
-    if (!platform) {
-      skipped.push({
-        index,
-        reason: `지원 플랫폼이 아닙니다. (${cleaned || merchantRaw})`,
-        raw,
-      });
-      return;
-    }
+    // CSV는 카드사/가맹점 표기가 다양해서 쇼핑 3대 플랫폼 규칙에 안 맞는 행도 자주 나옵니다.
+    // 이런 경우 행 전체를 버리지 않고 "미지정" 플랫폼으로 받아, 과거의 "비지원 플랫폼이면 업로드 실패"
+    // 버그를 막습니다. 카테고리는 별도로 "기타" 폴백을 태웁니다.
+    const resolvedPlatform = platform ?? "unspecified";
 
     // 사용자가 카테고리를 지정하지 않았거나 알 수 없는 값이면 "기타"로 자동 분류합니다.
     // CSV 한 줄은 카테고리 한 개만 제공하므로 항상 길이 1짜리 배열로 저장합니다.
@@ -153,7 +149,7 @@ export function importRows(parsed: CsvRow[]): CsvImportResult {
       id: `csv-${now}-${index}`,
       type: txShape.type,
       date,
-      platform,
+      platform: resolvedPlatform,
       categories: [category],
       title: cleaned || merchantRaw,
       amount: txShape.amount,

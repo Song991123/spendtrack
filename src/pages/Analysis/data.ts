@@ -129,8 +129,7 @@ function buildPlatform(rows: TxRow[]): {
     })
     // 기존 3개 플랫폼은 항상 노출해 "이 달엔 쿠팡만 써서 나머지는 0이야"가 한눈에 보이게 했습니다.
     // "미지정"은 누락된 입력을 강조할 의도는 없어서, 해당 데이터가 실제로 있을 때만 차트에 등장시킵니다.
-    .filter((item) => item.key !== "unspecified" || item.value > 0)
-    .map(({ key: _key, ...rest }) => rest);
+    .filter((item) => item.key !== "unspecified" || item.value > 0);
   const totalIncome = sumIncomeAndRefund(rows);
   return { items, totalSpend, totalIncome, netSpend: totalSpend - totalIncome };
 }
